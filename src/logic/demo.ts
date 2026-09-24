@@ -1,15 +1,20 @@
 import type { Category, Group, Rules, State, Team } from '../types'
 import { buildGroupSchedule } from './schedule'
 
+/**
+ * Mini volleyball rules as in the PZPS Kinder tournaments: best of 3 sets, sets to 15,
+ * deciding set to 11, always with a 2-point lead; table points 2 for a win, 1 for a loss.
+ * All of it can be changed in the admin settings.
+ */
 export const defaultRules: Rules = {
   setsMode: 'bestOf',
   sets: 3,
-  setPoints: 25,
-  lastSetPoints: 15,
+  setPoints: 15,
+  lastSetPoints: 11,
   winBy: 2,
   pointsWin: 2,
   pointsDraw: 1,
-  pointsLoss: 0,
+  pointsLoss: 1,
 }
 
 const CLUBS = [

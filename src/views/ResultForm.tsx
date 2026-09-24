@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { isMatchDecided, setTarget, setWinner, tally } from '../logic/scoring'
+import { isMatchDecided, resultProblem, setProblem, setTarget, tally } from '../logic/scoring'
 import type { Match, SetScore, State } from '../types'
 import { useLookups } from '../ui'
 
@@ -33,6 +33,7 @@ export function ResultForm({ state, match, submitLabel, onSubmit, children }: {
   const sets = parseFields(fields)
   const t = tally(rules, sets)
   const decided = isMatchDecided(rules, sets)
+  const problem = resultProblem(rules, sets)
 
   useEffect(() => {
     inputs.current[0]?.focus()
@@ -50,8 +51,11 @@ export function ResultForm({ state, match, submitLabel, onSubmit, children }: {
   }
   const restEmpty = (index: number) =>
     fields.flatMap((f) => [f.a, f.b]).slice(index + 1).every((v) => v === '')
+  const [tried, setTried] = useState(false)
   const submit = () => {
-    if (sets.length) onSubmit(sets)
+    setTried(true)
+    // Only a result that follows the rules can be saved.
+    if (!problem) onSubmit(sets)
   }
 
   return (
@@ -65,9 +69,8 @@ export function ResultForm({ state, match, submitLabel, onSubmit, children }: {
         <span className="rf-team">{side(match, 'b')}</span>
         <span />
         {fields.map((f, i) => {
-          const s = sets[i]
-          const w = s && f.a !== '' && f.b !== '' ? setWinner(rules, i, s) : null
           const filled = f.a !== '' && f.b !== ''
+          const p = filled ? setProblem(rules, i, { a: Number(f.a), b: Number(f.b) }) : null
           return [
             <span key={`l${i}`} className="rf-label">Set {i + 1}<small>do {setTarget(rules, i)}</small></span>,
             ...(['a', 'b'] as const).map((sd, k) => {
@@ -99,8 +102,8 @@ export function ResultForm({ state, match, submitLabel, onSubmit, children }: {
                 />
               )
             }),
-            <span key={`c${i}`} className={`rf-check ${w ? 'ok' : filled ? 'warn' : ''}`}>
-              {w ? '✓' : filled ? 'set niedokończony' : ''}
+            <span key={`c${i}`} className={`rf-check ${!filled ? '' : p ? 'warn' : 'ok'}`}>
+              {!filled ? '' : p === 'impossible' ? 'niemożliwy wynik' : p === 'unfinished' ? 'set niedokończony' : '✓'}
             </span>,
           ]
         })}
@@ -109,11 +112,16 @@ export function ResultForm({ state, match, submitLabel, onSubmit, children }: {
         Wynik: <b>{t.setsA}:{t.setsB}</b>
         {sets.length > 0 && !decided && <span className="muted small"> · mecz jeszcze nierozstrzygnięty</span>}
       </p>
+      {tried && problem && <p className="error" role="alert">{problem}</p>}
       <div className="actions">
-        <button className="btn btn-primary btn-lg" type="submit" disabled={!sets.length}>{submitLabel}</button>
+        <button className="btn btn-primary btn-lg" type="submit" disabled={!!problem}>{submitLabel}</button>
         {children}
       </div>
-      <p className="muted small">Dwie cyfry przeskakują do następnego pola. Enter przechodzi dalej, a na końcu zapisuje.</p>
+      {!tried && problem && sets.length > 0 && <p className="muted small">{problem}</p>}
+      <p className="muted small">
+        Dwie cyfry przeskakują do następnego pola. Enter przechodzi dalej, a na końcu zapisuje.
+        Zasady: sety do {rules.setPoints}{rules.setsMode === 'bestOf' && rules.sets > 1 ? `, decydujący do ${rules.lastSetPoints}` : ''}, przewaga {rules.winBy}.
+      </p>
     </form>
   )
 }

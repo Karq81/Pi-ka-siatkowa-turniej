@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { isMatchDecided, setTarget, setWinner, tally } from '../logic/scoring'
+import { canAddPoint, isMatchDecided, setTarget, setWinner, tally } from '../logic/scoring'
 import { canScore } from '../logic/pins'
 import { store, useSession, useStore } from '../store/store'
 import type { Match, State } from '../types'
@@ -181,15 +181,21 @@ function LiveScoring({ state, match, meta, onFinish }: { state: State; match: Ma
   const decided = isMatchDecided(rules, match.sets)
   const t = tally(rules, match.sets)
 
+  // Checked again inside the update, so a quick double tap cannot go past the end of a set.
   const change = (side: 'a' | 'b', delta: number) =>
     store.updateMatch(match.id, (m) => {
+      const cur = m.sets[idx]
+      if (!cur || (delta > 0 && !canAddPoint(rules, idx, cur))) return m
       const sets = m.sets.map((s, i) => (i === idx ? { ...s, [side]: Math.max(0, s[side] + delta) } : s))
       return { ...m, sets }
     })
 
-  const nextSet = () => store.updateMatch(match.id, (m) => ({ ...m, sets: [...m.sets, { a: 0, b: 0 }] }))
+  const nextSet = () => store.updateMatch(match.id, (m) =>
+    setWinner(rules, m.sets.length - 1, m.sets[m.sets.length - 1]) && !isMatchDecided(rules, m.sets)
+      ? { ...m, sets: [...m.sets, { a: 0, b: 0 }] }
+      : m)
   const finish = () => {
-    store.updateMatch(match.id, (m) => ({ ...m, status: 'finished' }))
+    store.updateMatch(match.id, (m) => (isMatchDecided(rules, m.sets) ? { ...m, status: 'finished' } : m))
     onFinish()
   }
 
@@ -202,7 +208,7 @@ function LiveScoring({ state, match, meta, onFinish }: { state: State; match: Ma
           <div key={s} className={`pad ${winner === s ? 'pad-won' : ''}`}>
             <span className="pad-team">{side(match, s)}</span>
             <span className="pad-score">{set[s]}</span>
-            <button className="btn-plus" onClick={() => change(s, 1)} aria-label={`Punkt dla ${side(match, s)}`}>
+            <button className="btn-plus" onClick={() => change(s, 1)} disabled={!!winner} aria-label={`Punkt dla ${side(match, s)}`}>
               +1
             </button>
             <button className="btn-minus" onClick={() => change(s, -1)} disabled={set[s] === 0}>

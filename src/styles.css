@@ -343,3 +343,4 @@ label { display: flex; flex-direction: column; gap: 4px; font-size: 0.9rem; font
   .rf-check { grid-column: 2 / -1; }
   .rf-check:empty { display: none; }
 }
+.btn-plus:disabled { background: color-mix(in srgb, var(--accent) 25%, var(--board)); color: rgb(255 255 255 / 0.4); cursor: not-allowed; transform: none; }

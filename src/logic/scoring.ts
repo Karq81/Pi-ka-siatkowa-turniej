@@ -14,6 +14,38 @@ export function setWinner(rules: Rules, index: number, s: SetScore): 'a' | 'b' |
   return null
 }
 
+/**
+ * Why a set score cannot be a finished set: 'unfinished' (nobody has won yet) or
+ * 'impossible' (the set would have ended earlier, e.g. 18:12 when playing to 15).
+ */
+export function setProblem(rules: Rules, index: number, s: SetScore): 'unfinished' | 'impossible' | null {
+  const target = setTarget(rules, index)
+  const hi = Math.max(s.a, s.b)
+  const diff = Math.abs(s.a - s.b)
+  // Past the target the set ends the moment someone leads by winBy, so a bigger lead is impossible.
+  if (hi > target && diff > rules.winBy) return 'impossible'
+  return setWinner(rules, index, s) ? null : 'unfinished'
+}
+
+/** Whether another point can be added to this set (false once the set is won). */
+export function canAddPoint(rules: Rules, index: number, s: SetScore): boolean {
+  return setWinner(rules, index, s) === null
+}
+
+/** Problem with a full result typed from a score sheet, or null when it is a valid finished match. */
+export function resultProblem(rules: Rules, sets: SetScore[]): string | null {
+  if (!sets.length) return 'Wpisz wynik co najmniej jednego seta.'
+  for (let i = 0; i < sets.length; i++) {
+    const p = setProblem(rules, i, sets[i])
+    const label = `Set ${i + 1} (${sets[i].a}:${sets[i].b})`
+    if (p === 'impossible') return `${label}: taki wynik jest niemożliwy, set kończy się wcześniej (do ${setTarget(rules, i)}, przewaga ${rules.winBy}).`
+    if (p === 'unfinished') return `${label}: set nie jest zakończony (do ${setTarget(rules, i)}, przewaga ${rules.winBy}).`
+    if (i < sets.length - 1 && isMatchDecided(rules, sets.slice(0, i + 1))) return `Mecz rozstrzygnął się po secie ${i + 1}, kolejne sety są zbędne.`
+  }
+  if (!isMatchDecided(rules, sets)) return 'Mecz nie jest jeszcze rozstrzygnięty, brakuje seta.'
+  return null
+}
+
 export interface MatchTally {
   setsA: number
   setsB: number
