@@ -98,6 +98,25 @@ function CourtPanel({ state, court }: { state: State; court: number }) {
     )
   }
 
+  if (!current.sets.length) {
+    // Marked as started by the chief referee without point-by-point scoring.
+    return (
+      <section className="ref-card">
+        <p className="eyebrow">Mecz trwa</p>
+        <p className="muted">{meta}</p>
+        <h2 className="vs">
+          <span>{side(current, 'a')}</span>
+          <span className="muted">vs</span>
+          <span>{side(current, 'b')}</span>
+        </h2>
+        <p>Sędzia główny oznaczył ten mecz jako trwający, bez liczenia punktów na żywo.</p>
+        <button className="btn btn-primary btn-lg" onClick={() => store.updateMatch(current.id, (m) => ({ ...m, sets: [{ a: 0, b: 0 }] }))}>
+          Licz punkty na żywo
+        </button>
+      </section>
+    )
+  }
+
   return <LiveScoring state={state} match={current} meta={meta} onFinish={() => setJustFinished(current.id)} />
 }
 

@@ -60,7 +60,9 @@ export function CourtCard({ state, court, big = false }: { state: State; court: 
   }
   const live = current.status === 'live'
   const t = tally(rules, current.sets)
-  const cur = live ? current.sets[current.sets.length - 1] : undefined
+  // A match can be live without point-by-point scoring (no phone at that court).
+  const counting = live && current.sets.length > 0
+  const cur = counting ? current.sets[current.sets.length - 1] : undefined
   return (
     <article className={`court ${live ? 'court-live' : ''} ${big ? 'court-big' : ''}`}>
       <header>
@@ -69,9 +71,10 @@ export function CourtCard({ state, court, big = false }: { state: State; court: 
       </header>
       <p className="court-meta">{categoryName(current.categoryId)} · {stageName(current)}</p>
       <div className="board">
-        <TeamRow name={side(current, 'a')} sets={t.setsA} points={cur?.a} live={live} />
-        <TeamRow name={side(current, 'b')} sets={t.setsB} points={cur?.b} live={live} />
+        <TeamRow name={side(current, 'a')} sets={t.setsA} points={cur?.a} live={counting} />
+        <TeamRow name={side(current, 'b')} sets={t.setsB} points={cur?.b} live={counting} />
       </div>
+      {live && !counting && <p className="court-sets muted">Mecz trwa. Wynik pojawi się po meczu.</p>}
       {live && current.sets.length > 1 && (
         <p className="court-sets muted">
           Sety: {current.sets.slice(0, -1).map((s) => `${s.a}:${s.b}`).join(', ')}

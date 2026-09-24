@@ -137,10 +137,14 @@ function MatchEditor({ state, match, onClose }: { state: State; match: Match; on
       </table>
       <p>Wynik w setach: <b>{t.setsA}:{t.setsB}</b></p>
       <div className="actions">
-        <button className="btn btn-primary" onClick={() => save('finished')}>Zapisz jako zakończony</button>
+        <button className="btn btn-primary" disabled={!played.length} onClick={() => save('finished')}>Zapisz jako zakończony</button>
         <button className="btn" onClick={() => save('live')}>Zapisz jako trwający</button>
         <button className="btn btn-danger" onClick={() => save('scheduled')}>Wyczyść wynik</button>
       </div>
+      <p className="muted small">
+        „Trwający” bez wpisanych setów: na stronie pojawi się „Mecz trwa, wynik po meczu”. Przydaje się na boiskach,
+        gdzie nikt nie liczy punktów na telefonie.
+      </p>
     </section>
   )
 }
