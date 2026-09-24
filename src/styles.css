@@ -250,3 +250,42 @@ label { display: flex; flex-direction: column; gap: 4px; font-size: 0.9rem; font
 }
 .banner-error { background: var(--danger); color: #fff; }
 .banner .btn { padding: 4px 12px; }
+
+/* Bracket */
+.notice-inline { margin-block: 12px; padding: 10px 12px; border-radius: 8px; background: var(--surface-2); border: 1px dashed var(--line); color: var(--muted); font-size: 0.9rem; }
+.bracket-scroll { overflow-x: auto; padding-block: 8px 16px; }
+.bracket { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(230px, 1fr); gap: 28px; min-height: 100%; }
+.bracket-col { display: flex; flex-direction: column; }
+.bracket-col h3, .bracket-third h3 {
+  font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 10px;
+}
+.bracket-matches { flex: 1; display: flex; flex-direction: column; justify-content: space-around; gap: 14px; }
+.b-match { position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); overflow: visible; }
+.b-match header {
+  display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 6px 10px;
+  font-size: 0.75rem; color: var(--muted); border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums;
+}
+.b-match header span:first-child { font-family: var(--display); font-weight: 600; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink); }
+.b-live { border-color: var(--live); }
+.b-team { display: flex; align-items: center; gap: 8px; padding: 7px 10px; }
+.b-team + .b-team { border-top: 1px solid var(--line); }
+.b-name { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow-wrap: anywhere; }
+.b-name small { color: var(--muted); font-size: 0.72rem; }
+.b-tbd .b-name { color: var(--muted); font-style: italic; }
+.b-sets { font-family: var(--display); font-weight: 700; font-size: 1.2rem; font-variant-numeric: tabular-nums; }
+.b-won { font-weight: 700; }
+.b-won .b-sets { color: var(--accent); }
+/* Connector lines between rounds */
+.bracket-col:not(:last-child) .b-match::after {
+  content: ''; position: absolute; top: 50%; right: -15px; width: 14px; border-top: 2px solid var(--line);
+}
+.bracket-col:not(:first-child) .b-match::before {
+  content: ''; position: absolute; top: 50%; left: -15px; width: 14px; border-top: 2px solid var(--line);
+}
+.round-F .b-match { border-width: 2px; border-color: var(--accent); }
+.bracket-third { margin-top: 20px; max-width: 320px; }
+@media (max-width: 480px) {
+  .tabs a, .tabs button { padding: 7px 10px; font-size: 0.98rem; }
+  .hero .tabs { flex-wrap: nowrap; overflow-x: auto; width: 100%; scrollbar-width: none; }
+  .hero .tabs a { flex: none; }
+}

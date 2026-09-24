@@ -5,6 +5,7 @@ import {
   persistentMultipleTabManager, setDoc, updateDoc, writeBatch, type Firestore,
 } from 'firebase/firestore'
 import { defaultRules } from '../logic/demo'
+import { applyMatchUpdate } from '../logic/knockout'
 import type { Match, Role, State } from '../types'
 import type { Store, SyncInfo } from './types'
 
@@ -121,10 +122,12 @@ export function createFirebaseStore(config: FirebaseOptions, tournamentId: strin
     role: () => role,
     login,
     updateMatch(id, update) {
-      const current = state.matches.find((m) => m.id === id)
-      if (!current) return
-      const next = { ...update(current), updatedAt: Date.now() }
-      setDoc(doc(matchesRef, id), next).catch(fail('Zapis wyniku'))
+      // Also fills in knockout teams that follow from this result, in one atomic write.
+      const changed = applyMatchUpdate(state, id, update)
+      if (!changed.length) return
+      const b = writeBatch(db)
+      for (const m of changed) b.set(doc(matchesRef, m.id), m)
+      b.commit().catch(fail('Zapis wyniku'))
     },
     async replace(next) {
       const ops: ((b: ReturnType<typeof writeBatch>) => void)[] = []

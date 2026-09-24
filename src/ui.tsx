@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { sourceLabel } from './logic/knockout'
 import { tally } from './logic/scoring'
 import { store, useRole, useSync } from './store/store'
 import type { Match, Role, Rules, State } from './types'
@@ -24,12 +25,21 @@ export function useLookups(state: State) {
     const team = new Map(state.teams.map((t) => [t.id, t]))
     const group = new Map(state.groups.map((g) => [g.id, g]))
     const category = new Map(state.categories.map((c) => [c.id, c]))
+    const teamName = (id: string) => team.get(id)?.name ?? '—'
     return {
-      teamName: (id: string) => team.get(id)?.name ?? '—',
+      teamName,
       groupName: (id: string) => group.get(id)?.name ?? '',
       categoryName: (id: string) => category.get(id)?.name ?? '',
+      /** Group name, or the knockout round label. */
+      stageName: (m: Match) => m.ko?.label ?? group.get(m.groupId)?.name ?? '',
+      /** Team name, or where the team will come from (e.g. "Zwycięzca: Półfinał 1"). */
+      side: (m: Match, s: 'a' | 'b') => {
+        const id = s === 'a' ? m.teamA : m.teamB
+        if (id) return teamName(id)
+        return m.ko ? sourceLabel(state, s === 'a' ? m.ko.srcA : m.ko.srcB) : '—'
+      },
     }
-  }, [state.teams, state.groups, state.categories])
+  }, [state])
 }
 
 const DAYS = ['niedz.', 'pon.', 'wt.', 'śr.', 'czw.', 'pt.', 'sob.']

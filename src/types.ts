@@ -47,13 +47,32 @@ export interface SetScore {
 
 export type MatchStatus = 'scheduled' | 'live' | 'finished'
 
+export type KoRound = 'QF' | 'SF' | 'F' | '3P'
+
+/** Where a knockout team comes from: a group place, or the winner/loser of an earlier match. */
+export type KoSource =
+  | { kind: 'group'; groupId: Id; pos: number }
+  | { kind: 'match'; matchId: Id; take: 'winner' | 'loser'; label: string }
+
+export interface KoInfo {
+  round: KoRound
+  /** e.g. "Ćwierćfinał 1", "Finał" */
+  label: string
+  srcA: KoSource
+  srcB: KoSource
+}
+
 export interface Match {
   id: Id
   categoryId: Id
+  /** Empty for knockout matches. */
   groupId: Id
+  /** Set for knockout (bracket) matches. */
+  ko?: KoInfo
   court: number
   /** ISO local date-time, e.g. 2026-10-23T09:00 */
   start: string
+  /** Empty while a knockout team is not known yet. */
   teamA: Id
   teamB: Id
   /** Finished sets followed by the set in progress (if live). */

@@ -4,6 +4,7 @@ import { buildGroupSchedule } from '../logic/schedule'
 import { tally } from '../logic/scoring'
 import { store, useStore, useSync } from '../store/store'
 import { parseTeams } from '../logic/importTeams'
+import { bracketPlan, createKnockout, hasKnockout, openGroupMatches } from '../logic/knockout'
 import type { Match, MatchStatus, SetScore, State } from '../types'
 import { formatDay, formatTime, PinGate, useLookups } from '../ui'
 import { CourtCard, MatchList } from './Public'
@@ -71,14 +72,14 @@ function Courts({ state }: { state: State }) {
 }
 
 function Matches({ state }: { state: State }) {
-  const { teamName } = useLookups(state)
+  const { side } = useLookups(state)
   const [filter, setFilter] = useState<MatchStatus | 'all'>('live')
   const [q, setQ] = useState('')
   const [editing, setEditing] = useState<string | null>(null)
   const query = q.trim().toLowerCase()
   const list = state.matches
     .filter((m) => filter === 'all' || m.status === filter)
-    .filter((m) => !query || `${teamName(m.teamA)} ${teamName(m.teamB)} boisko ${m.court}`.toLowerCase().includes(query))
+    .filter((m) => !query || `${side(m, 'a')} ${side(m, 'b')} boisko ${m.court}`.toLowerCase().includes(query))
     .sort((a, b) => a.start.localeCompare(b.start) || a.court - b.court)
   const current = editing ? state.matches.find((m) => m.id === editing) : undefined
 
@@ -101,7 +102,7 @@ function Matches({ state }: { state: State }) {
 }
 
 function MatchEditor({ state, match, onClose }: { state: State; match: Match; onClose: () => void }) {
-  const { teamName } = useLookups(state)
+  const { side } = useLookups(state)
   const rules = state.tournament.rules
   const initial = Array.from({ length: rules.sets }, (_, i) => match.sets[i] ?? { a: 0, b: 0 })
   const [sets, setSets] = useState<SetScore[]>(initial)
@@ -118,11 +119,11 @@ function MatchEditor({ state, match, onClose }: { state: State; match: Match; on
   return (
     <section className="editor">
       <button className="back" onClick={onClose}>← Lista meczów</button>
-      <h2>{teamName(match.teamA)} – {teamName(match.teamB)}</h2>
+      <h2>{side(match, 'a')} – {side(match, 'b')}</h2>
       <p className="muted">Boisko {match.court} · {formatDay(match.start)} {formatTime(match.start)}</p>
       <table className="set-inputs">
         <thead>
-          <tr><th className="left">Set</th><th className="left">{teamName(match.teamA)}</th><th className="left">{teamName(match.teamB)}</th></tr>
+          <tr><th className="left">Set</th><th className="left">{side(match, 'a')}</th><th className="left">{side(match, 'b')}</th></tr>
         </thead>
         <tbody>
           {sets.map((s, i) => (
@@ -202,6 +203,8 @@ function Data({ state }: { state: State }) {
         )}
         {msg && <p className="ok">{msg}</p>}
       </section>
+
+      <KnockoutPanel state={state} />
 
       <section className="panel">
         <h2>Eksport do Excela</h2>
@@ -359,6 +362,71 @@ function FirstSetup() {
           await store.replace(demoState())
         }}
       />
+    </section>
+  )
+}
+
+function KnockoutPanel({ state }: { state: State }) {
+  const [cat, setCat] = useState(state.categories[0]?.id ?? '')
+  const lastGroupMatch = state.matches.filter((m) => !m.ko && m.categoryId === cat).map((m) => m.start).sort().at(-1)
+  const [start, setStart] = useState(lastGroupMatch ?? '2026-10-25T12:00')
+  const [slot, setSlot] = useState(30)
+  const [firstCourt, setFirstCourt] = useState(1)
+  const [confirm, setConfirm] = useState(false)
+  const [msg, setMsg] = useState('')
+  const groups = state.groups.filter((g) => g.categoryId === cat)
+  const supported = !!bracketPlan(cat, groups)
+  const open = openGroupMatches(state, cat)
+  const exists = hasKnockout(state, cat)
+  const courts = [0, 1, 2, 3].map((i) => firstCourt + i).filter((c) => c <= state.tournament.courts)
+
+  const create = async () => {
+    const ko = createKnockout(state, cat, { start, slotMinutes: slot, courts })
+    const matches = [...state.matches.filter((m) => !(m.ko && m.categoryId === cat)), ...ko]
+    setConfirm(false)
+    setMsg('Zapisuję…')
+    await store.replace({ ...state, matches })
+    setMsg(`Utworzono drabinkę: ${ko.length} meczów. Zobacz zakładkę „Drabinka” na stronie wyników.`)
+  }
+
+  return (
+    <section className="panel">
+      <h2>Faza pucharowa (drabinka)</h2>
+      <p className="muted">
+        4 grupy: ćwierćfinały 1A–2B, 1C–2D, 1B–2A, 1D–2C, potem półfinały, finał i mecz o 3. miejsce.
+        2 grupy: od razu półfinały. Kolejne rundy uzupełniają się same po każdym wyniku.
+      </p>
+      <div className="chips">
+        {state.categories.map((c) => (
+          <button key={c.id} className={`chip ${cat === c.id ? 'active' : ''}`} onClick={() => { setCat(c.id); setConfirm(false); setMsg('') }}>{c.name}</button>
+        ))}
+      </div>
+      {!supported && <p className="error">Drabinka jest przygotowana dla 1, 2 lub 4 grup w kategorii. Ta kategoria ma {groups.length}.</p>}
+      {supported && (
+        <>
+          <div className="form-row">
+            <label>Start pierwszej rundy<input id="ko-start" type="datetime-local" value={start} onChange={(e) => setStart(e.target.value)} /></label>
+            <label>Mecz + przerwa (min)<input id="ko-slot" type="number" min={5} value={slot} onChange={(e) => setSlot(Number(e.target.value) || 30)} /></label>
+            <label>Boiska od numeru<input id="ko-court" type="number" min={1} max={state.tournament.courts} value={firstCourt} onChange={(e) => setFirstCourt(Math.max(1, Number(e.target.value) || 1))} /></label>
+          </div>
+          <p className="muted small">
+            Mecze na boiskach {courts.join(', ')}.
+            {open > 0 ? ` Uwaga: ${open} meczów grupowych jeszcze się nie skończyło. Pary będą się aktualizować, dopóki mecz drabinki się nie zacznie.` : ' Wszystkie mecze grupowe zakończone.'}
+          </p>
+          {confirm ? (
+            <div className="notice">
+              <p>{exists ? 'Drabinka tej kategorii już istnieje. Utworzenie nowej usunie jej mecze i wyniki.' : 'Utworzyć drabinkę?'}</p>
+              <div className="actions">
+                <button className="btn btn-primary" onClick={create}>Tak, utwórz</button>
+                <button className="btn" onClick={() => setConfirm(false)}>Anuluj</button>
+              </div>
+            </div>
+          ) : (
+            <button className="btn btn-primary" onClick={() => setConfirm(true)}>{exists ? 'Utwórz drabinkę od nowa' : 'Utwórz drabinkę'}</button>
+          )}
+        </>
+      )}
+      {msg && <p className="ok">{msg}</p>}
     </section>
   )
 }

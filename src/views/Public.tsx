@@ -2,11 +2,13 @@ import { useState } from 'react'
 import { formatRatio, standings, tally } from '../logic/scoring'
 import { useStore } from '../store/store'
 import type { Match, State } from '../types'
+import { Bracket } from './Bracket'
 import { courtMatch, formatDay, formatTime, ScoreLine, StatusPill, useLookups } from '../ui'
 
 const TABS = [
   { route: '', label: 'Na żywo' },
   { route: 'tabele', label: 'Tabele' },
+  { route: 'drabinka', label: 'Drabinka' },
   { route: 'terminarz', label: 'Terminarz' },
 ]
 
@@ -32,6 +34,7 @@ export function Public({ route }: { route: string }) {
       <main>
         {tab === '' && <LiveCourts state={state} />}
         {tab === 'tabele' && <Tables state={state} />}
+        {tab === 'drabinka' && <Bracket state={state} />}
         {tab === 'terminarz' && <Schedule state={state} />}
       </main>
       <footer className="footer">
@@ -44,7 +47,7 @@ export function Public({ route }: { route: string }) {
 }
 
 export function CourtCard({ state, court, big = false }: { state: State; court: number; big?: boolean }) {
-  const { teamName, categoryName, groupName } = useLookups(state)
+  const { categoryName, stageName, side } = useLookups(state)
   const { current, next } = courtMatch(state, court)
   const rules = state.tournament.rules
   if (!current) {
@@ -64,10 +67,10 @@ export function CourtCard({ state, court, big = false }: { state: State; court: 
         <span className="court-no">Boisko {court}</span>
         {live ? <StatusPill status="live" /> : <span className="pill">Start {formatTime(current.start)}</span>}
       </header>
-      <p className="court-meta">{categoryName(current.categoryId)} · {groupName(current.groupId)}</p>
+      <p className="court-meta">{categoryName(current.categoryId)} · {stageName(current)}</p>
       <div className="board">
-        <TeamRow name={teamName(current.teamA)} sets={t.setsA} points={cur?.a} live={live} />
-        <TeamRow name={teamName(current.teamB)} sets={t.setsB} points={cur?.b} live={live} />
+        <TeamRow name={side(current, 'a')} sets={t.setsA} points={cur?.a} live={live} />
+        <TeamRow name={side(current, 'b')} sets={t.setsB} points={cur?.b} live={live} />
       </div>
       {live && current.sets.length > 1 && (
         <p className="court-sets muted">
@@ -76,7 +79,7 @@ export function CourtCard({ state, court, big = false }: { state: State; court: 
       )}
       {next && (
         <p className="court-next">
-          Następnie {formatTime(next.start)}: {teamName(next.teamA)} – {teamName(next.teamB)}
+          Następnie {formatTime(next.start)}: {side(next, 'a')} – {side(next, 'b')}
         </p>
       )}
     </article>
@@ -180,7 +183,7 @@ function Tables({ state }: { state: State }) {
 }
 
 export function MatchList({ state, matches, onPick }: { state: State; matches: Match[]; onPick?: (m: Match) => void }) {
-  const { teamName, categoryName, groupName } = useLookups(state)
+  const { categoryName, stageName, side } = useLookups(state)
   if (!matches.length) return <p className="muted">Brak meczów.</p>
   return (
     <ul className="matches">
@@ -195,9 +198,9 @@ export function MatchList({ state, matches, onPick }: { state: State; matches: M
               <span className="muted">Boisko {m.court}</span>
             </span>
             <span className="m-teams">
-              <span className={winA ? 'win' : ''}>{teamName(m.teamA)}</span>
-              <span className={winB ? 'win' : ''}>{teamName(m.teamB)}</span>
-              <span className="muted small">{categoryName(m.categoryId)} · {groupName(m.groupId)}</span>
+              <span className={winA ? 'win' : ''}>{side(m, 'a')}</span>
+              <span className={winB ? 'win' : ''}>{side(m, 'b')}</span>
+              <span className="muted small">{categoryName(m.categoryId)} · {stageName(m)}</span>
             </span>
             <span className="m-score">
               {m.status === 'scheduled' ? <StatusPill status="scheduled" /> : <ScoreLine match={m} rules={state.tournament.rules} />}
@@ -218,11 +221,11 @@ export function MatchList({ state, matches, onPick }: { state: State; matches: M
 function Schedule({ state }: { state: State }) {
   const [cat, setCat] = useState('')
   const [q, setQ] = useState('')
-  const { teamName } = useLookups(state)
+  const { side } = useLookups(state)
   const query = q.trim().toLowerCase()
   const list = state.matches
     .filter((m) => !cat || m.categoryId === cat)
-    .filter((m) => !query || `${teamName(m.teamA)} ${teamName(m.teamB)}`.toLowerCase().includes(query))
+    .filter((m) => !query || `${side(m, 'a')} ${side(m, 'b')}`.toLowerCase().includes(query))
     .sort((a, b) => a.start.localeCompare(b.start) || a.court - b.court)
   const days = [...new Set(list.map((m) => m.start.slice(0, 10)))]
   return (

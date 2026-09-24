@@ -7,7 +7,7 @@ import { courtMatch, formatTime, PinGate, useLookups } from '../ui'
 /** List of courts for referees to pick from. */
 export function CourtPicker() {
   const state = useStore()
-  const { teamName } = useLookups(state)
+  const { side } = useLookups(state)
   const courts = Array.from({ length: state.tournament.courts }, (_, i) => i + 1)
   return (
     <div className="page">
@@ -24,7 +24,7 @@ export function CourtPicker() {
               <a href={`#boisko-${c}`}>
                 <b>Boisko {c}</b>
                 <span className="muted small">
-                  {current ? `${formatTime(current.start)} ${teamName(current.teamA)} – ${teamName(current.teamB)}` : 'Brak meczów'}
+                  {current ? `${formatTime(current.start)} ${side(current, 'a')} – ${side(current, 'b')}` : 'Brak meczów'}
                 </span>
               </a>
             </li>
@@ -52,7 +52,7 @@ export function Court({ court }: { court: number }) {
 }
 
 function CourtPanel({ state, court }: { state: State; court: number }) {
-  const { teamName, categoryName, groupName } = useLookups(state)
+  const { categoryName, stageName, side } = useLookups(state)
   const [justFinished, setJustFinished] = useState<string | null>(null)
   const { current, next } = courtMatch(state, court)
   const finished = justFinished ? state.matches.find((m) => m.id === justFinished) : undefined
@@ -62,7 +62,7 @@ function CourtPanel({ state, court }: { state: State; court: number }) {
     return (
       <section className="ref-card">
         <p className="eyebrow">Mecz zakończony</p>
-        <h2>{teamName(finished.teamA)} {t.setsA}:{t.setsB} {teamName(finished.teamB)}</h2>
+        <h2>{side(finished, 'a')} {t.setsA}:{t.setsB} {side(finished, 'b')}</h2>
         <p className="muted">{finished.sets.map((s) => `${s.a}:${s.b}`).join(', ')}</p>
         <p>Wynik jest już na stronie. Pomyłkę może poprawić tylko sędzia główny.</p>
         <button className="btn btn-primary btn-lg" onClick={() => setJustFinished(null)}>
@@ -74,7 +74,7 @@ function CourtPanel({ state, court }: { state: State; court: number }) {
 
   if (!current) return <p className="muted">Na tym boisku nie ma już zaplanowanych meczów.</p>
 
-  const meta = `${categoryName(current.categoryId)} · ${groupName(current.groupId)} · ${formatTime(current.start)}`
+  const meta = `${categoryName(current.categoryId)} · ${stageName(current)} · ${formatTime(current.start)}`
 
   if (current.status === 'scheduled') {
     return (
@@ -82,17 +82,18 @@ function CourtPanel({ state, court }: { state: State; court: number }) {
         <p className="eyebrow">Następny mecz</p>
         <p className="muted">{meta}</p>
         <h2 className="vs">
-          <span>{teamName(current.teamA)}</span>
+          <span>{side(current, 'a')}</span>
           <span className="muted">vs</span>
-          <span>{teamName(current.teamB)}</span>
+          <span>{side(current, 'b')}</span>
         </h2>
         <button
           className="btn btn-primary btn-lg"
+          disabled={!current.teamA || !current.teamB}
           onClick={() => store.updateMatch(current.id, (m) => ({ ...m, status: 'live', sets: [{ a: 0, b: 0 }] }))}
         >
-          Rozpocznij mecz
+          {current.teamA && current.teamB ? 'Rozpocznij mecz' : 'Czekamy na wyniki poprzednich meczów'}
         </button>
-        {next && <p className="muted small">Potem: {formatTime(next.start)} {teamName(next.teamA)} – {teamName(next.teamB)}</p>}
+        {next && <p className="muted small">Potem: {formatTime(next.start)} {side(next, 'a')} – {side(next, 'b')}</p>}
       </section>
     )
   }
@@ -101,7 +102,7 @@ function CourtPanel({ state, court }: { state: State; court: number }) {
 }
 
 function LiveScoring({ state, match, meta, onFinish }: { state: State; match: Match; meta: string; onFinish: () => void }) {
-  const { teamName } = useLookups(state)
+  const { side } = useLookups(state)
   const rules = state.tournament.rules
   const idx = match.sets.length - 1
   const set = match.sets[idx]
@@ -126,14 +127,14 @@ function LiveScoring({ state, match, meta, onFinish }: { state: State; match: Ma
       <p className="muted center">{meta}</p>
       <p className="set-label">Set {idx + 1} · do {setTarget(rules, idx)} · sety {t.setsA}:{t.setsB}</p>
       <div className="pads">
-        {(['a', 'b'] as const).map((side) => (
-          <div key={side} className={`pad ${winner === side ? 'pad-won' : ''}`}>
-            <span className="pad-team">{teamName(side === 'a' ? match.teamA : match.teamB)}</span>
-            <span className="pad-score">{set[side]}</span>
-            <button className="btn-plus" onClick={() => change(side, 1)} aria-label={`Punkt dla ${teamName(side === 'a' ? match.teamA : match.teamB)}`}>
+        {(['a', 'b'] as const).map((s) => (
+          <div key={s} className={`pad ${winner === s ? 'pad-won' : ''}`}>
+            <span className="pad-team">{side(match, s)}</span>
+            <span className="pad-score">{set[s]}</span>
+            <button className="btn-plus" onClick={() => change(s, 1)} aria-label={`Punkt dla ${side(match, s)}`}>
               +1
             </button>
-            <button className="btn-minus" onClick={() => change(side, -1)} disabled={set[side] === 0}>
+            <button className="btn-minus" onClick={() => change(s, -1)} disabled={set[s] === 0}>
               −1 cofnij
             </button>
           </div>
@@ -144,7 +145,7 @@ function LiveScoring({ state, match, meta, onFinish }: { state: State; match: Ma
       )}
       {winner && !decided && (
         <div className="notice">
-          <p>Set {idx + 1} dla: <b>{teamName(winner === 'a' ? match.teamA : match.teamB)}</b> ({set.a}:{set.b})</p>
+          <p>Set {idx + 1} dla: <b>{side(match, winner)}</b> ({set.a}:{set.b})</p>
           <button className="btn btn-primary btn-lg" onClick={nextSet}>Zatwierdź seta, zacznij set {idx + 2}</button>
         </div>
       )}

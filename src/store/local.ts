@@ -1,4 +1,5 @@
 import { demoState } from '../logic/demo'
+import { applyMatchUpdate } from '../logic/knockout'
 import type { Role, State } from '../types'
 import type { Store, SyncInfo } from './types'
 
@@ -68,10 +69,8 @@ export function createLocalStore(): Store {
       return ok
     },
     updateMatch(id, update) {
-      commit({
-        ...state,
-        matches: state.matches.map((m) => (m.id === id ? { ...update(m), updatedAt: Date.now() } : m)),
-      })
+      const changed = new Map(applyMatchUpdate(state, id, update).map((m) => [m.id, m]))
+      commit({ ...state, matches: state.matches.map((m) => changed.get(m.id) ?? m) })
     },
     async replace(next) {
       commit(next)
