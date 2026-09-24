@@ -1,36 +1,52 @@
 import { useEffect, useState } from 'react'
 import { isMatchDecided, setTarget, setWinner, tally } from '../logic/scoring'
-import { store, useStore } from '../store/store'
+import { canScore } from '../logic/pins'
+import { store, useSession, useStore } from '../store/store'
 import type { Match, State } from '../types'
-import { courtMatch, formatTime, PinGate, useLookups } from '../ui'
+import { courtMatch, formatTime, PinGate, StatusPill, useLookups } from '../ui'
 
 /** List of courts for referees to pick from. */
 export function CourtPicker() {
   const state = useStore()
+  const session = useSession()
   const { side } = useLookups(state)
   const courts = Array.from({ length: state.tournament.courts }, (_, i) => i + 1)
   return (
     <div className="page">
       <header className="bar">
         <a href="#" className="back">← Wyniki</a>
-        <h1>Wybierz boisko</h1>
+        <h1>Tryb sędziego</h1>
       </header>
-      <p className="muted">Przy każdym boisku wisi kartka z kodem QR, który prowadzi prosto do panelu tego boiska.</p>
+      <p className="muted">
+        Wybierz swoje boisko i wpisz klucz, który dostałeś od sędziego głównego. Przy każdym boisku wisi też kartka
+        z kodem QR, który prowadzi prosto tutaj.
+      </p>
       <ul className="court-picker">
         {courts.map((c) => {
           const { current } = courtMatch(state, c)
+          const mine = canScore(session, c)
           return (
             <li key={c}>
-              <a href={`#boisko-${c}`}>
-                <b>Boisko {c}</b>
+              <a href={`#boisko-${c}`} className={current?.status === 'live' ? 'is-live' : ''}>
+                <span className="picker-head">
+                  <b>Boisko {c}</b>
+                  {current?.status === 'live' && <StatusPill status="live" />}
+                </span>
                 <span className="muted small">
                   {current ? `${formatTime(current.start)} ${side(current, 'a')} – ${side(current, 'b')}` : 'Brak meczów'}
                 </span>
+                <span className="picker-cta">{mine ? 'Otwórz punktację →' : 'Sędziuj (wymaga klucza) →'}</span>
               </a>
             </li>
           )
         })}
       </ul>
+      {session && (
+        <p className="muted small">
+          Ten telefon jest zalogowany jako {session.role === 'admin' ? 'sędzia główny' : `sędzia boiska ${session.court}`}.{' '}
+          <button className="linklike" onClick={() => store.logout()}>Wyloguj</button>
+        </p>
+      )}
     </div>
   )
 }
@@ -44,7 +60,7 @@ export function Court({ court }: { court: number }) {
         <a href="#sedzia" className="back">← Boiska</a>
         <h1>Boisko {court}</h1>
       </header>
-      <PinGate role="court" label={`Boisko ${court}`}>
+      <PinGate court={court} label={`Boisko ${court}`}>
         <CourtPanel state={state} court={court} />
       </PinGate>
     </div>

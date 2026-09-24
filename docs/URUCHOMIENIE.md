@@ -39,7 +39,8 @@ VITE_FIREBASE_APP_ID=...
 ## 4. Pierwsze uruchomienie
 
 1. Wejdź na `adres-strony/#admin`. Pokaże się **Pierwsze uruchomienie**.
-2. Ustaw PIN sędziego głównego i PIN sędziów boisk → **Utwórz turniej** (startuje z danymi przykładowymi).
+2. Ustaw PIN sędziego głównego → **Utwórz turniej** (startuje z danymi przykładowymi).
+   Klucze dla każdego boiska generują się same: **Klucze boisk** (tam też kartki z kodami QR do wydruku).
 3. **Drużyny i terminarz** → wklej drużyny z Excela → **Wczytaj i ułóż terminarz**.
 4. **Ustawienia** → zasady meczu (sety, punkty, punktacja tabeli).
 
@@ -50,16 +51,18 @@ VITE_FIREBASE_APP_ID=...
 | Wyniki dla kibiców | `adres-strony/` |
 | Panel boiska nr 3 (na kod QR przy boisku) | `adres-strony/#boisko-3` |
 | Lista boisk dla sędziów | `adres-strony/#sedzia` |
+| Kartki z kodami QR i kluczami (dla sędziego głównego) | `adres-strony/#kartki` |
 | Sędzia główny | `adres-strony/#admin` |
 | Telewizor na hali | `adres-strony/#tv` |
 
 ## Jak działa bezpieczeństwo
 
 - Wyniki może czytać każdy.
-- Zapis wymaga PIN-u. Telefon wysyła PIN raz, reguły Firestore porównują go z PIN-em zapisanym w bazie
-  (którego aplikacja nie może odczytać).
+- Zapis wymaga klucza. Każde boisko ma swój klucz; z kluczem boiska 3 można prowadzić tylko mecze na boisku 3.
+  PIN sędziego głównego otwiera wszystko. Telefon wysyła klucz raz, reguły Firestore porównują go z kluczami
+  w bazie (które widzi tylko sędzia główny).
 - Sędzia boiska może prowadzić mecz, ale **zakończonego wyniku nie zmieni**. Poprawia tylko sędzia główny.
-- Po zmianie PIN-ów stare telefony tracą dostęp.
+- „Nowy klucz” dla boiska odcina telefon, który miał stary klucz.
 - Bez zasięgu telefon zapisuje punkty u siebie i wysyła je, gdy wróci internet.
 
 ## Testy lokalne

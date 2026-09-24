@@ -1,20 +1,20 @@
 import { initializeApp, type FirebaseOptions } from 'firebase/app'
 import { connectAuthEmulator, getAuth, onAuthStateChanged, signInAnonymously, type User } from 'firebase/auth'
 import {
-  collection, connectFirestoreEmulator, doc, getFirestore, initializeFirestore, onSnapshot, persistentLocalCache,
+  collection, connectFirestoreEmulator, doc, getDoc, getFirestore, initializeFirestore, onSnapshot, persistentLocalCache,
   persistentMultipleTabManager, setDoc, updateDoc, writeBatch, type Firestore,
 } from 'firebase/firestore'
 import { defaultRules } from '../logic/demo'
 import { applyMatchUpdate } from '../logic/knockout'
-import type { Match, Role, State } from '../types'
+import type { Match, Pins, Session, State } from '../types'
 import type { Store, SyncInfo } from './types'
 
 /*
  * Firestore layout (see firestore.rules):
  *   tournaments/{t}                 settings, categories, groups, teams (one small document)
  *   tournaments/{t}/matches/{id}    one document per match, so courts write independently
- *   tournaments/{t}/private/pins    admin and court PINs, never readable by the app
- *   tournaments/{t}/sessions/{uid}  a device's role, granted by the rules when the PIN matches
+ *   tournaments/{t}/private/pins    admin PIN and one key per court, readable only by the admin
+ *   tournaments/{t}/sessions/{uid}  a device's role (and court), granted by the rules when the key matches
  */
 
 const EMPTY: State = {
@@ -46,8 +46,9 @@ export function createFirebaseStore(config: FirebaseOptions, tournamentId: strin
 
   let state: State = EMPTY
   let sync: SyncInfo = { mode: 'online', connected: false, pending: false, empty: false, error: null }
-  let role: Role | null = null
-  try { role = (localStorage.getItem(roleKey) as Role | null) ?? null } catch { /* no storage */ }
+  let session: Session | null = null
+  try { session = JSON.parse(localStorage.getItem(roleKey) ?? 'null') as Session | null } catch { /* no storage */ }
+  if (session && typeof session !== 'object') session = null
 
   const listeners = new Set<() => void>()
   const notify = () => listeners.forEach((l) => l())
@@ -58,7 +59,7 @@ export function createFirebaseStore(config: FirebaseOptions, tournamentId: strin
       ? `${what}: brak uprawnień. Zaloguj się ponownie PIN-em.`
       : `${what}: nie udało się zapisać. Sprawdź internet i spróbuj jeszcze raz.`
     console.error(what, e)
-    if (code === 'permission-denied') saveRole(null)
+    if (code === 'permission-denied') saveSession(null)
     setSync({ error: msg })
   }
 
@@ -78,24 +79,25 @@ export function createFirebaseStore(config: FirebaseOptions, tournamentId: strin
     setSync({ pending: snap.metadata.hasPendingWrites, connected: !snap.metadata.fromCache })
   }, fail('Odczyt meczów'))
 
-  const saveRole = (r: Role | null) => {
-    role = r
-    try { if (r) localStorage.setItem(roleKey, r); else localStorage.removeItem(roleKey) } catch { /* no storage */ }
+  const saveSession = (s: Session | null) => {
+    session = s
+    try { if (s) localStorage.setItem(roleKey, JSON.stringify(s)); else localStorage.removeItem(roleKey) } catch { /* no storage */ }
     notify()
   }
 
   const withTimeout = <T,>(p: Promise<T>) =>
     Promise.race([p, new Promise<never>((_, rej) => setTimeout(() => rej({ code: 'timeout' }), LOGIN_TIMEOUT_MS))])
 
-  async function login(r: Role, pin: string): Promise<boolean> {
+  async function login(pin: string, court?: number): Promise<boolean> {
     const u = await user
-    const session = doc(tRef, 'sessions', u.uid)
-    // The rules accept the session only if the PIN matches; try admin first so the
-    // chief referee's PIN also opens court panels.
-    for (const candidate of r === 'admin' ? (['admin'] as const) : (['admin', 'court'] as const)) {
+    const ref = doc(tRef, 'sessions', u.uid)
+    // The rules accept the session only if the key matches; try admin first so the
+    // chief referee's PIN also opens every court panel.
+    const candidates: Session[] = [{ role: 'admin' }, ...(court ? [{ role: 'court' as const, court }] : [])]
+    for (const candidate of candidates) {
       try {
-        await withTimeout(setDoc(session, { role: candidate, pin }))
-        saveRole(candidate)
+        await withTimeout(setDoc(ref, { ...candidate, pin }))
+        saveSession(candidate)
         return true
       } catch (e) {
         if ((e as { code?: string }).code === 'timeout') {
@@ -119,8 +121,9 @@ export function createFirebaseStore(config: FirebaseOptions, tournamentId: strin
       listeners.add(fn)
       return () => listeners.delete(fn)
     },
-    role: () => role,
+    session: () => session,
     login,
+    logout: () => saveSession(null),
     updateMatch(id, update) {
       // Also fills in knockout teams that follow from this result, in one atomic write.
       const changed = applyMatchUpdate(state, id, update)
@@ -150,10 +153,18 @@ export function createFirebaseStore(config: FirebaseOptions, tournamentId: strin
       notify()
       updateDoc(tRef, { tournament: state.tournament }).catch(fail('Zapis ustawień'))
     },
-    async setPins(adminPin, courtPin) {
-      await setDoc(doc(tRef, 'private', 'pins'), { adminPin, courtPin })
-      // Existing sessions stay tied to the old PIN; log this device in with the new one.
-      if (!(await login('admin', adminPin))) saveRole(null)
+    async getPins() {
+      try {
+        const snap = await getDoc(doc(tRef, 'private', 'pins'))
+        return (snap.data() as Pins | undefined) ?? null
+      } catch {
+        return null
+      }
+    },
+    async setPins(pins) {
+      await setDoc(doc(tRef, 'private', 'pins'), pins)
+      // Sessions are tied to the key they used; log this device in again with the new admin PIN.
+      if (!(await login(pins.adminPin))) saveSession(null)
     },
     clearError() { setSync({ error: null }) },
   }

@@ -1,17 +1,20 @@
-import { useState } from 'react'
+import QRCode from 'qrcode'
+import { useEffect, useState } from 'react'
 import { demoState } from '../logic/demo'
 import { buildGroupSchedule } from '../logic/schedule'
 import { tally } from '../logic/scoring'
 import { store, useStore, useSync } from '../store/store'
 import { parseTeams } from '../logic/importTeams'
 import { bracketPlan, createKnockout, hasKnockout, openGroupMatches } from '../logic/knockout'
-import type { Match, MatchStatus, SetScore, State } from '../types'
+import { courtKeys } from '../logic/pins'
+import type { Match, MatchStatus, Pins, SetScore, State } from '../types'
 import { formatDay, formatTime, PinGate, useLookups } from '../ui'
 import { CourtCard, MatchList } from './Public'
 
 const TABS = [
   { id: 'boiska', label: 'Boiska' },
   { id: 'mecze', label: 'Mecze i poprawki' },
+  { id: 'klucze', label: 'Klucze boisk' },
   { id: 'dane', label: 'Drużyny i terminarz' },
   { id: 'ustawienia', label: 'Ustawienia' },
 ]
@@ -37,7 +40,7 @@ export function Admin() {
         <a href="#" className="back">← Wyniki</a>
         <h1>Sędzia główny</h1>
       </header>
-      <PinGate role="admin" label="Panel sędziego głównego">
+      <PinGate label="Panel sędziego głównego">
         <nav className="tabs tabs-admin" aria-label="Panel">
           {TABS.map((t) => (
             <button key={t.id} className={tab === t.id ? 'active' : ''} onClick={() => setTab(t.id)}>{t.label}</button>
@@ -45,6 +48,7 @@ export function Admin() {
         </nav>
         {tab === 'boiska' && <Courts state={state} />}
         {tab === 'mecze' && <Matches state={state} />}
+        {tab === 'klucze' && <CourtKeys state={state} />}
         {tab === 'dane' && <Data state={state} />}
         {tab === 'ustawienia' && <Settings state={state} />}
       </PinGate>
@@ -303,11 +307,10 @@ function Settings({ state }: { state: State }) {
   )
 }
 
-function PinFields({ onSave, saveLabel }: { onSave: (admin: string, court: string) => Promise<void>; saveLabel: string }) {
-  const [admin, setAdmin] = useState('')
-  const [court, setCourt] = useState('')
+function AdminPinForm({ onSave, saveLabel }: { onSave: (pin: string) => Promise<void>; saveLabel: string }) {
+  const [pin, setPin] = useState('')
   const [msg, setMsg] = useState('')
-  const valid = /^\d{4,}$/.test(admin) && /^\d{4,}$/.test(court) && admin !== court
+  const valid = /^\d{4,}$/.test(pin)
   return (
     <form
       className="data"
@@ -315,18 +318,16 @@ function PinFields({ onSave, saveLabel }: { onSave: (admin: string, court: strin
         e.preventDefault()
         setMsg('Zapisuję…')
         try {
-          await onSave(admin, court)
-          setMsg('Zapisano nowe PIN-y.')
+          await onSave(pin)
+          setMsg('Zapisano.')
         } catch {
-          setMsg('Nie udało się zapisać PIN-ów. Sprawdź internet.')
+          setMsg('Nie udało się zapisać. Sprawdź internet.')
         }
       }}
     >
-      <div className="form-grid">
-        <label>PIN sędziego głównego<input id="pin-admin" inputMode="numeric" autoComplete="off" value={admin} onChange={(e) => setAdmin(e.target.value)} /></label>
-        <label>PIN sędziów boisk<input id="pin-court" inputMode="numeric" autoComplete="off" value={court} onChange={(e) => setCourt(e.target.value)} /></label>
-      </div>
-      <p className="muted small">Co najmniej 4 cyfry, dwa różne PIN-y. PIN sędziego głównego otwiera też panele boisk.</p>
+      <label>PIN sędziego głównego (co najmniej 4 cyfry)
+        <input id="pin-admin" inputMode="numeric" autoComplete="off" value={pin} onChange={(e) => setPin(e.target.value)} />
+      </label>
       <div className="actions">
         <button className="btn btn-primary" type="submit" disabled={!valid}>{saveLabel}</button>
       </div>
@@ -338,9 +339,17 @@ function PinFields({ onSave, saveLabel }: { onSave: (admin: string, court: strin
 function PinSettings() {
   return (
     <section className="panel">
-      <h2>PIN-y</h2>
-      <p className="muted">Po zmianie PIN-u sędziowie boisk muszą wpisać nowy. Telefony ze starym PIN-em stracą dostęp.</p>
-      <PinFields saveLabel="Zmień PIN-y" onSave={(a, c) => store.setPins(a, c)} />
+      <h2>PIN sędziego głównego</h2>
+      <p className="muted">Otwiera ten panel i wszystkie boiska. Klucze boisk są w zakładce „Klucze boisk”.</p>
+      <AdminPinForm
+        saveLabel="Zmień PIN"
+        onSave={async (adminPin) => {
+          const pins = await store.getPins()
+          if (!pins) throw new Error('no pins')
+          const courts = courtKeys(store.get().tournament.courts, { adminPin, courts: pins.courts })
+          await store.setPins({ adminPin, courts })
+        }}
+      />
     </section>
   )
 }
@@ -349,24 +358,129 @@ function PinSettings() {
 function FirstSetup() {
   return (
     <section className="panel">
-      <h2>Ustaw PIN-y i utwórz turniej</h2>
+      <h2>Ustaw PIN i utwórz turniej</h2>
       <p className="muted">
-        Baza jest pusta. Ustaw PIN sędziego głównego i PIN dla sędziów boisk. Turniej zacznie się od danych
-        przykładowych, które potem zastąpisz prawdziwymi drużynami w zakładce „Drużyny i terminarz”.
+        Baza jest pusta. Ustaw PIN sędziego głównego. Klucze dla każdego boiska wygenerują się same, znajdziesz je
+        w zakładce „Klucze boisk”. Turniej zacznie się od danych przykładowych, które potem zastąpisz prawdziwymi drużynami.
       </p>
-      <PinFields
+      <AdminPinForm
         saveLabel="Utwórz turniej"
-        onSave={async (a, c) => {
+        onSave={async (adminPin) => {
+          const pins = { adminPin, courts: courtKeys(10, { adminPin, courts: {} }) }
           try {
-            await store.setPins(a, c)
+            await store.setPins(pins)
           } catch (e) {
-            // PINs already set by an interrupted earlier setup: continue if the admin PIN matches.
-            if (!(await store.login('admin', a))) throw e
+            // Keys already set by an interrupted earlier setup: continue if the admin PIN matches.
+            if (!(await store.login(adminPin))) throw e
           }
           await store.replace(demoState())
         }}
       />
     </section>
+  )
+}
+
+/** Admin: one key per court, to hand to the person scoring at that court. */
+function CourtKeys({ state }: { state: State }) {
+  const [pins, setPins] = useState<Pins | null>(null)
+  const [loaded, setLoaded] = useState(false)
+  const [renewing, setRenewing] = useState<number | null>(null)
+  useEffect(() => {
+    store.getPins().then((p) => { setPins(p); setLoaded(true) })
+  }, [])
+  const count = state.tournament.courts
+  const missing = !!pins && Array.from({ length: count }, (_, i) => i + 1).some((c) => !pins.courts[String(c)])
+  const save = async (renew: number[]) => {
+    if (!pins) return
+    const next = { adminPin: pins.adminPin, courts: courtKeys(count, pins, renew) }
+    await store.setPins(next)
+    setPins(next)
+    setRenewing(null)
+  }
+  const base = `${location.origin}${location.pathname}`
+
+  if (!loaded) return <p className="muted">Wczytuję klucze…</p>
+  if (!pins) return <p className="error">Nie udało się wczytać kluczy. Sprawdź internet i zaloguj się ponownie PIN-em.</p>
+  return (
+    <div className="data">
+      <section className="panel">
+        <h2>Klucze boisk</h2>
+        <p className="muted">
+          Każde boisko ma swój klucz. Podaj go osobie, która liczy punkty na tym boisku. Z kluczem do boiska 3 można
+          prowadzić tylko mecze na boisku 3. Zakończonego meczu nie zmieni nikt poza Tobą.
+        </p>
+        <div className="actions">
+          <a className="btn btn-primary" href="#kartki">Kartki z kodami QR do wydruku</a>
+          {missing && <button className="btn" onClick={() => save([])}>Wygeneruj brakujące klucze</button>}
+        </div>
+      </section>
+      <ul className="keys">
+        {Array.from({ length: count }, (_, i) => i + 1).map((c) => (
+          <li key={c}>
+            <span className="keys-court">Boisko {c}</span>
+            <span className="keys-key">{pins.courts[String(c)] ?? '—'}</span>
+            <span className="keys-link muted small">{base}#boisko-{c}</span>
+            {renewing === c ? (
+              <span className="actions">
+                <button className="btn btn-danger" onClick={() => save([c])}>Tak, nowy klucz</button>
+                <button className="btn" onClick={() => setRenewing(null)}>Anuluj</button>
+              </span>
+            ) : (
+              <button className="btn" onClick={() => setRenewing(c)}>Nowy klucz</button>
+            )}
+          </li>
+        ))}
+      </ul>
+      <p className="muted small">„Nowy klucz” wylogowuje telefon, który używał starego klucza do tego boiska.</p>
+    </div>
+  )
+}
+
+/** Printable cards: one per court, with a QR code to the court panel and its key. */
+export function PrintCards() {
+  const state = useStore()
+  return (
+    <div className="page">
+      <header className="bar no-print">
+        <a href="#admin" className="back">← Panel</a>
+        <h1>Kartki dla boisk</h1>
+      </header>
+      <PinGate label="Kartki z kluczami">
+        <Cards count={state.tournament.courts} name={state.tournament.name} />
+      </PinGate>
+    </div>
+  )
+}
+
+function Cards({ count, name }: { count: number; name: string }) {
+  const [pins, setPins] = useState<Pins | null>(null)
+  const [qr, setQr] = useState<Record<number, string>>({})
+  const base = `${location.origin}${location.pathname}`
+  useEffect(() => {
+    store.getPins().then(setPins)
+    Promise.all(
+      Array.from({ length: count }, (_, i) => i + 1).map(async (c) =>
+        [c, await QRCode.toString(`${base}#boisko-${c}`, { type: 'svg', margin: 0 })] as const),
+    ).then((list) => setQr(Object.fromEntries(list)))
+  }, [count, base])
+  return (
+    <>
+      <div className="actions no-print">
+        <button className="btn btn-primary" onClick={() => window.print()}>Drukuj</button>
+        <p className="muted small">Wytnij kartki i przyklej przy boiskach. Klucz możesz też zakleić i podać tylko sędziemu.</p>
+      </div>
+      <div className="cards">
+        {Array.from({ length: count }, (_, i) => i + 1).map((c) => (
+          <article key={c} className="card">
+            <p className="card-title">{name}</p>
+            <h2>Boisko {c}</h2>
+            <div className="card-qr" dangerouslySetInnerHTML={{ __html: qr[c] ?? '' }} />
+            <p>Zeskanuj telefonem, żeby liczyć punkty</p>
+            <p className="card-key">Klucz: <b>{pins?.courts[String(c)] ?? '····'}</b></p>
+          </article>
+        ))}
+      </div>
+    </>
   )
 }
 

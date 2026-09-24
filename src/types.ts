@@ -83,6 +83,16 @@ export interface Match {
 
 export type Role = 'admin' | 'court'
 
+/** Who this device is logged in as: the chief referee, or the referee of one court. */
+export type Session = { role: 'admin' } | { role: 'court'; court: number }
+
+/** Access keys. Each court has its own key, so a referee can only score their court. */
+export interface Pins {
+  adminPin: string
+  /** Court number (as text) → key */
+  courts: Record<string, string>
+}
+
 export interface State {
   tournament: Tournament
   categories: Category[]

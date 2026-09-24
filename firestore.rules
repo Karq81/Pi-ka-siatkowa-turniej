@@ -1,8 +1,9 @@
 rules_version = '2';
 
 // SiatkaLive access rules. Paste into Firebase console → Firestore → Rules → Publish.
-// Everyone can read results. Writing needs a PIN, which the app sends once per device
-// as a "session"; the rules compare it with the PINs stored in private/pins.
+// Everyone can read results. Writing needs a key: the chief referee's PIN, or the key of
+// one court. The app sends the key once per device as a "session"; the rules compare it
+// with the keys stored in private/pins.
 service cloud.firestore {
   match /databases/{database}/documents {
     match /tournaments/{t} {
@@ -16,12 +17,16 @@ service cloud.firestore {
         return request.auth != null
           && exists(/databases/$(database)/documents/tournaments/$(t)/sessions/$(request.auth.uid));
       }
-      // A session is valid only while its PIN is still the current one.
+      // A session is valid only while its key is still the current one.
       function isAdmin() {
         return hasSession() && session().role == 'admin' && session().pin == pins().adminPin;
       }
-      function isCourt() {
-        return hasSession() && (isAdmin() || (session().role == 'court' && session().pin == pins().courtPin));
+      function isAnyCourt() {
+        return hasSession() && session().role == 'court'
+          && session().pin == pins().courts[string(session().court)];
+      }
+      function isCourt(c) {
+        return isAnyCourt() && session().court == c;
       }
 
       allow read: if true;
@@ -29,28 +34,35 @@ service cloud.firestore {
 
       match /matches/{m} {
         allow read: if true;
-        allow delete: if isAdmin();
-        // Court referees may start and score matches, but a finished result can only be changed by the admin.
-        allow create, update: if isAdmin()
-          || (isCourt() && (resource == null || resource.data.status != 'finished'));
+        allow create, delete: if isAdmin();
+        allow update: if isAdmin()
+          // A court referee runs the matches of their own court, until the match is finished.
+          || (isCourt(resource.data.court) && resource.data.status != 'finished'
+              && request.resource.data.court == resource.data.court)
+          // Any referee's result may fill in the teams of a knockout match that has not started.
+          || ((isAnyCourt()) && resource.data.status == 'scheduled'
+              && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['teamA', 'teamB', 'updatedAt']));
       }
 
       match /private/{d} {
-        allow read: if false;
-        // The first PIN setup creates the document; after that only the admin can change it.
+        allow read: if isAdmin();
+        // The first setup creates the keys; after that only the admin can change them.
         allow create: if request.auth != null && d == 'pins'
           && request.resource.data.adminPin is string && request.resource.data.adminPin.size() >= 4
-          && request.resource.data.courtPin is string && request.resource.data.courtPin.size() >= 4;
+          && request.resource.data.courts is map;
         allow update: if isAdmin()
-          && request.resource.data.adminPin.size() >= 4 && request.resource.data.courtPin.size() >= 4;
+          && request.resource.data.adminPin is string && request.resource.data.adminPin.size() >= 4
+          && request.resource.data.courts is map;
       }
 
       match /sessions/{uid} {
         allow read: if request.auth != null && request.auth.uid == uid;
-        allow create, update: if request.auth != null && request.auth.uid == uid
-          && request.resource.data.keys().hasOnly(['role', 'pin'])
-          && ((request.resource.data.role == 'admin' && request.resource.data.pin == pins().adminPin)
-            || (request.resource.data.role == 'court' && request.resource.data.pin == pins().courtPin));
+        allow create, update: if request.auth != null && request.auth.uid == uid && (
+          (request.resource.data.keys().hasOnly(['role', 'pin'])
+            && request.resource.data.role == 'admin' && request.resource.data.pin == pins().adminPin)
+          || (request.resource.data.keys().hasOnly(['role', 'pin', 'court'])
+            && request.resource.data.role == 'court' && request.resource.data.court is int
+            && request.resource.data.pin == pins().courts[string(request.resource.data.court)]));
       }
     }
   }

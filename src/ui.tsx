@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { sourceLabel } from './logic/knockout'
 import { tally } from './logic/scoring'
-import { store, useRole, useSync } from './store/store'
-import type { Match, Role, Rules, State } from './types'
+import { canScore } from './logic/pins'
+import { store, useSession, useSync } from './store/store'
+import type { Match, Rules, State } from './types'
 
 /** Routes are plain hash tokens (#tabele, #boisko-3) so links survive being shared. */
 export function useRoute(): string {
@@ -82,24 +83,29 @@ export function ScoreLine({ match, rules }: { match: Match; rules: Rules }) {
   )
 }
 
-export function PinGate({ role, label, children }: { role: Role; label: string; children: ReactNode }) {
-  const current = useRole()
+/**
+ * Asks for a key before showing a panel. Without `court` only the admin PIN opens it;
+ * with `court`, that court's key works too.
+ */
+export function PinGate({ court, label, children }: { court?: number; label: string; children: ReactNode }) {
+  const session = useSession()
   const [value, setValue] = useState('')
   const [error, setError] = useState(false)
   const [busy, setBusy] = useState(false)
-  if (current === 'admin' || current === role) return <>{children}</>
+  const allowed = court ? canScore(session, court) : session?.role === 'admin'
+  if (allowed) return <>{children}</>
   return (
     <form
       className="pin"
       onSubmit={async (e) => {
         e.preventDefault()
         setBusy(true)
-        const ok = await store.login(role, value.trim())
+        const ok = await store.login(value.trim(), court)
         setBusy(false)
         setError(!ok)
       }}
     >
-      <label htmlFor="pin-input">{label}: wpisz PIN</label>
+      <label htmlFor="pin-input">{label}: wpisz {court ? 'klucz boiska' : 'PIN'}</label>
       <input
         id="pin-input"
         inputMode="numeric"
@@ -107,7 +113,7 @@ export function PinGate({ role, label, children }: { role: Role; label: string; 
         value={value}
         onChange={(e) => { setValue(e.target.value); setError(false) }}
       />
-      {error && <p className="error">Nieprawidłowy PIN. Zapytaj sędziego głównego.</p>}
+      {error && <p className="error">{court ? `To nie jest klucz do boiska ${court}. Zapytaj sędziego głównego.` : 'Nieprawidłowy PIN.'}</p>}
       <button className="btn btn-primary" type="submit" disabled={busy || !value}>{busy ? 'Sprawdzam…' : 'Wejdź'}</button>
     </form>
   )

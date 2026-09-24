@@ -289,3 +289,39 @@ label { display: flex; flex-direction: column; gap: 4px; font-size: 0.9rem; font
   .hero .tabs { flex-wrap: nowrap; overflow-x: auto; width: 100%; scrollbar-width: none; }
   .hero .tabs a { flex: none; }
 }
+
+/* Referee entry points */
+.btn-ref { width: 100%; padding: 8px 12px; font-size: 0.9rem; text-decoration: none; color: var(--accent); border-color: var(--accent); background: transparent; }
+.btn-ref:hover { background: var(--accent); color: var(--accent-ink); }
+.court-picker a.is-live { border-color: var(--live); }
+.picker-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.picker-cta { margin-top: 6px; font-weight: 600; color: var(--accent); }
+.linklike { background: none; border: 0; padding: 0; color: var(--accent); text-decoration: underline; cursor: pointer; }
+
+/* Court keys (admin) */
+.keys { list-style: none; margin: 0; padding: 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
+.keys li { display: grid; grid-template-columns: 110px 90px 1fr auto; gap: 12px; align-items: center; padding: 10px 12px; }
+.keys li + li { border-top: 1px solid var(--line); }
+.keys-court { font-family: var(--display); font-weight: 700; font-size: 1.15rem; }
+.keys-key { font-family: var(--display); font-weight: 700; font-size: 1.6rem; letter-spacing: 0.12em; font-variant-numeric: tabular-nums; }
+.keys-link { overflow-wrap: anywhere; }
+@media (max-width: 560px) {
+  .keys li { grid-template-columns: 1fr auto; }
+  .keys-link { grid-column: 1 / -1; }
+}
+
+/* Printable court cards */
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; margin-top: 16px; }
+.card { background: #fff; color: #0e1b2c; border: 2px dashed #9aa8bb; border-radius: 12px; padding: 16px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 8px; break-inside: avoid; }
+.card h2 { margin: 0; font-size: 2.4rem; }
+.card-title { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em; color: #5a6b82; }
+.card-qr { width: 170px; max-width: 100%; }
+.card-qr svg { width: 100%; height: auto; display: block; }
+.card-key { font-size: 1.1rem; }
+.card-key b { font-family: var(--display); font-size: 1.8rem; letter-spacing: 0.12em; }
+@media print {
+  .no-print, .banner { display: none !important; }
+  body { background: #fff; }
+  .page { max-width: none; padding: 0; }
+  .cards { grid-template-columns: repeat(2, 1fr); gap: 10mm; }
+}

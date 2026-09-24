@@ -1,6 +1,5 @@
-import type { Category, Group, Rules, SetScore, State, Team } from '../types'
+import type { Category, Group, Rules, State, Team } from '../types'
 import { buildGroupSchedule } from './schedule'
-import { isMatchDecided, setTarget } from './scoring'
 
 export const defaultRules: Rules = {
   setsMode: 'bestOf',
@@ -13,31 +12,14 @@ export const defaultRules: Rules = {
   pointsLoss: 0,
 }
 
-// Deterministic PRNG so the demo looks the same on every device.
-function rng(seed: number) {
-  return () => {
-    seed = (seed * 1664525 + 1013904223) % 4294967296
-    return seed / 4294967296
-  }
-}
-
 const CLUBS = [
   'Orlik', 'Iskra', 'Sokół', 'Olimp', 'Tęcza', 'Grom', 'Płomyk', 'Żak', 'Jedynka', 'Dwójka',
   'Wisełka', 'Pogoń', 'Czarni', 'Delfin', 'Kometa', 'Rakieta', 'Promyk', 'Huragan', 'Jastrząb', 'Lotos',
 ]
 const TOWNS = ['Kraków', 'Tarnów', 'Bochnia', 'Wieliczka', 'Myślenice', 'Niepołomice', 'Skawina', 'Brzesko']
 
-function randomSet(r: () => number, target: number, aWins: boolean): SetScore {
-  const loser = Math.floor(target * 0.45 + r() * (target * 0.45))
-  const extra = r() < 0.15 ? 1 + Math.floor(r() * 4) : 0
-  const w = extra ? target + extra : target
-  const l = extra ? w - 2 : Math.min(loser, target - 2)
-  return aWins ? { a: w, b: l } : { a: l, b: w }
-}
-
 /** Example tournament: 60 teams in 3 categories, 4 groups of 5 each, 10 courts. */
 export function demoState(): State {
-  const r = rng(2026)
   const categories: Category[] = [
     { id: 'c1', name: 'Dwójki' },
     { id: 'c2', name: 'Trójki' },
@@ -72,23 +54,11 @@ export function demoState(): State {
     courts: 10, start: '2026-10-23T09:00', slotMinutes: 25, dayEnd: '18:00',
   })
 
-  // Pretend the tournament is under way: first slots finished, the next one live.
-  const slots = [...new Set(matches.map((m) => m.start))].sort()
-  const finishedSlots = new Set(slots.slice(0, 4))
-  const liveSlot = slots[4]
+  // The tournament has just started: the first match on every court is live at 0:0.
+  const firstSlot = matches.map((m) => m.start).sort()[0]
   for (const m of matches) {
-    if (finishedSlots.has(m.start)) {
-      const sets: SetScore[] = []
-      while (!isMatchDecided(rules, sets)) sets.push(randomSet(r, setTarget(rules, sets.length), r() < 0.55))
-      m.sets = sets
-      m.status = 'finished'
-      m.updatedAt = 1
-    } else if (m.start === liveSlot) {
-      const done = Math.floor(r() * 2)
-      const sets: SetScore[] = []
-      for (let i = 0; i < done; i++) sets.push(randomSet(r, setTarget(rules, i), r() < 0.5))
-      sets.push({ a: Math.floor(r() * 20), b: Math.floor(r() * 20) })
-      m.sets = sets
+    if (m.start === firstSlot) {
+      m.sets = [{ a: 0, b: 0 }]
       m.status = 'live'
       m.updatedAt = 1
     }

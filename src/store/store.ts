@@ -17,6 +17,6 @@ export function useSync(): SyncInfo {
   return useSyncExternalStore(store.subscribe, store.sync)
 }
 
-export function useRole() {
-  return useSyncExternalStore(store.subscribe, store.role)
+export function useSession() {
+  return useSyncExternalStore(store.subscribe, store.session)
 }

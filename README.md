@@ -9,7 +9,7 @@ Wyniki turnieju mini siatkówki na żywo: strona dla kibiców, panel sędziego b
 - **Sędzia główny** (`#admin`): podgląd wszystkich boisk, wpisywanie i poprawianie wyników, import drużyn z Excela (wklejka: Drużyna;Kategoria;Grupa) z automatycznym ułożeniem terminarza, eksport wyników do CSV/Excela, ustawienia zasad (sety, punkty, punktacja tabeli), PIN-y.
 - **Tryb TV** (`#tv`): na telewizor lub rzutnik, sam przełącza boiska i tabele.
 
-Dane przykładowe: 60 drużyn, 3 kategorie, 12 grup po 5, 10 boisk. PIN sędziego głównego `1234`, PIN boisk `0000`.
+Dane przykładowe: 60 drużyn, 3 kategorie, 12 grup po 5, 10 boisk. W trybie lokalnym: PIN sędziego głównego `1234`, klucz boiska N to `100N` (np. boisko 3: `1003`).
 
 Bez konfiguracji Firebase aplikacja działa lokalnie (dane w jednej przeglądarce, dobre do przeklikania).
 Z Firebase wyniki z telefonów sędziów trafiają na żywo do wszystkich, także bez zasięgu (wyślą się po jego powrocie).

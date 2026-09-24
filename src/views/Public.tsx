@@ -50,6 +50,8 @@ export function CourtCard({ state, court, big = false }: { state: State; court: 
   const { categoryName, stageName, side } = useLookups(state)
   const { current, next } = courtMatch(state, court)
   const rules = state.tournament.rules
+  // Referee entry for this court (not on the TV screen).
+  const refLink = !big && <a className="btn btn-ref" href={`#boisko-${court}`}>Sędziuj boisko {court}</a>
   if (!current) {
     return (
       <article className="court court-idle">
@@ -85,6 +87,7 @@ export function CourtCard({ state, court, big = false }: { state: State; court: 
           Następnie {formatTime(next.start)}: {side(next, 'a')} – {side(next, 'b')}
         </p>
       )}
+      {refLink}
     </article>
   )
 }

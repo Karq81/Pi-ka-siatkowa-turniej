@@ -1,6 +1,6 @@
 import { demoState } from '../logic/demo'
 import { applyMatchUpdate } from '../logic/knockout'
-import type { Role, State } from '../types'
+import type { Pins, Session, State } from '../types'
 import type { Store, SyncInfo } from './types'
 
 const KEY = 'siatkalive:v1'
@@ -27,8 +27,19 @@ function write(key: string, value: unknown, storage: () => Storage = () => local
 /** Browser-only store: syncs tabs on one device. Used when Firebase is not configured. */
 export function createLocalStore(): Store {
   let state = read<State>(KEY) ?? demoState()
-  let pins = read<{ admin: string; court: string }>(PINS_KEY) ?? { admin: '1234', court: '0000' }
-  let role = read<Role>(ROLE_KEY, () => sessionStorage)
+  // Demo keys: admin 1234, court N → 100N (e.g. court 3 → 1003).
+  const demoPins: Pins = {
+    adminPin: '1234',
+    courts: Object.fromEntries(Array.from({ length: 10 }, (_, i) => [String(i + 1), String(1001 + i)])),
+  }
+  let pins = read<Pins>(PINS_KEY)
+  if (!pins?.courts) pins = demoPins
+  let session = read<Session>(ROLE_KEY, () => sessionStorage)
+  const saveSession = (s: Session | null) => {
+    session = s
+    write(ROLE_KEY, s, () => sessionStorage)
+    notify()
+  }
   const sync: SyncInfo = { mode: 'local', connected: true, pending: false, empty: false, error: null }
   const listeners = new Set<() => void>()
   const notify = () => listeners.forEach((l) => l())
@@ -58,16 +69,14 @@ export function createLocalStore(): Store {
       listeners.add(fn)
       return () => listeners.delete(fn)
     },
-    role: () => role,
-    async login(r, pin) {
-      const ok = pin === pins.admin || (r === 'court' && pin === pins.court)
-      if (ok) {
-        role = pin === pins.admin ? 'admin' : 'court'
-        write(ROLE_KEY, role, () => sessionStorage)
-        notify()
-      }
-      return ok
+    session: () => session,
+    async login(pin, court) {
+      if (pin === pins!.adminPin) saveSession({ role: 'admin' })
+      else if (court && pin === pins!.courts[String(court)]) saveSession({ role: 'court', court })
+      else return false
+      return true
     },
+    logout: () => saveSession(null),
     updateMatch(id, update) {
       const changed = new Map(applyMatchUpdate(state, id, update).map((m) => [m.id, m]))
       commit({ ...state, matches: state.matches.map((m) => changed.get(m.id) ?? m) })
@@ -78,9 +87,13 @@ export function createLocalStore(): Store {
     updateTournament(patch) {
       commit({ ...state, tournament: { ...state.tournament, ...patch } })
     },
-    async setPins(admin, court) {
-      pins = { admin, court }
-      write(PINS_KEY, pins)
+    async getPins() {
+      return session?.role === 'admin' ? pins : null
+    },
+    async setPins(next) {
+      pins = next
+      write(PINS_KEY, next)
+      if (session?.role === 'admin') saveSession({ role: 'admin' })
     },
     clearError() {},
   }

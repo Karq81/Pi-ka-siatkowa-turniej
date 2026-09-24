@@ -1,4 +1,4 @@
-import type { Match, Role, State } from '../types'
+import type { Match, Pins, Session, State } from '../types'
 
 export interface SyncInfo {
   /** 'local' = data only in this browser; 'online' = shared database. */
@@ -20,15 +20,21 @@ export interface Store {
   get(): State
   sync(): SyncInfo
   subscribe(fn: () => void): () => void
-  role(): Role | null
-  /** Checks the PIN and remembers the role on this device. */
-  login(role: Role, pin: string): Promise<boolean>
+  session(): Session | null
+  /**
+   * Checks a key and remembers the session on this device. The admin PIN always works;
+   * with `court`, that court's key works too.
+   */
+  login(pin: string, court?: number): Promise<boolean>
+  logout(): void
   updateMatch(id: string, update: (m: Match) => Match): void
   /** Admin: replace the whole tournament (teams, groups, schedule). */
   replace(state: State): Promise<void>
   /** Admin: change tournament settings only. */
   updateTournament(patch: Partial<State['tournament']>): void
-  /** Admin: set new PINs. First call on an empty online database creates the tournament. */
-  setPins(adminPin: string, courtPin: string): Promise<void>
+  /** Admin: read the current keys (null if not set or not allowed). */
+  getPins(): Promise<Pins | null>
+  /** Admin: save keys. The first call on an empty online database sets them up. */
+  setPins(pins: Pins): Promise<void>
   clearError(): void
 }
