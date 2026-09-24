@@ -52,7 +52,8 @@ export function CourtPicker() {
   )
 }
 
-export function Court({ court }: { court: number }) {
+/** `manual`: open straight in "type the result from the score sheet" mode. */
+export function Court({ court, manual = false }: { court: number; manual?: boolean }) {
   const state = useStore()
   useWakeLock()
   return (
@@ -62,17 +63,22 @@ export function Court({ court }: { court: number }) {
         <h1>Boisko {court}</h1>
       </header>
       <PinGate court={court} label={`Boisko ${court}`}>
-        <CourtPanel state={state} court={court} />
+        <CourtPanel state={state} court={court} manualFirst={manual} />
       </PinGate>
     </div>
   )
 }
 
-function CourtPanel({ state, court }: { state: State; court: number }) {
+function CourtPanel({ state, court, manualFirst }: { state: State; court: number; manualFirst: boolean }) {
   const { categoryName, stageName, side } = useLookups(state)
   const [justFinished, setJustFinished] = useState<string | null>(null)
-  const [manual, setManual] = useState<string | null>(null)
   const { current, next } = courtMatch(state, court)
+  const [manual, setManual] = useState<string | null>(null)
+  // "Podaj wynik" mode: every new match on this court opens straight in the result form.
+  const ready = !!current?.teamA && !!current?.teamB && current.status !== 'finished'
+  useEffect(() => {
+    if (manualFirst && ready && current) setManual(current.id)
+  }, [manualFirst, ready, current?.id])
   const finished = justFinished ? state.matches.find((m) => m.id === justFinished) : undefined
 
   if (finished) {
@@ -165,9 +171,7 @@ function CourtPanel({ state, court }: { state: State; court: number }) {
   return (
     <>
       <LiveScoring state={state} match={current} meta={meta} onFinish={() => setJustFinished(current.id)} />
-      <p className="center">
-        <button className="linklike" onClick={() => setManual(current.id)}>Wpisz cały wynik ręcznie</button>
-      </p>
+      <button className="btn btn-lg" onClick={() => setManual(current.id)}>Nie liczę na żywo, podaj wynik z kartki</button>
     </>
   )
 }

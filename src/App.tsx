@@ -17,6 +17,8 @@ function Screen() {
   const route = useRoute()
   const court = /^boisko-(\d+)$/.exec(route)
   if (court) return <Court key={court[1]} court={Number(court[1])} />
+  const result = /^wynik-(\d+)$/.exec(route)
+  if (result) return <Court key={`w${result[1]}`} court={Number(result[1])} manual />
   if (route === 'sedzia') return <CourtPicker />
   if (route === 'admin') return <Admin />
   if (route === 'kartki') return <PrintCards />

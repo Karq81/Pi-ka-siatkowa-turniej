@@ -51,7 +51,12 @@ export function CourtCard({ state, court, big = false }: { state: State; court: 
   const { current, next } = courtMatch(state, court)
   const rules = state.tournament.rules
   // Referee entry for this court (not on the TV screen).
-  const refLink = !big && <a className="btn btn-ref" href={`#boisko-${court}`}>Sędziuj boisko {court}</a>
+  const refLink = !big && (
+    <div className="ref-links">
+      <a className="btn btn-ref" href={`#boisko-${court}`}>Sędziuj na żywo</a>
+      <a className="btn btn-ref" href={`#wynik-${court}`}>Podaj wynik</a>
+    </div>
+  )
   if (!current) {
     return (
       <article className="court court-idle">
