@@ -19,8 +19,6 @@ export interface Tournament {
   name: string
   subtitle: string
   courts: number
-  adminPin: string
-  courtPin: string
   rules: Rules
 }
 
@@ -63,6 +61,8 @@ export interface Match {
   status: MatchStatus
   updatedAt: number
 }
+
+export type Role = 'admin' | 'court'
 
 export interface State {
   tournament: Tournament

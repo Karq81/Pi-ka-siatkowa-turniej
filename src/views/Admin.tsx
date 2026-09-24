@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { demoState } from '../logic/demo'
 import { buildGroupSchedule } from '../logic/schedule'
 import { tally } from '../logic/scoring'
-import { store, useStore } from '../store/store'
+import { store, useStore, useSync } from '../store/store'
 import { parseTeams } from '../logic/importTeams'
 import type { Match, MatchStatus, SetScore, State } from '../types'
 import { formatDay, formatTime, PinGate, useLookups } from '../ui'
@@ -17,14 +17,26 @@ const TABS = [
 
 export function Admin() {
   const state = useStore()
+  const sync = useSync()
   const [tab, setTab] = useState('boiska')
+  if (sync.empty) {
+    return (
+      <div className="page">
+        <header className="bar">
+          <a href="#" className="back">← Wyniki</a>
+          <h1>Pierwsze uruchomienie</h1>
+        </header>
+        <FirstSetup />
+      </div>
+    )
+  }
   return (
     <div className="page">
       <header className="bar">
         <a href="#" className="back">← Wyniki</a>
         <h1>Sędzia główny</h1>
       </header>
-      <PinGate pin={state.tournament.adminPin} label="Panel sędziego głównego">
+      <PinGate role="admin" label="Panel sędziego głównego">
         <nav className="tabs tabs-admin" aria-label="Panel">
           {TABS.map((t) => (
             <button key={t.id} className={tab === t.id ? 'active' : ''} onClick={() => setTab(t.id)}>{t.label}</button>
@@ -154,9 +166,10 @@ function Data({ state }: { state: State }) {
 
   const doImport = () => {
     const matches = buildGroupSchedule(parsed.groups, { courts: state.tournament.courts, start, slotMinutes: slot, dayEnd })
-    store.replace({ ...state, ...parsed, matches })
     setConfirm(null)
-    setMsg(`Wczytano ${parsed.teams.length} drużyn i ułożono ${matches.length} meczów.`)
+    setMsg('Zapisuję…')
+    store.replace({ ...state, ...parsed, matches }).then(() =>
+      setMsg(`Wczytano ${parsed.teams.length} drużyn i ułożono ${matches.length} meczów.`))
   }
 
   return (
@@ -246,7 +259,7 @@ function download(name: string, content: string) {
 function Settings({ state }: { state: State }) {
   const t = state.tournament
   const r = t.rules
-  const update = (patch: Partial<State['tournament']>) => store.replace({ ...state, tournament: { ...t, ...patch } })
+  const update = (patch: Partial<State['tournament']>) => store.updateTournament(patch)
   const rules = (patch: Partial<typeof r>) => update({ rules: { ...r, ...patch } })
   const num = (v: string, min = 0) => Math.max(min, Number(v) || 0)
   return (
@@ -257,10 +270,9 @@ function Settings({ state }: { state: State }) {
           <label>Nazwa<input id="set-name" value={t.name} onChange={(e) => update({ name: e.target.value })} /></label>
           <label>Podtytuł<input id="set-subtitle" value={t.subtitle} onChange={(e) => update({ subtitle: e.target.value })} /></label>
           <label>Liczba boisk<input id="set-courts" type="number" min={1} value={t.courts} onChange={(e) => update({ courts: num(e.target.value, 1) })} /></label>
-          <label>PIN sędziego głównego<input id="set-admin-pin" value={t.adminPin} onChange={(e) => update({ adminPin: e.target.value })} /></label>
-          <label>PIN sędziów boisk<input id="set-court-pin" value={t.courtPin} onChange={(e) => update({ courtPin: e.target.value })} /></label>
         </div>
       </section>
+      <PinSettings />
       <section className="panel">
         <h2>Zasady meczu</h2>
         <div className="form-grid">
@@ -281,5 +293,72 @@ function Settings({ state }: { state: State }) {
         <p className="muted small">Zasady do potwierdzenia z organizatorem. Zmiana od razu przelicza wszystkie tabele.</p>
       </section>
     </div>
+  )
+}
+
+function PinFields({ onSave, saveLabel }: { onSave: (admin: string, court: string) => Promise<void>; saveLabel: string }) {
+  const [admin, setAdmin] = useState('')
+  const [court, setCourt] = useState('')
+  const [msg, setMsg] = useState('')
+  const valid = /^\d{4,}$/.test(admin) && /^\d{4,}$/.test(court) && admin !== court
+  return (
+    <form
+      className="data"
+      onSubmit={async (e) => {
+        e.preventDefault()
+        setMsg('Zapisuję…')
+        try {
+          await onSave(admin, court)
+          setMsg('Zapisano nowe PIN-y.')
+        } catch {
+          setMsg('Nie udało się zapisać PIN-ów. Sprawdź internet.')
+        }
+      }}
+    >
+      <div className="form-grid">
+        <label>PIN sędziego głównego<input id="pin-admin" inputMode="numeric" autoComplete="off" value={admin} onChange={(e) => setAdmin(e.target.value)} /></label>
+        <label>PIN sędziów boisk<input id="pin-court" inputMode="numeric" autoComplete="off" value={court} onChange={(e) => setCourt(e.target.value)} /></label>
+      </div>
+      <p className="muted small">Co najmniej 4 cyfry, dwa różne PIN-y. PIN sędziego głównego otwiera też panele boisk.</p>
+      <div className="actions">
+        <button className="btn btn-primary" type="submit" disabled={!valid}>{saveLabel}</button>
+      </div>
+      {msg && <p className="muted">{msg}</p>}
+    </form>
+  )
+}
+
+function PinSettings() {
+  return (
+    <section className="panel">
+      <h2>PIN-y</h2>
+      <p className="muted">Po zmianie PIN-u sędziowie boisk muszą wpisać nowy. Telefony ze starym PIN-em stracą dostęp.</p>
+      <PinFields saveLabel="Zmień PIN-y" onSave={(a, c) => store.setPins(a, c)} />
+    </section>
+  )
+}
+
+/** Shown once, when the online database has no tournament yet. */
+function FirstSetup() {
+  return (
+    <section className="panel">
+      <h2>Ustaw PIN-y i utwórz turniej</h2>
+      <p className="muted">
+        Baza jest pusta. Ustaw PIN sędziego głównego i PIN dla sędziów boisk. Turniej zacznie się od danych
+        przykładowych, które potem zastąpisz prawdziwymi drużynami w zakładce „Drużyny i terminarz”.
+      </p>
+      <PinFields
+        saveLabel="Utwórz turniej"
+        onSave={async (a, c) => {
+          try {
+            await store.setPins(a, c)
+          } catch (e) {
+            // PINs already set by an interrupted earlier setup: continue if the admin PIN matches.
+            if (!(await store.login('admin', a))) throw e
+          }
+          await store.replace(demoState())
+        }}
+      />
+    </section>
   )
 }

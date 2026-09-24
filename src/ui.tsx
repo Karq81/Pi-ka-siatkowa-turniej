@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { tally } from './logic/scoring'
-import type { Match, Rules, State } from './types'
+import { store, useRole, useSync } from './store/store'
+import type { Match, Role, Rules, State } from './types'
 
 /** Routes are plain hash tokens (#tabele, #boisko-3) so links survive being shared. */
 export function useRoute(): string {
@@ -70,25 +71,21 @@ export function ScoreLine({ match, rules }: { match: Match; rules: Rules }) {
   )
 }
 
-export function PinGate({ pin, label, children }: { pin: string; label: string; children: ReactNode }) {
-  const storageKey = `siatkalive:pin:${label}`
-  const [ok, setOk] = useState(() => {
-    try { return sessionStorage.getItem(storageKey) === pin } catch { return false }
-  })
+export function PinGate({ role, label, children }: { role: Role; label: string; children: ReactNode }) {
+  const current = useRole()
   const [value, setValue] = useState('')
   const [error, setError] = useState(false)
-  if (ok) return <>{children}</>
+  const [busy, setBusy] = useState(false)
+  if (current === 'admin' || current === role) return <>{children}</>
   return (
     <form
       className="pin"
-      onSubmit={(e) => {
+      onSubmit={async (e) => {
         e.preventDefault()
-        if (value === pin) {
-          try { sessionStorage.setItem(storageKey, pin) } catch { /* in-memory only */ }
-          setOk(true)
-        } else {
-          setError(true)
-        }
+        setBusy(true)
+        const ok = await store.login(role, value.trim())
+        setBusy(false)
+        setError(!ok)
       }}
     >
       <label htmlFor="pin-input">{label}: wpisz PIN</label>
@@ -100,7 +97,28 @@ export function PinGate({ pin, label, children }: { pin: string; label: string; 
         onChange={(e) => { setValue(e.target.value); setError(false) }}
       />
       {error && <p className="error">Nieprawidłowy PIN. Zapytaj sędziego głównego.</p>}
-      <button className="btn btn-primary" type="submit">Wejdź</button>
+      <button className="btn btn-primary" type="submit" disabled={busy || !value}>{busy ? 'Sprawdzam…' : 'Wejdź'}</button>
     </form>
   )
+}
+
+/** Connection state and save errors, shown on every screen. */
+export function SyncBanner() {
+  const sync = useSync()
+  if (sync.error) {
+    return (
+      <div className="banner banner-error" role="alert">
+        <span>{sync.error}</span>
+        <button className="btn" onClick={() => store.clearError()}>OK</button>
+      </div>
+    )
+  }
+  if (sync.mode === 'online' && !sync.connected) {
+    return (
+      <div className="banner" role="status">
+        Brak połączenia. {sync.pending ? 'Wyniki są zapisane w telefonie i wyślą się same, gdy wróci internet.' : 'Pokazuję ostatnie znane wyniki.'}
+      </div>
+    )
+  }
+  return null
 }

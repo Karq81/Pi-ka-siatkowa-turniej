@@ -99,8 +99,6 @@ export function demoState(): State {
       name: 'Turniej Mini Siatkówki',
       subtitle: '23–25 października 2026 · dane przykładowe',
       courts: 10,
-      adminPin: '1234',
-      courtPin: '0000',
       rules,
     },
     categories,

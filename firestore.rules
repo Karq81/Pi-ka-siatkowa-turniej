@@ -1,0 +1,57 @@
+rules_version = '2';
+
+// SiatkaLive access rules. Paste into Firebase console → Firestore → Rules → Publish.
+// Everyone can read results. Writing needs a PIN, which the app sends once per device
+// as a "session"; the rules compare it with the PINs stored in private/pins.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /tournaments/{t} {
+      function pins() {
+        return get(/databases/$(database)/documents/tournaments/$(t)/private/pins).data;
+      }
+      function session() {
+        return get(/databases/$(database)/documents/tournaments/$(t)/sessions/$(request.auth.uid)).data;
+      }
+      function hasSession() {
+        return request.auth != null
+          && exists(/databases/$(database)/documents/tournaments/$(t)/sessions/$(request.auth.uid));
+      }
+      // A session is valid only while its PIN is still the current one.
+      function isAdmin() {
+        return hasSession() && session().role == 'admin' && session().pin == pins().adminPin;
+      }
+      function isCourt() {
+        return hasSession() && (isAdmin() || (session().role == 'court' && session().pin == pins().courtPin));
+      }
+
+      allow read: if true;
+      allow write: if isAdmin();
+
+      match /matches/{m} {
+        allow read: if true;
+        allow delete: if isAdmin();
+        // Court referees may start and score matches, but a finished result can only be changed by the admin.
+        allow create, update: if isAdmin()
+          || (isCourt() && (resource == null || resource.data.status != 'finished'));
+      }
+
+      match /private/{d} {
+        allow read: if false;
+        // The first PIN setup creates the document; after that only the admin can change it.
+        allow create: if request.auth != null && d == 'pins'
+          && request.resource.data.adminPin is string && request.resource.data.adminPin.size() >= 4
+          && request.resource.data.courtPin is string && request.resource.data.courtPin.size() >= 4;
+        allow update: if isAdmin()
+          && request.resource.data.adminPin.size() >= 4 && request.resource.data.courtPin.size() >= 4;
+      }
+
+      match /sessions/{uid} {
+        allow read: if request.auth != null && request.auth.uid == uid;
+        allow create, update: if request.auth != null && request.auth.uid == uid
+          && request.resource.data.keys().hasOnly(['role', 'pin'])
+          && ((request.resource.data.role == 'admin' && request.resource.data.pin == pins().adminPin)
+            || (request.resource.data.role == 'court' && request.resource.data.pin == pins().courtPin));
+      }
+    }
+  }
+}

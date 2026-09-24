@@ -11,8 +11,9 @@ Wyniki turnieju mini siatkówki na żywo: strona dla kibiców, panel sędziego b
 
 Dane przykładowe: 60 drużyn, 3 kategorie, 12 grup po 5, 10 boisk. PIN sędziego głównego `1234`, PIN boisk `0000`.
 
-> Na razie dane są zapisywane tylko w przeglądarce (synchronizują się między kartami na jednym urządzeniu).
-> Następny krok: wspólna baza online (Firebase), żeby wyniki z telefonów sędziów trafiały do wszystkich.
+Bez konfiguracji Firebase aplikacja działa lokalnie (dane w jednej przeglądarce, dobre do przeklikania).
+Z Firebase wyniki z telefonów sędziów trafiają na żywo do wszystkich, także bez zasięgu (wyślą się po jego powrocie).
+Instrukcja krok po kroku: [docs/URUCHOMIENIE.md](docs/URUCHOMIENIE.md).
 
 ## Uruchomienie
 
@@ -20,5 +21,7 @@ Dane przykładowe: 60 drużyn, 3 kategorie, 12 grup po 5, 10 boisk. PIN sędzieg
 npm install
 npm run dev        # serwer deweloperski
 npm test           # testy logiki (sety, tabele, terminarz, import)
+npm run test:rules # testy reguł bezpieczeństwa na emulatorze Firebase
+npm run dev:emulator # aplikacja na lokalnym emulatorze Firebase
 npm run build      # wersja do wrzucenia na hosting (katalog dist/)
 ```

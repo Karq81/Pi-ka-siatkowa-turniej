@@ -44,7 +44,7 @@ export function Court({ court }: { court: number }) {
         <a href="#sedzia" className="back">← Boiska</a>
         <h1>Boisko {court}</h1>
       </header>
-      <PinGate pin={state.tournament.courtPin} label={`Boisko ${court}`}>
+      <PinGate role="court" label={`Boisko ${court}`}>
         <CourtPanel state={state} court={court} />
       </PinGate>
     </div>
