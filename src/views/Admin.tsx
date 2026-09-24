@@ -10,9 +10,11 @@ import { courtKeys } from '../logic/pins'
 import type { Match, MatchStatus, Pins, SetScore, State } from '../types'
 import { formatDay, formatTime, PinGate, useLookups } from '../ui'
 import { CourtCard, MatchList } from './Public'
+import { ResultForm } from './ResultForm'
 
 const TABS = [
   { id: 'boiska', label: 'Boiska' },
+  { id: 'wynik', label: 'Podaj wynik' },
   { id: 'mecze', label: 'Mecze i poprawki' },
   { id: 'klucze', label: 'Klucze boisk' },
   { id: 'dane', label: 'Drużyny i terminarz' },
@@ -47,6 +49,7 @@ export function Admin() {
           ))}
         </nav>
         {tab === 'boiska' && <Courts state={state} />}
+        {tab === 'wynik' && <QuickResults state={state} />}
         {tab === 'mecze' && <Matches state={state} />}
         {tab === 'klucze' && <CourtKeys state={state} />}
         {tab === 'dane' && <Data state={state} />}
@@ -107,49 +110,83 @@ function Matches({ state }: { state: State }) {
 
 function MatchEditor({ state, match, onClose }: { state: State; match: Match; onClose: () => void }) {
   const { side } = useLookups(state)
-  const rules = state.tournament.rules
-  const initial = Array.from({ length: rules.sets }, (_, i) => match.sets[i] ?? { a: 0, b: 0 })
-  const [sets, setSets] = useState<SetScore[]>(initial)
-  const played = sets.filter((s) => s.a > 0 || s.b > 0)
-  const t = tally(rules, played)
-
-  const save = (status: MatchStatus) => {
-    store.updateMatch(match.id, (m) => ({ ...m, status, sets: status === 'scheduled' ? [] : played }))
+  const save = (status: MatchStatus, sets: SetScore[] = []) => {
+    store.updateMatch(match.id, (m) => ({ ...m, status, sets }))
     onClose()
   }
-  const set = (i: number, side: 'a' | 'b', v: string) =>
-    setSets((s) => s.map((x, j) => (j === i ? { ...x, [side]: Math.max(0, Number(v) || 0) } : x)))
-
   return (
     <section className="editor">
       <button className="back" onClick={onClose}>← Lista meczów</button>
       <h2>{side(match, 'a')} – {side(match, 'b')}</h2>
       <p className="muted">Boisko {match.court} · {formatDay(match.start)} {formatTime(match.start)}</p>
-      <table className="set-inputs">
-        <thead>
-          <tr><th className="left">Set</th><th className="left">{side(match, 'a')}</th><th className="left">{side(match, 'b')}</th></tr>
-        </thead>
-        <tbody>
-          {sets.map((s, i) => (
-            <tr key={i}>
-              <td>{i + 1}</td>
-              <td><input id={`set-${i}-a`} inputMode="numeric" value={s.a || ''} placeholder="0" onChange={(e) => set(i, 'a', e.target.value)} /></td>
-              <td><input id={`set-${i}-b`} inputMode="numeric" value={s.b || ''} placeholder="0" onChange={(e) => set(i, 'b', e.target.value)} /></td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <p>Wynik w setach: <b>{t.setsA}:{t.setsB}</b></p>
-      <div className="actions">
-        <button className="btn btn-primary" disabled={!played.length} onClick={() => save('finished')}>Zapisz jako zakończony</button>
-        <button className="btn" onClick={() => save('live')}>Zapisz jako trwający</button>
-        <button className="btn btn-danger" onClick={() => save('scheduled')}>Wyczyść wynik</button>
-      </div>
+      <ResultForm state={state} match={match} submitLabel="Zapisz jako zakończony" onSubmit={(sets) => save('finished', sets)}>
+        <button type="button" className="btn" onClick={() => save('live', match.status === 'live' ? match.sets : [])}>Oznacz jako trwający</button>
+        <button type="button" className="btn btn-danger" onClick={() => save('scheduled')}>Wyczyść wynik</button>
+      </ResultForm>
       <p className="muted small">
-        „Trwający” bez wpisanych setów: na stronie pojawi się „Mecz trwa, wynik po meczu”. Przydaje się na boiskach,
+        „Oznacz jako trwający”: na stronie pojawi się „Mecz trwa, wynik po meczu”. Przydaje się na boiskach,
         gdzie nikt nie liczy punktów na telefonie.
       </p>
     </section>
+  )
+}
+
+/** Fast entry of results from score sheets: pick a match, type the sets, save, next. */
+function QuickResults({ state }: { state: State }) {
+  const { side, categoryName, stageName } = useLookups(state)
+  const [q, setQ] = useState('')
+  const [current, setCurrent] = useState<string | null>(null)
+  const [saved, setSaved] = useState('')
+  const query = q.trim().toLowerCase()
+  // Waiting for a result: live first, then scheduled, in time order.
+  const waiting = state.matches
+    .filter((m) => m.status !== 'finished' && m.teamA && m.teamB)
+    .sort((a, b) => (a.status === 'live' ? 0 : 1) - (b.status === 'live' ? 0 : 1) || a.start.localeCompare(b.start) || a.court - b.court)
+  const list = waiting.filter((m) =>
+    !query || `${side(m, 'a')} ${side(m, 'b')} boisko ${m.court} b${m.court}`.toLowerCase().includes(query))
+  const match = current ? state.matches.find((m) => m.id === current) : undefined
+
+  if (match) {
+    return (
+      <section className="editor">
+        <button className="back" onClick={() => setCurrent(null)}>← Wybierz inny mecz</button>
+        <h2>{side(match, 'a')} – {side(match, 'b')}</h2>
+        <p className="muted">Boisko {match.court} · {formatTime(match.start)} · {categoryName(match.categoryId)} · {stageName(match)}</p>
+        <ResultForm
+          key={match.id}
+          state={state}
+          match={match}
+          submitLabel="Zapisz i następny mecz"
+          onSubmit={(sets) => {
+            store.updateMatch(match.id, (m) => ({ ...m, status: 'finished', sets }))
+            const t = sets.map((x) => `${x.a}:${x.b}`).join(', ')
+            setSaved(`Zapisano: ${side(match, 'a')} – ${side(match, 'b')} (${t})`)
+            const next = list.filter((m) => m.id !== match.id)[0]
+            setCurrent(next?.id ?? null)
+          }}
+        />
+        {saved && <p className="ok">{saved}</p>}
+      </section>
+    )
+  }
+
+  return (
+    <>
+      <div className="filters">
+        <input
+          id="quick-search"
+          type="search"
+          autoFocus
+          placeholder="Wpisz drużynę albo numer boiska, Enter wybiera pierwszy mecz"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter' && list[0]) setCurrent(list[0].id) }}
+        />
+      </div>
+      {saved && <p className="ok">{saved}</p>}
+      <p className="muted small">Mecze czekające na wynik: {waiting.length}. Kliknij mecz, wpisz sety z kartki i zapisz.</p>
+      <MatchList state={state} matches={list.slice(0, 30)} onPick={(m) => setCurrent(m.id)} />
+    </>
   )
 }
 

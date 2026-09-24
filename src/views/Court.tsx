@@ -3,6 +3,7 @@ import { isMatchDecided, setTarget, setWinner, tally } from '../logic/scoring'
 import { canScore } from '../logic/pins'
 import { store, useSession, useStore } from '../store/store'
 import type { Match, State } from '../types'
+import { ResultForm } from './ResultForm'
 import { courtMatch, formatTime, PinGate, StatusPill, useLookups } from '../ui'
 
 /** List of courts for referees to pick from. */
@@ -70,6 +71,7 @@ export function Court({ court }: { court: number }) {
 function CourtPanel({ state, court }: { state: State; court: number }) {
   const { categoryName, stageName, side } = useLookups(state)
   const [justFinished, setJustFinished] = useState<string | null>(null)
+  const [manual, setManual] = useState<string | null>(null)
   const { current, next } = courtMatch(state, court)
   const finished = justFinished ? state.matches.find((m) => m.id === justFinished) : undefined
 
@@ -91,6 +93,31 @@ function CourtPanel({ state, court }: { state: State; court: number }) {
   if (!current) return <p className="muted">Na tym boisku nie ma już zaplanowanych meczów.</p>
 
   const meta = `${categoryName(current.categoryId)} · ${stageName(current)} · ${formatTime(current.start)}`
+  const known = !!current.teamA && !!current.teamB
+  const manualLink = known && (
+    <button className="btn btn-lg" onClick={() => setManual(current.id)}>Podaj wynik z kartki</button>
+  )
+
+  if (manual === current.id) {
+    return (
+      <section className="ref-card">
+        <p className="eyebrow">Podaj wynik</p>
+        <p className="muted">{meta}</p>
+        <ResultForm
+          state={state}
+          match={current}
+          submitLabel="Zakończ mecz i wyślij wynik"
+          onSubmit={(sets) => {
+            store.updateMatch(current.id, (m) => ({ ...m, status: 'finished', sets }))
+            setManual(null)
+            setJustFinished(current.id)
+          }}
+        >
+          <button type="button" className="btn" onClick={() => setManual(null)}>Anuluj</button>
+        </ResultForm>
+      </section>
+    )
+  }
 
   if (current.status === 'scheduled') {
     return (
@@ -107,8 +134,9 @@ function CourtPanel({ state, court }: { state: State; court: number }) {
           disabled={!current.teamA || !current.teamB}
           onClick={() => store.updateMatch(current.id, (m) => ({ ...m, status: 'live', sets: [{ a: 0, b: 0 }] }))}
         >
-          {current.teamA && current.teamB ? 'Rozpocznij mecz' : 'Czekamy na wyniki poprzednich meczów'}
+          {known ? 'Rozpocznij mecz i licz punkty' : 'Czekamy na wyniki poprzednich meczów'}
         </button>
+        {manualLink}
         {next && <p className="muted small">Potem: {formatTime(next.start)} {side(next, 'a')} – {side(next, 'b')}</p>}
       </section>
     )
@@ -129,11 +157,19 @@ function CourtPanel({ state, court }: { state: State; court: number }) {
         <button className="btn btn-primary btn-lg" onClick={() => store.updateMatch(current.id, (m) => ({ ...m, sets: [{ a: 0, b: 0 }] }))}>
           Licz punkty na żywo
         </button>
+        {manualLink}
       </section>
     )
   }
 
-  return <LiveScoring state={state} match={current} meta={meta} onFinish={() => setJustFinished(current.id)} />
+  return (
+    <>
+      <LiveScoring state={state} match={current} meta={meta} onFinish={() => setJustFinished(current.id)} />
+      <p className="center">
+        <button className="linklike" onClick={() => setManual(current.id)}>Wpisz cały wynik ręcznie</button>
+      </p>
+    </>
+  )
 }
 
 function LiveScoring({ state, match, meta, onFinish }: { state: State; match: Match; meta: string; onFinish: () => void }) {

@@ -325,3 +325,21 @@ label { display: flex; flex-direction: column; gap: 4px; font-size: 0.9rem; font
   .page { max-width: none; padding: 0; }
   .cards { grid-template-columns: repeat(2, 1fr); gap: 10mm; }
 }
+
+/* Result form (typing a score sheet) */
+.result-form { display: flex; flex-direction: column; gap: 12px; }
+.rf-grid { display: grid; grid-template-columns: auto minmax(64px, 110px) minmax(64px, 110px) 1fr; gap: 8px 10px; align-items: center; }
+.rf-team { font-weight: 600; font-size: 0.9rem; overflow-wrap: anywhere; align-self: end; }
+.rf-label { display: flex; flex-direction: column; font-family: var(--display); font-weight: 600; font-size: 1.1rem; }
+.rf-label small { font-family: var(--body); font-weight: 400; font-size: 0.72rem; color: var(--muted); }
+.rf-input { text-align: center; font-family: var(--display); font-size: 1.8rem; font-weight: 700; padding: 6px; font-variant-numeric: tabular-nums; }
+.rf-check { font-size: 0.8rem; }
+.rf-check.ok { color: var(--ok); font-size: 1.2rem; font-weight: 700; }
+.rf-check.warn { color: var(--danger); }
+.rf-total b { font-family: var(--display); font-size: 1.5rem; }
+@media (max-width: 480px) {
+  .rf-grid { grid-template-columns: auto 1fr 1fr; }
+  .rf-grid > span:nth-child(4n) { display: none; }
+  .rf-check { grid-column: 2 / -1; }
+  .rf-check:empty { display: none; }
+}
