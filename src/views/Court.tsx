@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
 import { canAddPoint, isMatchDecided, setTarget, setWinner, tally } from '../logic/scoring'
+import { courtBoard } from '../logic/courtBoard'
 import { canScore } from '../logic/pins'
 import { store, useSession, useStore } from '../store/store'
 import type { Match, State } from '../types'
 import { ResultForm } from './ResultForm'
-import { BackBar, courtMatch, formatTime, PinGate, StatusPill, useLookups } from '../ui'
+import { BackBar, courtMatch, formatTime, PinGate, StatusPill, useLookups, useNow } from '../ui'
 
 /** List of courts for referees to pick from. */
 export function CourtPicker() {
@@ -25,6 +26,7 @@ export function CourtList() {
   const session = useSession()
   const { side } = useLookups(state)
   const courts = Array.from({ length: state.tournament.courts }, (_, i) => i + 1)
+  const now = useNow(15000)
   return (
     <>
       <p className="muted">
@@ -33,17 +35,29 @@ export function CourtList() {
       </p>
       <ul className="court-picker">
         {courts.map((c) => {
-          const { current } = courtMatch(state, c)
+          const board = courtBoard(state, c, now)
+          const current = board.match
           const mine = canScore(session, c)
+          const res = current?.sets.at(-1)
           return (
-            <li key={c} className={`picker-card ${current?.status === 'live' ? 'is-live' : ''}`}>
+            <li key={c} className={`picker-card ${board.mode === 'live' ? 'is-live' : ''}`}>
               <span className="picker-head">
                 <b>Boisko {c}</b>
-                {current?.status === 'live' && <StatusPill status="live" />}
+                {board.mode === 'live' && <StatusPill status="live" />}
+                {board.mode === 'finished' && <StatusPill status="finished" />}
+                {board.mode === 'next' && <span className="pill pill-next">Następne spotkanie</span>}
               </span>
-              <span className="muted small">
-                {current ? `${formatTime(current.start)} ${side(current, 'a')} – ${side(current, 'b')}` : 'Brak meczów'}
+              <span className="small">
+                {current ? (
+                  <>
+                    <b>{formatTime(current.start)}</b> {side(current, 'a')} – {side(current, 'b')}
+                    {board.mode === 'finished' && res && <b> · {res.a}:{res.b}</b>}
+                  </>
+                ) : 'Brak meczów'}
               </span>
+              {board.mode === 'finished' && board.next && (
+                <span className="muted small">Następne spotkanie {formatTime(board.next.start)}: {side(board.next, 'a')} – {side(board.next, 'b')}</span>
+              )}
               <span className="ref-links">
                 <a className="btn btn-ref" href={`#boisko-${c}`}>Sędziuj na żywo</a>
                 <a className="btn btn-ref" href={`#wynik-${c}`}>Podaj wynik</a>

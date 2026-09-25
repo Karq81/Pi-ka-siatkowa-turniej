@@ -101,11 +101,13 @@ button, input, select, textarea { font: inherit; color: inherit; }
   text-transform: uppercase; letter-spacing: 0.06em; padding: 2px 8px; border-radius: 999px;
   background: var(--surface-2); color: var(--muted); border: 1px solid var(--line); white-space: nowrap;
 }
-.pill-live { background: var(--live); color: #fff; border-color: var(--live); }
+.pill-live { background: var(--live); color: #fff; border-color: var(--live); animation: live-pulse 1.6s ease-in-out infinite; }
+@keyframes live-pulse { 0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--live) 55%, transparent); } 50% { box-shadow: 0 0 0 6px transparent; opacity: 0.8; } }
+.pill-next { background: color-mix(in srgb, var(--accent) 12%, var(--surface)); color: var(--accent); border-color: var(--accent); }
 .pill-live i { width: 7px; height: 7px; border-radius: 50%; background: #fff; animation: pulse 1.4s ease-in-out infinite; }
 .pill-done { color: var(--ok); }
 @keyframes pulse { 50% { opacity: 0.25; } }
-@media (prefers-reduced-motion: reduce) { .pill-live i { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .pill-live, .pill-live i { animation: none; } }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .chip {
   padding: 6px 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface);
@@ -718,3 +720,12 @@ a.bm:hover { border-color: var(--accent); }
   border: 1.5px solid var(--accent); color: var(--accent); background: var(--surface); font-weight: 700; font-size: 0.88rem; text-decoration: none;
 }
 .btn-correct:hover { background: var(--accent); color: var(--accent-ink); }
+
+/* Court board states */
+.court.mode-live { border-color: var(--live); box-shadow: 0 0 0 1px var(--live); }
+.court.mode-finished .board { outline: 2px solid color-mix(in srgb, var(--ok) 60%, transparent); }
+.court.mode-next { border-style: dashed; border-color: var(--accent); }
+a.board { display: block; color: var(--board-ink); text-decoration: none; }
+.team-row.win .team-name { font-weight: 700; }
+.team-row.win .points { color: #7ee2a8; }
+.court.mode-finished .team-row:not(.win) .points { opacity: 0.6; }

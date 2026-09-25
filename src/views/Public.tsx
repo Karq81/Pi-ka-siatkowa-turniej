@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { formatRatio, standings, tally } from '../logic/scoring'
 import { useFavorites } from '../favorites'
+import { courtBoard } from '../logic/courtBoard'
 import { useStore } from '../store/store'
 import type { Match, State } from '../types'
 import { Competition, TeamPage } from './Competition'
 import { MatchPage } from './Groups'
 import { Info } from './Info'
-import { BackBar, courtMatch, formatDay, formatTime, ScoreLine, StatusPill, useLookups } from '../ui'
+import { BackBar, formatDay, formatTime, ScoreLine, StatusPill, useLookups, useNow } from '../ui'
 
 /**
  * What visitors see: the invitation, groups (each with its table and schedule), live
@@ -68,10 +69,17 @@ export function Public({ route }: { route: string }) {
 }
 
 /** `referee`: show the scoring buttons (organiser panel only, never on public pages). */
+/**
+ * One court's board. The match being played says "Trwa" (from its start time on);
+ * after the result it shows "Koniec meczu" with the score until 5 minutes before the
+ * next match on that court, which then appears as "Następne spotkanie".
+ * `referee`: show the scoring buttons (organiser panel only, never on public pages).
+ */
 export function CourtCard({ state, court, big = false, referee = false }: { state: State; court: number; big?: boolean; referee?: boolean }) {
   const mine = useFavorites()
+  const now = useNow(15000)
   const { categoryName, stageName, side } = useLookups(state)
-  const { current, next } = courtMatch(state, court)
+  const board = courtBoard(state, court, now)
   const rules = state.tournament.rules
   const refLink = referee && (
     <div className="ref-links">
@@ -79,6 +87,7 @@ export function CourtCard({ state, court, big = false, referee = false }: { stat
       <a className="btn btn-ref" href={`#wynik-${court}`}>Podaj wynik</a>
     </div>
   )
+  const current = board.match
   if (!current) {
     return (
       <article className="court court-idle">
@@ -87,32 +96,36 @@ export function CourtCard({ state, court, big = false, referee = false }: { stat
       </article>
     )
   }
-  const live = current.status === 'live'
+  const live = board.mode === 'live'
+  const finished = board.mode === 'finished'
   const t = tally(rules, current.sets)
-  // A match can be live without point-by-point scoring (no phone at that court).
-  const counting = live && current.sets.length > 0
   const multi = rules.sets > 1
-  const cur = counting ? current.sets[current.sets.length - 1] : undefined
+  // Points: the set in progress while playing, the final score once finished.
+  const shown = current.sets.length > 0 && (live || finished)
+  const cur = shown ? current.sets[current.sets.length - 1] : undefined
+  const winA = finished && t.setsA > t.setsB
+  const winB = finished && t.setsB > t.setsA
+  const next = board.next
   return (
-    <article className={`court ${live ? 'court-live' : ''} ${big ? 'court-big' : ''} ${mine.includes(current.teamA) || mine.includes(current.teamB) ? 'mine' : ''}`}>
+    <article className={`court mode-${board.mode} ${big ? 'court-big' : ''} ${mine.includes(current.teamA) || mine.includes(current.teamB) ? 'mine' : ''}`}>
       <header>
         <span className="court-no">Boisko {court}</span>
-        {live ? <StatusPill status="live" /> : <span className="pill">Start {formatTime(current.start)}</span>}
+        {live && <StatusPill status="live" />}
+        {finished && <StatusPill status="finished" />}
+        {board.mode === 'next' && <span className="pill pill-next">Następne spotkanie · {formatTime(current.start)}</span>}
       </header>
-      <p className="court-meta">{categoryName(current.categoryId)} · {stageName(current)}</p>
-      <div className="board">
-        <TeamRow name={side(current, 'a')} sets={multi ? t.setsA : undefined} points={cur?.a} live={counting} />
-        <TeamRow name={side(current, 'b')} sets={multi ? t.setsB : undefined} points={cur?.b} live={counting} />
-      </div>
-      {live && !counting && <p className="court-sets muted">Mecz trwa. Wynik pojawi się po meczu.</p>}
-      {live && current.sets.length > 1 && (
-        <p className="court-sets muted">
-          Sety: {current.sets.slice(0, -1).map((s) => `${s.a}:${s.b}`).join(', ')}
-        </p>
+      <p className="court-meta">{categoryName(current.categoryId)} · {stageName(current)} · {formatTime(current.start)}</p>
+      <a className="board" href={`#mecz-${current.id}`}>
+        <TeamRow name={side(current, 'a')} sets={multi ? t.setsA : undefined} points={cur?.a} live={shown} win={winA} />
+        <TeamRow name={side(current, 'b')} sets={multi ? t.setsB : undefined} points={cur?.b} live={shown} win={winB} />
+      </a>
+      {live && !current.sets.length && <p className="court-sets muted">Mecz trwa. Wynik pojawi się po meczu.</p>}
+      {multi && current.sets.length > 1 && (live || finished) && (
+        <p className="court-sets muted">Sety: {current.sets.map((s) => `${s.a}:${s.b}`).join(', ')}</p>
       )}
-      {next && (
+      {next && board.mode !== 'next' && (
         <p className="court-next">
-          Następnie {formatTime(next.start)}: {side(next, 'a')} – {side(next, 'b')}
+          Następne spotkanie {formatTime(next.start)}: {side(next, 'a')} – {side(next, 'b')}
         </p>
       )}
       {refLink}
@@ -121,9 +134,9 @@ export function CourtCard({ state, court, big = false, referee = false }: { stat
 }
 
 /** `sets` is left out when the match is a single set. */
-function TeamRow({ name, sets, points, live }: { name: string; sets?: number; points?: number; live: boolean }) {
+function TeamRow({ name, sets, points, live, win = false }: { name: string; sets?: number; points?: number; live: boolean; win?: boolean }) {
   return (
-    <div className="team-row">
+    <div className={`team-row ${win ? 'win' : ''}`}>
       <span className="team-name">{name}</span>
       {live && sets !== undefined && <span className="sets" title="Wygrane sety">{sets}</span>}
       {live && <span className="points">{points ?? 0}</span>}

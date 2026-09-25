@@ -95,9 +95,19 @@ export function courtMatch(state: State, court: number): { current?: Match; next
   return live ? { current: live, next: waiting[0] } : { current: waiting[0], next: waiting[1] }
 }
 
+/** Current time, refreshed every `ms`, for time-based displays (countdowns, "Trwa"). */
+export function useNow(ms = 1000) {
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), ms)
+    return () => clearInterval(t)
+  }, [ms])
+  return now
+}
+
 export function StatusPill({ status }: { status: Match['status'] }) {
-  if (status === 'live') return <span className="pill pill-live"><i />Na żywo</span>
-  if (status === 'finished') return <span className="pill pill-done">Koniec</span>
+  if (status === 'live') return <span className="pill pill-live"><i />Trwa</span>
+  if (status === 'finished') return <span className="pill pill-done">Koniec meczu</span>
   return <span className="pill">Zaplanowany</span>
 }
 

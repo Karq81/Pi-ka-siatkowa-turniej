@@ -3,11 +3,12 @@ import { clubOf } from '../logic/draw'
 import { bracketView, groupFinished, tierForGroupPlace } from '../logic/knockout'
 import { useFavorites, toggleFavorite, setFavorites } from '../favorites'
 import { BracketTree } from './BracketTree'
+import { isUnderway } from '../logic/courtBoard'
 import { CorrectButton } from './Correction'
 import { useSession } from '../store/store'
 import { formatRatio, standings, tally } from '../logic/scoring'
 import type { Match, State, Team } from '../types'
-import { BackBar, formatDay, formatTime, StatusPill, useLookups } from '../ui'
+import { BackBar, formatDay, formatTime, StatusPill, useLookups, useNow } from '../ui'
 
 type Phase = 'groups' | 'ko'
 
@@ -110,14 +111,6 @@ export function TeamBadge({ team, size = 'md' }: { team?: Team; size?: 'sm' | 'm
 
 /* ---------- Countdown ---------- */
 
-function useNow(ms = 1000) {
-  const [now, setNow] = useState(() => Date.now())
-  useEffect(() => {
-    const t = setInterval(() => setNow(Date.now()), ms)
-    return () => clearInterval(t)
-  }, [ms])
-  return now
-}
 
 function NextMatch({ state, categoryId }: { state: State; categoryId: string }) {
   const now = useNow()
@@ -216,6 +209,8 @@ function GroupView({ state, groupId }: { state: State; groupId: string }) {
 export function MatchCard({ state, match: m, label }: { state: State; match: Match; label?: string }) {
   const mine = useFavorites()
   const session = useSession()
+  const now = useNow(15000)
+  const underway = isUnderway(m, now)
   const { side } = useLookups(state)
   const rules = state.tournament.rules
   const t = tally(rules, m.sets)
@@ -231,7 +226,8 @@ export function MatchCard({ state, match: m, label }: { state: State; match: Mat
       <header>
         <span>{label ?? ''}{label && m.start ? ' · ' : ''}{m.start ? `${formatDay(m.start)} ${formatTime(m.start)}` : ''}</span>
         <span>{m.court ? `Boisko ${m.court}` : ''}</span>
-        {m.status === 'live' && <StatusPill status="live" />}
+        {underway && <StatusPill status="live" />}
+        {m.status === 'finished' && <StatusPill status="finished" />}
       </header>
       <div className="mc-row">
         <span className={`mc-team ${done && t.setsA > t.setsB ? 'win' : ''}`}>
@@ -249,7 +245,7 @@ export function MatchCard({ state, match: m, label }: { state: State; match: Mat
     </>
   )
   const followed = mine.includes(m.teamA) || mine.includes(m.teamB)
-  const cls = `mcard ${m.status === 'live' ? 'is-live' : ''} ${done ? 'is-done' : ''} ${followed ? 'mine' : ''}`
+  const cls = `mcard ${underway ? 'is-live' : ''} ${done ? 'is-done' : ''} ${followed ? 'mine' : ''}`
   if (!m.start) return <div className={cls}>{body}</div>
   // The chief referee also gets a correction button, kept outside the link.
   if (session?.role === 'admin') {

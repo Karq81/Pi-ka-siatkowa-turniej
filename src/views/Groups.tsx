@@ -1,10 +1,12 @@
 import { tally } from '../logic/scoring'
 import type { Match, State } from '../types'
 import { CorrectButton } from './Correction'
-import { BackBar, formatDay, formatTime, StatusPill, useLookups } from '../ui'
+import { isUnderway } from '../logic/courtBoard'
+import { BackBar, formatDay, formatTime, StatusPill, useLookups, useNow } from '../ui'
 
 /** One match: a big scoreboard that updates live. */
 export function MatchPage({ state, matchId }: { state: State; matchId: string }) {
+  const now = useNow(15000)
   const { categoryName, stageName, side } = useLookups(state)
   const m = state.matches.find((x) => x.id === matchId)
   if (!m) return <NotFound />
@@ -21,7 +23,7 @@ export function MatchPage({ state, matchId }: { state: State; matchId: string })
       <article className={`match-page ${m.status === 'live' ? 'is-live' : ''}`}>
         <header>
           <span>{categoryName(m.categoryId)} · {stageName(m)}</span>
-          <StatusPill status={m.status} />
+          <StatusPill status={isUnderway(m, now) ? 'live' : m.status} />
         </header>
         <p className="muted">{formatDay(m.start)}, godz. {formatTime(m.start)} · Boisko {m.court}</p>
         <div className="mp-board">
@@ -30,12 +32,12 @@ export function MatchPage({ state, matchId }: { state: State; matchId: string })
           <MatchSide teamId={m.teamB} name={side(m, 'b')} score={m.status === 'scheduled' ? undefined : scoreB} win={isWin(m, t, 'b')} />
         </div>
         <div className="center"><CorrectButton match={m} /></div>
-        {m.status === 'live' && !m.sets.length && <p className="center muted">Mecz trwa. Wynik pojawi się po meczu.</p>}
+        {isUnderway(m, now) && !m.sets.length && <p className="center muted">Mecz trwa. Wynik pojawi się po meczu.</p>}
         {!single && m.sets.length > 0 && (
           <p className="center muted">Sety: {m.sets.map((s) => `${s.a}:${s.b}`).join(', ')}</p>
         )}
         {m.status === 'live' && <p className="center muted small">Wynik zmienia się na bieżąco.</p>}
-        {m.status === 'scheduled' && <p className="center muted">Mecz jeszcze się nie zaczął.</p>}
+        {m.status === 'scheduled' && !isUnderway(m, now) && <p className="center muted">Mecz jeszcze się nie zaczął.</p>}
       </article>
     </>
   )
