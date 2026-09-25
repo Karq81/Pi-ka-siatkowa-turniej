@@ -17,6 +17,14 @@ export const defaultRules: Rules = {
   pointsLoss: 1,
 }
 
+// Deterministic generator, so the example looks the same on every device.
+function rng(seed: number) {
+  return () => {
+    seed = (seed * 1664525 + 1013904223) % 4294967296
+    return seed / 4294967296
+  }
+}
+
 const CLUBS = [
   'Orlik', 'Iskra', 'Sokół', 'Olimp', 'Tęcza', 'Grom', 'Płomyk', 'Żak', 'Jedynka', 'Dwójka',
   'Wisełka', 'Pogoń', 'Czarni', 'Delfin', 'Kometa', 'Rakieta', 'Promyk', 'Huragan', 'Jastrząb', 'Lotos',
@@ -59,11 +67,23 @@ export function demoState(): State {
     courts: 10, start: '2026-10-23T09:00', slotMinutes: 25, dayEnd: '18:00',
   })
 
-  // The tournament has just started: the first match on every court is live at 0:0.
-  const firstSlot = matches.map((m) => m.start).sort()[0]
+  // Example moment of the tournament: the first two rounds on the courts are finished,
+  // the third is being played, the rest is still to come.
+  const r = rng(2026)
+  const slots = [...new Set(matches.map((m) => m.start))].sort()
+  const target = rules.setPoints
   for (const m of matches) {
-    if (m.start === firstSlot) {
-      m.sets = [{ a: 0, b: 0 }]
+    const slot = slots.indexOf(m.start)
+    if (slot < 2) {
+      // Mostly clear wins, sometimes a close set that goes past the target.
+      const close = r() < 0.2
+      const win = close ? target + 1 + Math.floor(r() * 2) : target
+      const lose = close ? win - rules.winBy : 4 + Math.floor(r() * (target - 6))
+      m.sets = [r() < 0.5 ? { a: win, b: lose } : { a: lose, b: win }]
+      m.status = 'finished'
+      m.updatedAt = 1
+    } else if (slot === 2) {
+      m.sets = [{ a: Math.floor(r() * (target - 1)), b: Math.floor(r() * (target - 1)) }]
       m.status = 'live'
       m.updatedAt = 1
     }

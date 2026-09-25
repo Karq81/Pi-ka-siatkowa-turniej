@@ -3,12 +3,14 @@ import { formatRatio, standings, tally } from '../logic/scoring'
 import { useStore } from '../store/store'
 import type { Match, State } from '../types'
 import { Bracket } from './Bracket'
+import { GroupPage, Groups, MatchPage } from './Groups'
 import { Info } from './Info'
 import { courtMatch, formatDay, formatTime, ScoreLine, StatusPill, useLookups } from '../ui'
 
 const TABS = [
   { route: '', label: 'Start' },
   { route: 'wyniki', label: 'Wyniki' },
+  { route: 'grupy', label: 'Grupy' },
   { route: 'na-zywo', label: 'Na żywo' },
   { route: 'tabele', label: 'Tabele' },
   { route: 'drabinka', label: 'Drabinka' },
@@ -17,7 +19,9 @@ const TABS = [
 
 export function Public({ route }: { route: string }) {
   const state = useStore()
-  const tab = TABS.some((t) => t.route === route) ? route : ''
+  // Group and match pages sit under the "Grupy" tab.
+  const detail = /^(grupa|mecz)-(.+)$/.exec(route)
+  const tab = detail ? 'grupy' : TABS.some((t) => t.route === route) ? route : ''
   const nav = (
     <nav className="tabs" aria-label="Sekcje">
       {TABS.map((t) => (
@@ -43,6 +47,9 @@ export function Public({ route }: { route: string }) {
       )}
       <main>
         {tab === 'wyniki' && <Results state={state} />}
+        {tab === 'grupy' && !detail && <Groups state={state} />}
+        {detail?.[1] === 'grupa' && <GroupPage state={state} groupId={detail[2]} />}
+        {detail?.[1] === 'mecz' && <MatchPage state={state} matchId={detail[2]} />}
         {tab === 'na-zywo' && <LiveCourts state={state} />}
         {tab === 'tabele' && <Tables state={state} />}
         {tab === 'drabinka' && <Bracket state={state} />}
@@ -152,14 +159,15 @@ function CategoryChips({ state, value, onChange }: { state: State; value: string
   )
 }
 
-export function GroupTable({ state, groupId }: { state: State; groupId: string }) {
+/** `title`: show the group name linking to its page (off on the group page itself). */
+export function GroupTable({ state, groupId, title = true }: { state: State; groupId: string; title?: boolean }) {
   const { teamName } = useLookups(state)
   const group = state.groups.find((g) => g.id === groupId)!
   const multi = state.tournament.rules.sets > 1
   const rows = standings(state.tournament.rules, group, state.matches, state.teams)
   return (
     <div className="table-card">
-      <h3>{group.name}</h3>
+      {title && <h3><a href={`#grupa-${group.id}`} className="plain-link">{group.name} →</a></h3>}
       <div className="table-scroll">
         <table>
           <thead>
@@ -232,7 +240,9 @@ export function MatchList({ state, matches, onPick }: { state: State; matches: M
         )
         return (
           <li key={m.id} className={m.status === 'live' ? 'is-live' : ''}>
-            {onPick ? <button className="m-row" onClick={() => onPick(m)}>{body}</button> : <div className="m-row">{body}</div>}
+            {onPick
+              ? <button className="m-row" onClick={() => onPick(m)}>{body}</button>
+              : <a className="m-row" href={`#mecz-${m.id}`}>{body}</a>}
           </li>
         )
       })}
@@ -325,8 +335,10 @@ function Results({ state }: { state: State }) {
                         <span className="muted small">{formatDay(m.start)} · B{m.court}</span>
                       </td>
                       <td className="left teams">
-                        <span className={t.setsA > t.setsB ? 'win' : ''}>{side(m, 'a')}</span>
-                        <span className={t.setsB > t.setsA ? 'win' : ''}>{side(m, 'b')}</span>
+                        <a href={`#mecz-${m.id}`} className="plain-link">
+                          <span className={t.setsA > t.setsB ? 'win' : ''}>{side(m, 'a')}</span>
+                          <span className={t.setsB > t.setsA ? 'win' : ''}>{side(m, 'b')}</span>
+                        </a>
                       </td>
                       <td className="score">
                         {single ? (
