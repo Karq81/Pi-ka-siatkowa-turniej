@@ -3,10 +3,12 @@ import { formatRatio, standings, tally } from '../logic/scoring'
 import { useStore } from '../store/store'
 import type { Match, State } from '../types'
 import { Bracket } from './Bracket'
+import { Info } from './Info'
 import { courtMatch, formatDay, formatTime, ScoreLine, StatusPill, useLookups } from '../ui'
 
 const TABS = [
-  { route: '', label: 'Na żywo' },
+  { route: '', label: 'Start' },
+  { route: 'na-zywo', label: 'Na żywo' },
   { route: 'tabele', label: 'Tabele' },
   { route: 'drabinka', label: 'Drabinka' },
   { route: 'terminarz', label: 'Terminarz' },
@@ -15,24 +17,31 @@ const TABS = [
 export function Public({ route }: { route: string }) {
   const state = useStore()
   const tab = TABS.some((t) => t.route === route) ? route : ''
+  const nav = (
+    <nav className="tabs" aria-label="Sekcje">
+      {TABS.map((t) => (
+        <a key={t.route} href={`#${t.route}`} className={tab === t.route ? 'active' : ''}>
+          {t.label}
+        </a>
+      ))}
+    </nav>
+  )
   return (
     <div className="page">
-      <header className="hero">
-        <div>
-          <p className="eyebrow">Wyniki na żywo</p>
-          <h1>{state.tournament.name}</h1>
-          <p className="muted">{state.tournament.subtitle}</p>
-        </div>
-        <nav className="tabs" aria-label="Sekcje">
-          {TABS.map((t) => (
-            <a key={t.route} href={`#${t.route}`} className={tab === t.route ? 'active' : ''}>
-              {t.label}
-            </a>
-          ))}
-        </nav>
-      </header>
+      {tab === '' ? (
+        <Info nav={nav} />
+      ) : (
+        <header className="hero">
+          <div>
+            <p className="eyebrow">Wyniki na żywo</p>
+            <h1>{state.tournament.name}</h1>
+            <p className="muted">{state.tournament.subtitle}</p>
+          </div>
+          {nav}
+        </header>
+      )}
       <main>
-        {tab === '' && <LiveCourts state={state} />}
+        {tab === 'na-zywo' && <LiveCourts state={state} />}
         {tab === 'tabele' && <Tables state={state} />}
         {tab === 'drabinka' && <Bracket state={state} />}
         {tab === 'terminarz' && <Schedule state={state} />}

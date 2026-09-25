@@ -71,8 +71,8 @@ export function demoState(): State {
 
   return {
     tournament: {
-      name: 'Turniej Mini Siatkówki',
-      subtitle: '23–25 października 2026 · dane przykładowe',
+      name: 'Albatros CUP 2026',
+      subtitle: '23–25 października 2026 · Mielno · drużyny przykładowe',
       courts: 10,
       rules,
     },

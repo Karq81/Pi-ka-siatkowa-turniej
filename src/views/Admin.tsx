@@ -29,7 +29,7 @@ export function Admin() {
     return (
       <div className="page">
         <header className="bar">
-          <a href="#" className="back">← Wyniki</a>
+          <a href="#na-zywo" className="back">← Wyniki</a>
           <h1>Pierwsze uruchomienie</h1>
         </header>
         <FirstSetup />
@@ -39,7 +39,7 @@ export function Admin() {
   return (
     <div className="page">
       <header className="bar">
-        <a href="#" className="back">← Wyniki</a>
+        <a href="#na-zywo" className="back">← Wyniki</a>
         <h1>Sędzia główny</h1>
       </header>
       <PinGate label="Panel sędziego głównego">

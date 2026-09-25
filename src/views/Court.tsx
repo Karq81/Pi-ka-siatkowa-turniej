@@ -15,7 +15,7 @@ export function CourtPicker() {
   return (
     <div className="page">
       <header className="bar">
-        <a href="#" className="back">← Wyniki</a>
+        <a href="#na-zywo" className="back">← Wyniki</a>
         <h1>Tryb sędziego</h1>
       </header>
       <p className="muted">

@@ -346,3 +346,61 @@ label { display: flex; flex-direction: column; gap: 4px; font-size: 0.9rem; font
 .btn-plus:disabled { background: color-mix(in srgb, var(--accent) 25%, var(--board)); color: rgb(255 255 255 / 0.4); cursor: not-allowed; transform: none; }
 .ref-links { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .ref-links .btn-ref { padding-inline: 6px; }
+
+/* Start page */
+.info { display: flex; flex-direction: column; gap: 28px; }
+.info h2 { margin: 0 0 12px; }
+.info-hero {
+  background: var(--board); color: var(--board-ink); border-radius: 14px;
+  padding: 20px; display: flex; flex-direction: column; gap: 18px;
+  background-image: radial-gradient(120% 90% at 100% 0%, rgb(28 79 214 / 0.55), transparent 60%);
+}
+.info-hero-inner { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+.info-logo { width: 96px; height: auto; border-radius: 50%; background: #fff; padding: 6px; flex: none; }
+.info-hero .eyebrow { color: var(--ball); }
+.info-hero h1 { font-size: clamp(2.6rem, 9vw, 4.2rem); line-height: 0.95; letter-spacing: 0.01em; text-transform: uppercase; }
+.info-when { margin-top: 6px; font-size: 1.05rem; opacity: 0.85; }
+.info-hero .tabs a { color: var(--board-ink); }
+.info-hero .tabs a.active { background: var(--ball); color: #1d1600; }
+.info-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
+.fact, .price { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; display: flex; flex-direction: column; gap: 4px; }
+.fact b, .price b { font-size: 1.05rem; }
+.fact-label { font-family: var(--display); font-weight: 600; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent); }
+.fact-num { font-family: var(--display); font-size: 1.8rem; line-height: 1; }
+.info-live {
+  display: grid; grid-template-columns: 1fr auto; gap: 20px; align-items: center;
+  background: var(--surface); border: 2px solid var(--accent); border-radius: 14px; padding: 20px;
+}
+.info-live-text { display: flex; flex-direction: column; gap: 12px; align-items: flex-start; }
+.info-live-text .btn-lg { width: auto; padding-inline: 28px; }
+.info-qr { width: 168px; max-width: 100%; background: #fff; padding: 10px; border-radius: 10px; }
+.info-qr svg { display: block; width: 100%; height: auto; }
+@media (max-width: 560px) {
+  .info-live { grid-template-columns: 1fr; justify-items: center; text-align: center; }
+  .info-live-text { align-items: center; }
+}
+.days { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; }
+.day { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.day header { display: flex; justify-content: space-between; align-items: baseline; padding: 10px 14px; background: var(--surface-2); border-bottom: 1px solid var(--line); }
+.day header b { font-family: var(--display); font-size: 1.3rem; text-transform: uppercase; letter-spacing: 0.04em; }
+.day header span { font-variant-numeric: tabular-nums; color: var(--muted); }
+.day ol { list-style: none; margin: 0; padding: 6px 14px 12px; }
+.day li { display: grid; grid-template-columns: 72px 1fr; gap: 8px; padding-block: 6px; border-bottom: 1px dashed var(--line); }
+.day li:last-child { border-bottom: 0; }
+.day .t { font-family: var(--display); font-weight: 700; font-variant-numeric: tabular-nums; color: var(--muted); }
+.day li.hl { font-weight: 600; }
+.day li.hl .t { color: var(--accent); }
+.info-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+.plain { margin: 0; padding-left: 1.1em; display: flex; flex-direction: column; gap: 4px; }
+.prices { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-bottom: 12px; }
+.price b { font-family: var(--display); font-size: 2.2rem; line-height: 1; }
+.account { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.account span { font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace; font-size: 1.05rem; font-weight: 600; user-select: all; overflow-wrap: anywhere; }
+.select { user-select: all; }
+.reminders { background: color-mix(in srgb, var(--ball) 22%, var(--surface)); border-radius: var(--radius); padding: 16px; }
+.info-org { text-align: center; }
+a.btn { text-decoration: none; }
+@media (max-width: 480px) {
+  .info-hero .tabs { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  .info-hero .tabs a { flex: none; }
+}
