@@ -7,24 +7,30 @@ import { GroupPage, Groups, MatchPage } from './Groups'
 import { Info } from './Info'
 import { courtMatch, formatDay, formatTime, ScoreLine, StatusPill, useLookups } from '../ui'
 
+/**
+ * What visitors see: the invitation, groups (each with its table and schedule), live
+ * courts and results. The bracket tab appears once the organiser creates it.
+ * Tables and the full schedule stay reachable (#tabele, #terminarz) but are not in the menu.
+ */
 const TABS = [
   { route: '', label: 'Start' },
-  { route: 'wyniki', label: 'Wyniki' },
   { route: 'grupy', label: 'Grupy' },
   { route: 'na-zywo', label: 'Na żywo' },
-  { route: 'tabele', label: 'Tabele' },
-  { route: 'drabinka', label: 'Drabinka' },
-  { route: 'terminarz', label: 'Terminarz' },
+  { route: 'wyniki', label: 'Wyniki' },
+  { route: 'drabinka', label: 'Drabinka', onlyWithBracket: true },
 ]
+const HIDDEN_ROUTES = ['tabele', 'terminarz']
 
 export function Public({ route }: { route: string }) {
   const state = useStore()
   // Group and match pages sit under the "Grupy" tab.
   const detail = /^(grupa|mecz)-(.+)$/.exec(route)
-  const tab = detail ? 'grupy' : TABS.some((t) => t.route === route) ? route : ''
+  const known = TABS.some((t) => t.route === route) || HIDDEN_ROUTES.includes(route)
+  const tab = detail ? 'grupy' : known ? route : ''
+  const bracket = state.matches.some((m) => m.ko)
   const nav = (
     <nav className="tabs" aria-label="Sekcje">
-      {TABS.map((t) => (
+      {TABS.filter((t) => !t.onlyWithBracket || bracket).map((t) => (
         <a key={t.route} href={`#${t.route}`} className={tab === t.route ? 'active' : ''}>
           {t.label}
         </a>

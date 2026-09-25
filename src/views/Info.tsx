@@ -2,10 +2,18 @@ import QRCode from 'qrcode'
 import { useEffect, useState, type ReactNode } from 'react'
 import logo from '../assets/logo-opty-mielno.png'
 import { info } from '../content/info'
+import { useStore } from '../store/store'
 
 /** Start page for families and teams: key facts, schedule, costs and a QR code to live results. */
 export function Info({ nav }: { nav: ReactNode }) {
-  const resultsUrl = `${location.origin}${location.pathname}#wyniki`
+  const state = useStore()
+  // Team counts follow the entered team list; the announcement's numbers are the fallback.
+  const teamsIn = (name: string) => {
+    const cat = state.categories.find((c) => c.name === name)
+    const n = cat ? state.teams.filter((t) => t.categoryId === cat.id).length : 0
+    return n || info.categories.find((c) => c.name === name)?.teams || 0
+  }
+  const resultsUrl = `${location.origin}${location.pathname}#grupy`
   const [qr, setQr] = useState('')
   const [copied, setCopied] = useState(false)
   useEffect(() => {
@@ -47,7 +55,7 @@ export function Info({ nav }: { nav: ReactNode }) {
         {info.categories.map((c) => (
           <div key={c.name} className="fact">
             <span className="fact-label">{c.name}</span>
-            <b><span className="fact-num">{c.teams}</span> zespołów</b>
+            <b><span className="fact-num">{teamsIn(c.name)}</span> zespołów</b>
             <span className="muted small">{c.note}</span>
           </div>
         ))}
@@ -55,12 +63,15 @@ export function Info({ nav }: { nav: ReactNode }) {
 
       <section className="info-live">
         <div className="info-live-text">
-          <h2>Wyniki na żywo</h2>
+          <h2>Grupy, mecze i wyniki</h2>
           <p>
-            Wszystkie mecze, tabele grup i drabinkę zobaczysz w telefonie, na bieżąco w trakcie turnieju.
-            Zeskanuj kod albo kliknij przycisk.
+            Grupy, kto z kim i o której gra, tabele i wyniki na żywo zobaczysz w telefonie, na bieżąco w trakcie
+            turnieju. Zeskanuj kod albo kliknij przycisk.
           </p>
-          <a className="btn btn-primary btn-lg" href="#wyniki">Zobacz wyniki</a>
+          <div className="actions">
+            <a className="btn btn-primary btn-lg" href="#grupy">Grupy i terminarz</a>
+            <a className="btn btn-lg" href="#na-zywo">Wyniki na żywo</a>
+          </div>
         </div>
         <div className="info-qr" aria-label="Kod QR do wyników" dangerouslySetInnerHTML={{ __html: qr }} />
       </section>
@@ -96,7 +107,7 @@ export function Info({ nav }: { nav: ReactNode }) {
           <h2>Uczestnicy</h2>
           <ul className="plain">
             {info.categories.map((c) => (
-              <li key={c.name}><b>{c.name}</b>: {c.teams} zespołów, {c.note}</li>
+              <li key={c.name}><b>{c.name}</b>: {teamsIn(c.name)} zespołów, {c.note}</li>
             ))}
           </ul>
           <p className="muted small">{info.reserves}</p>
