@@ -3,6 +3,8 @@ import { clubOf } from '../logic/draw'
 import { bracketView, groupFinished, tierForGroupPlace } from '../logic/knockout'
 import { useFavorites, toggleFavorite, setFavorites } from '../favorites'
 import { BracketTree } from './BracketTree'
+import { CorrectButton } from './Correction'
+import { useSession } from '../store/store'
 import { formatRatio, standings, tally } from '../logic/scoring'
 import type { Match, State, Team } from '../types'
 import { BackBar, formatDay, formatTime, StatusPill, useLookups } from '../ui'
@@ -213,6 +215,7 @@ function GroupView({ state, groupId }: { state: State; groupId: string }) {
 /** One match as a card: when and where, both teams with badges, the score. */
 export function MatchCard({ state, match: m, label }: { state: State; match: Match; label?: string }) {
   const mine = useFavorites()
+  const session = useSession()
   const { side } = useLookups(state)
   const rules = state.tournament.rules
   const t = tally(rules, m.sets)
@@ -247,7 +250,17 @@ export function MatchCard({ state, match: m, label }: { state: State; match: Mat
   )
   const followed = mine.includes(m.teamA) || mine.includes(m.teamB)
   const cls = `mcard ${m.status === 'live' ? 'is-live' : ''} ${done ? 'is-done' : ''} ${followed ? 'mine' : ''}`
-  return m.start ? <a href={`#mecz-${m.id}`} className={cls}>{body}</a> : <div className={cls}>{body}</div>
+  if (!m.start) return <div className={cls}>{body}</div>
+  // The chief referee also gets a correction button, kept outside the link.
+  if (session?.role === 'admin') {
+    return (
+      <div className={cls}>
+        <a href={`#mecz-${m.id}`} className="mcard-main">{body}</a>
+        <CorrectButton match={m} />
+      </div>
+    )
+  }
+  return <a href={`#mecz-${m.id}`} className={cls}>{body}</a>
 }
 
 /* ---------- Knockout phase ---------- */
