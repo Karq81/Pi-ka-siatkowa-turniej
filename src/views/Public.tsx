@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { formatRatio, standings, tally } from '../logic/scoring'
 import { useStore } from '../store/store'
 import type { Match, State } from '../types'
-import { Competition } from './Competition'
+import { Competition, TeamPage } from './Competition'
 import { MatchPage } from './Groups'
 import { Info } from './Info'
 import { courtMatch, formatDay, formatTime, ScoreLine, StatusPill, useLookups } from '../ui'
@@ -23,7 +23,7 @@ const HIDDEN_ROUTES = ['tabele', 'terminarz', 'drabinka']
 export function Public({ route }: { route: string }) {
   const state = useStore()
   // Group links, match pages and the bracket all sit under "Rozgrywki".
-  const detail = /^(grupa|mecz)-(.+)$/.exec(route)
+  const detail = /^(grupa|mecz|druzyna)-(.+)$/.exec(route)
   const known = TABS.some((t) => t.route === route) || HIDDEN_ROUTES.includes(route)
   const tab = detail || route === 'drabinka' ? 'grupy' : known ? route : ''
   const nav = (
@@ -51,7 +51,8 @@ export function Public({ route }: { route: string }) {
       )}
       <main>
         {tab === 'wyniki' && <Results state={state} />}
-        {tab === 'grupy' && detail?.[1] !== 'mecz' && <Competition state={state} route={route} />}
+        {tab === 'grupy' && detail?.[1] !== 'mecz' && detail?.[1] !== 'druzyna' && <Competition state={state} route={route} />}
+        {detail?.[1] === 'druzyna' && <TeamPage state={state} teamId={detail[2]} />}
         {detail?.[1] === 'mecz' && <MatchPage state={state} matchId={detail[2]} />}
         {tab === 'na-zywo' && <LiveCourts state={state} />}
         {tab === 'tabele' && <Tables state={state} />}

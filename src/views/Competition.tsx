@@ -43,6 +43,8 @@ export function Competition({ state, route }: { state: State; route: string }) {
         })}
       </div>
 
+      <TeamPicker state={state} categoryId={cat} />
+
       <NextMatch state={state} categoryId={cat} />
 
       <div className="phase" role="tablist" aria-label="Faza">
@@ -180,7 +182,7 @@ function GroupView({ state, groupId }: { state: State; groupId: string }) {
               <li key={r.teamId} className={i < 2 ? 'top' : ''}>
                 <span className="pos">{i + 1}</span>
                 <TeamBadge team={t} />
-                <span className="name">{t?.name}</span>
+                <a className="name plain-link" href={`#druzyna-${r.teamId}`}>{t?.name}</a>
                 <span className="trend" aria-label={tr.length ? `Ostatnie mecze: ${tr.map((x) => (x === 'w' ? 'wygrana' : 'przegrana')).join(', ')}` : undefined}>
                   {tr.map((x, j) => <i key={j} className={x} />)}
                 </span>
@@ -293,5 +295,106 @@ function KnockoutView({ state, categoryId }: { state: State; categoryId: string 
         })}
       </div>
     </>
+  )
+}
+
+/* ---------- Team: picker and page ---------- */
+
+/** "Find your team": opens the team's page with all its matches. */
+export function TeamPicker({ state, categoryId }: { state: State; categoryId?: string }) {
+  const cats = state.categories.filter((c) => !categoryId || c.id === categoryId)
+  return (
+    <label className="team-picker">
+      <span>Znajdź swoją drużynę</span>
+      <select
+        id={`team-picker-${categoryId ?? 'all'}`}
+        value=""
+        onChange={(e) => { if (e.target.value) location.hash = `druzyna-${e.target.value}` }}
+      >
+        <option value="">Wybierz drużynę…</option>
+        {cats.map((c) => (
+          <optgroup key={c.id} label={c.name}>
+            {state.teams.filter((t) => t.categoryId === c.id).sort((a, b) => a.name.localeCompare(b.name, 'pl')).map((t) => (
+              <option key={t.id} value={t.id}>{t.name}</option>
+            ))}
+          </optgroup>
+        ))}
+      </select>
+    </label>
+  )
+}
+
+/** One team: place in the group, next match and every match in order (who, when, where). */
+export function TeamPage({ state, teamId }: { state: State; teamId: string }) {
+  const now = useNow(30000)
+  const team = state.teams.find((t) => t.id === teamId)
+  if (!team) return <p className="muted">Nie znaleziono drużyny. <a href="#grupy">Wróć do rozgrywek</a>.</p>
+  const rules = state.tournament.rules
+  const category = state.categories.find((c) => c.id === team.categoryId)
+  const group = state.groups.find((g) => g.teamIds.includes(team.id))
+  const rows = group ? standings(rules, group, state.matches, state.teams) : []
+  const pos = rows.findIndex((r) => r.teamId === team.id)
+  const row = rows[pos]
+  const matches = state.matches
+    .filter((m) => m.teamA === team.id || m.teamB === team.id)
+    .sort((a, b) => a.start.localeCompare(b.start))
+  const next = matches.find((m) => m.status === 'live') ?? matches.find((m) => m.status === 'scheduled' && new Date(m.start).getTime() >= now - 15 * 60000)
+  const days = [...new Set(matches.map((m) => m.start.slice(0, 10)))]
+  // Where the team would play in the knockout phase, by the current table.
+  const ko = bracketView(state, team.categoryId)?.find((s) => s.match.teamA === team.id || s.match.teamB === team.id)
+  const opponent = (m: Match) => state.teams.find((t) => t.id === (m.teamA === team.id ? m.teamB : m.teamA))
+  const won = matches.filter((m) => m.status === 'finished').filter((m) => {
+    const t = tally(rules, m.sets)
+    return m.teamA === team.id ? t.setsA > t.setsB : t.setsB > t.setsA
+  }).length
+  const played = matches.filter((m) => m.status === 'finished').length
+
+  return (
+    <div className="team-page">
+      <p><a href={group ? `#grupa-${group.id}` : '#grupy'} className="back">← {group ? `${category?.name} · ${group.name}` : 'Rozgrywki'}</a></p>
+      <header className="team-head">
+        <TeamBadge team={team} size="lg" />
+        <div>
+          <h2>{team.name}</h2>
+          <p className="muted">{category?.name}{group ? ` · ${group.name}` : ''}</p>
+        </div>
+      </header>
+      <div className="team-stats">
+        <div><b>{pos >= 0 ? `${pos + 1}.` : '–'}</b><span>miejsce w grupie</span></div>
+        <div><b>{row?.tablePoints ?? 0}</b><span>punkty</span></div>
+        <div><b>{won}/{played}</b><span>wygrane mecze</span></div>
+        <div><b>{matches.length}</b><span>mecze w terminarzu</span></div>
+      </div>
+
+      {next && (
+        <section className={`team-next ${next.status === 'live' ? 'is-live' : ''}`}>
+          <p className="eyebrow">{next.status === 'live' ? 'Gra teraz' : 'Następny mecz'}</p>
+          <p className="tn-when">{formatDay(next.start)}, <b>{formatTime(next.start)}</b> · Boisko <b>{next.court}</b></p>
+          <p className="tn-vs">
+            z <TeamBadge team={opponent(next)} size="sm" /> <b>{opponent(next)?.name ?? 'rywal do ustalenia'}</b>
+          </p>
+        </section>
+      )}
+
+      {ko && (
+        <p className="notice-inline">
+          W fazie pucharowej gra o miejsca <b>{ko.match.ko!.tierFrom}–{ko.match.ko!.tierTo}</b>
+          {ko.projected ? ' (według aktualnej tabeli grupy).' : '.'}
+        </p>
+      )}
+
+      <h3 className="list-title">Wszystkie mecze</h3>
+      {!matches.length && <p className="muted">Terminarz pojawi się po losowaniu grup.</p>}
+      {days.map((d) => (
+        <section key={d} className="team-day">
+          <h4 className="day-title">{formatDay(d)}</h4>
+          <div className="cards">
+            {matches.filter((m) => m.start.startsWith(d)).map((m) => (
+              <MatchCard key={m.id} state={state} match={m} label={m.ko ? m.ko.label : group?.name} />
+            ))}
+          </div>
+        </section>
+      ))}
+    </div>
   )
 }
