@@ -404,3 +404,30 @@ a.btn { text-decoration: none; }
   .info-hero .tabs { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
   .info-hero .tabs a { flex: none; }
 }
+
+/* Organiser panel */
+.organizer { list-style: none; padding: 0; margin: 16px 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+.organizer a { display: flex; flex-direction: column; gap: 6px; height: 100%; padding: 16px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); text-decoration: none; color: var(--ink); }
+.organizer a:hover { border-color: var(--accent); }
+.organizer b { font-family: var(--display); font-size: 1.4rem; }
+.picker-card { display: flex; flex-direction: column; gap: 8px; padding: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
+.picker-card.is-live { border-color: var(--live); }
+.picker-card b { font-family: var(--display); font-size: 1.3rem; }
+
+/* Public results table */
+.results td { vertical-align: middle; }
+/* Cells stay table cells; their lines stack as blocks. */
+.results .when > *, .results .teams > *, .results .score > * { display: block; }
+.results .when { white-space: nowrap; }
+.results .when b { font-family: var(--display); font-size: 1.1rem; }
+.results .teams { min-width: 0; white-space: normal; overflow-wrap: anywhere; }
+.results .score { white-space: nowrap; padding-inline: 4px 0; }
+.results th, .results td { padding-inline: 6px; }
+@media (max-width: 520px) {
+  .results .when { width: 64px; }
+  .results .when .muted { font-size: 0.72rem; }
+  .results .score b { font-size: 1.3rem; }
+}
+.results .teams .win { font-weight: 700; }
+.results .score b { font-family: var(--display); font-size: 1.5rem; }
+@media (max-width: 520px) { .hide-narrow { display: none; } }

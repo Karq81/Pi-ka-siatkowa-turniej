@@ -2,15 +2,15 @@ import type { Category, Group, Rules, State, Team } from '../types'
 import { buildGroupSchedule } from './schedule'
 
 /**
- * Mini volleyball rules as in the PZPS Kinder tournaments: best of 3 sets, sets to 15,
- * deciding set to 11, always with a 2-point lead; table points 2 for a win, 1 for a loss.
+ * Albatros CUP (girls aged 10–11): one set to 15 with a 2-point lead (the organiser may
+ * switch to 21). Table points as in PZPS mini volleyball: 2 for a win, 1 for a loss.
  * All of it can be changed in the admin settings.
  */
 export const defaultRules: Rules = {
-  setsMode: 'bestOf',
-  sets: 3,
+  setsMode: 'fixed',
+  sets: 1,
   setPoints: 15,
-  lastSetPoints: 11,
+  lastSetPoints: 15,
   winBy: 2,
   pointsWin: 2,
   pointsDraw: 1,

@@ -46,13 +46,24 @@ VITE_FIREBASE_APP_ID=...
 
 ## Adresy
 
+**Dla rodziców i trenerów (tylko oglądanie, bez żadnych przycisków do wpisywania):**
+
 | Co | Adres |
 |---|---|
-| Wyniki dla kibiców | `adres-strony/` |
-| Panel boiska nr 3 (na kod QR przy boisku) | `adres-strony/#boisko-3` |
-| Lista boisk dla sędziów | `adres-strony/#sedzia` |
-| Kartki z kodami QR i kluczami (dla sędziego głównego) | `adres-strony/#kartki` |
+| Strona startowa z informacjami i kodem QR | `adres-strony/` |
+| Wyniki meczów (tabela, tu prowadzi kod QR) | `adres-strony/#wyniki` |
+| Boiska na żywo | `adres-strony/#na-zywo` |
+| Tabele grup, drabinka, terminarz | `#tabele`, `#drabinka`, `#terminarz` |
+
+**Dla organizatora (niepodlinkowane ze strony publicznej, wszystko wymaga klucza):**
+
+| Co | Adres |
+|---|---|
+| Panel organizatora | `adres-strony/#panel` |
 | Sędzia główny | `adres-strony/#admin` |
+| Sędziowie boisk (lista boisk) | `adres-strony/#sedzia` |
+| Boisko nr 3: liczenie na żywo / wynik z kartki | `#boisko-3` / `#wynik-3` |
+| Kartki z kodami QR i kluczami | `adres-strony/#kartki` |
 | Telewizor na hali | `adres-strony/#tv` |
 
 ## Jak działa bezpieczeństwo

@@ -29,7 +29,7 @@ export function Admin() {
     return (
       <div className="page">
         <header className="bar">
-          <a href="#na-zywo" className="back">← Wyniki</a>
+          <a href="#panel" className="back">← Panel organizatora</a>
           <h1>Pierwsze uruchomienie</h1>
         </header>
         <FirstSetup />
@@ -39,7 +39,7 @@ export function Admin() {
   return (
     <div className="page">
       <header className="bar">
-        <a href="#na-zywo" className="back">← Wyniki</a>
+        <a href="#panel" className="back">← Panel organizatora</a>
         <h1>Sędzia główny</h1>
       </header>
       <PinGate label="Panel sędziego głównego">
@@ -71,7 +71,7 @@ function Courts({ state }: { state: State }) {
       </div>
       <section className="courts">
         {Array.from({ length: state.tournament.courts }, (_, i) => (
-          <CourtCard key={i} state={state} court={i + 1} />
+          <CourtCard key={i} state={state} court={i + 1} referee />
         ))}
       </section>
     </>

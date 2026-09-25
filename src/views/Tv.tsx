@@ -44,7 +44,7 @@ export function Tv() {
           ))}
         </section>
       )}
-      <a className="tv-exit" href="#na-zywo">Wyjdź z trybu TV</a>
+      <a className="tv-exit" href="#panel">Wyjdź z trybu TV</a>
     </div>
   )
 }

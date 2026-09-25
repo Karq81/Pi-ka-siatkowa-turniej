@@ -65,6 +65,7 @@ function BracketMatch({ state, slot }: { state: State; slot: BracketSlot }) {
   const rules = state.tournament.rules
   const t = tally(rules, m.sets)
   const done = m.status === 'finished'
+  const single = rules.sets === 1
   const row = (id: string, src: KoSource, sets: number, won: boolean) => {
     // A team from a group table is provisional until that group has finished.
     const provisional = !!id && src.kind === 'group' && (slot.projected || !groupDone(state, src.groupId))
@@ -84,8 +85,9 @@ function BracketMatch({ state, slot }: { state: State; slot: BracketSlot }) {
         <span>{m.ko!.label}</span>
         {m.status === 'live' ? <StatusPill status="live" /> : m.start && <span>{formatDay(m.start)} {formatTime(m.start)} · B{m.court}</span>}
       </header>
-      {row(m.teamA, m.ko!.srcA, t.setsA, done && t.setsA > t.setsB)}
-      {row(m.teamB, m.ko!.srcB, t.setsB, done && t.setsB > t.setsA)}
+      {/* Single-set matches show the points, longer matches the sets won. */}
+      {row(m.teamA, m.ko!.srcA, single ? m.sets[0]?.a ?? 0 : t.setsA, done && t.setsA > t.setsB)}
+      {row(m.teamB, m.ko!.srcB, single ? m.sets[0]?.b ?? 0 : t.setsB, done && t.setsB > t.setsA)}
     </article>
   )
 }

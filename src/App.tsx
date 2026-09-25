@@ -1,6 +1,7 @@
 import { Admin, PrintCards } from './views/Admin'
 import { Court, CourtPicker } from './views/Court'
 import { Public } from './views/Public'
+import { Organizer } from './views/Organizer'
 import { Tv } from './views/Tv'
 import { SyncBanner, useRoute } from './ui'
 
@@ -19,6 +20,7 @@ function Screen() {
   if (court) return <Court key={court[1]} court={Number(court[1])} />
   const result = /^wynik-(\d+)$/.exec(route)
   if (result) return <Court key={`w${result[1]}`} court={Number(result[1])} manual />
+  if (route === 'panel') return <Organizer />
   if (route === 'sedzia') return <CourtPicker />
   if (route === 'admin') return <Admin />
   if (route === 'kartki') return <PrintCards />

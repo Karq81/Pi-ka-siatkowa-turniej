@@ -8,6 +8,7 @@ import { courtMatch, formatDay, formatTime, ScoreLine, StatusPill, useLookups } 
 
 const TABS = [
   { route: '', label: 'Start' },
+  { route: 'wyniki', label: 'Wyniki' },
   { route: 'na-zywo', label: 'Na żywo' },
   { route: 'tabele', label: 'Tabele' },
   { route: 'drabinka', label: 'Drabinka' },
@@ -41,26 +42,24 @@ export function Public({ route }: { route: string }) {
         </header>
       )}
       <main>
+        {tab === 'wyniki' && <Results state={state} />}
         {tab === 'na-zywo' && <LiveCourts state={state} />}
         {tab === 'tabele' && <Tables state={state} />}
         {tab === 'drabinka' && <Bracket state={state} />}
         {tab === 'terminarz' && <Schedule state={state} />}
       </main>
-      <footer className="footer">
-        <a href="#sedzia">Panel sędziego boiska</a>
-        <a href="#admin">Panel sędziego głównego</a>
-        <a href="#tv">Tryb TV</a>
-      </footer>
+      {/* Public pages are view-only: the organiser panel lives at #panel and is not linked from here. */}
+      <footer className="footer muted small">Wyniki odświeżają się same, nie trzeba przeładowywać strony.</footer>
     </div>
   )
 }
 
-export function CourtCard({ state, court, big = false }: { state: State; court: number; big?: boolean }) {
+/** `referee`: show the scoring buttons (organiser panel only, never on public pages). */
+export function CourtCard({ state, court, big = false, referee = false }: { state: State; court: number; big?: boolean; referee?: boolean }) {
   const { categoryName, stageName, side } = useLookups(state)
   const { current, next } = courtMatch(state, court)
   const rules = state.tournament.rules
-  // Referee entry for this court (not on the TV screen).
-  const refLink = !big && (
+  const refLink = referee && (
     <div className="ref-links">
       <a className="btn btn-ref" href={`#boisko-${court}`}>Sędziuj na żywo</a>
       <a className="btn btn-ref" href={`#wynik-${court}`}>Podaj wynik</a>
@@ -78,6 +77,7 @@ export function CourtCard({ state, court, big = false }: { state: State; court: 
   const t = tally(rules, current.sets)
   // A match can be live without point-by-point scoring (no phone at that court).
   const counting = live && current.sets.length > 0
+  const multi = rules.sets > 1
   const cur = counting ? current.sets[current.sets.length - 1] : undefined
   return (
     <article className={`court ${live ? 'court-live' : ''} ${big ? 'court-big' : ''}`}>
@@ -87,8 +87,8 @@ export function CourtCard({ state, court, big = false }: { state: State; court: 
       </header>
       <p className="court-meta">{categoryName(current.categoryId)} · {stageName(current)}</p>
       <div className="board">
-        <TeamRow name={side(current, 'a')} sets={t.setsA} points={cur?.a} live={counting} />
-        <TeamRow name={side(current, 'b')} sets={t.setsB} points={cur?.b} live={counting} />
+        <TeamRow name={side(current, 'a')} sets={multi ? t.setsA : undefined} points={cur?.a} live={counting} />
+        <TeamRow name={side(current, 'b')} sets={multi ? t.setsB : undefined} points={cur?.b} live={counting} />
       </div>
       {live && !counting && <p className="court-sets muted">Mecz trwa. Wynik pojawi się po meczu.</p>}
       {live && current.sets.length > 1 && (
@@ -106,11 +106,12 @@ export function CourtCard({ state, court, big = false }: { state: State; court: 
   )
 }
 
-function TeamRow({ name, sets, points, live }: { name: string; sets: number; points?: number; live: boolean }) {
+/** `sets` is left out when the match is a single set. */
+function TeamRow({ name, sets, points, live }: { name: string; sets?: number; points?: number; live: boolean }) {
   return (
     <div className="team-row">
       <span className="team-name">{name}</span>
-      {live && <span className="sets" title="Wygrane sety">{sets}</span>}
+      {live && sets !== undefined && <span className="sets" title="Wygrane sety">{sets}</span>}
       {live && <span className="points">{points ?? 0}</span>}
     </div>
   )
@@ -154,6 +155,7 @@ function CategoryChips({ state, value, onChange }: { state: State; value: string
 export function GroupTable({ state, groupId }: { state: State; groupId: string }) {
   const { teamName } = useLookups(state)
   const group = state.groups.find((g) => g.id === groupId)!
+  const multi = state.tournament.rules.sets > 1
   const rows = standings(state.tournament.rules, group, state.matches, state.teams)
   return (
     <div className="table-card">
@@ -163,7 +165,7 @@ export function GroupTable({ state, groupId }: { state: State; groupId: string }
           <thead>
             <tr>
               <th>#</th><th className="left">Drużyna</th><th title="Mecze">M</th><th title="Wygrane">W</th>
-              <th title="Przegrane">P</th><th title="Punkty">Pkt</th><th title="Sety">Sety</th>
+              <th title="Przegrane">P</th><th title="Punkty">Pkt</th>{multi && <th title="Sety">Sety</th>}
               <th title="Stosunek małych punktów">Małe pkt</th>
             </tr>
           </thead>
@@ -174,7 +176,7 @@ export function GroupTable({ state, groupId }: { state: State; groupId: string }
                 <td className="left">{teamName(r.teamId)}</td>
                 <td>{r.played}</td><td>{r.won}</td><td>{r.lost}</td>
                 <td className="pts">{r.tablePoints}</td>
-                <td>{r.setsWon}:{r.setsLost}</td>
+                {multi && <td>{r.setsWon}:{r.setsLost}</td>}
                 <td title={formatRatio(r.pointsWon, r.pointsLost)}>{r.pointsWon}:{r.pointsLost}</td>
               </tr>
             ))}
@@ -272,6 +274,79 @@ function Schedule({ state }: { state: State }) {
         </section>
       ))}
       {!days.length && <p className="muted">Nic nie znaleziono.</p>}
+    </>
+  )
+}
+
+/** Finished matches as a results table, newest first, for parents and coaches. */
+function Results({ state }: { state: State }) {
+  const { side, stageName } = useLookups(state)
+  const [cat, setCat] = useState('')
+  const [q, setQ] = useState('')
+  const rules = state.tournament.rules
+  const query = q.trim().toLowerCase()
+  const list = state.matches
+    .filter((m) => m.status === 'finished')
+    .filter((m) => !cat || m.categoryId === cat)
+    .filter((m) => !query || `${side(m, 'a')} ${side(m, 'b')}`.toLowerCase().includes(query))
+    .sort((a, b) => b.start.localeCompare(a.start) || b.updatedAt - a.updatedAt || a.court - b.court)
+  return (
+    <>
+      <div className="filters">
+        <input id="results-search" type="search" placeholder="Szukaj drużyny" value={q} onChange={(e) => setQ(e.target.value)} />
+        <div className="chips">
+          <button className={`chip ${cat === '' ? 'active' : ''}`} onClick={() => setCat('')}>Wszystkie</button>
+          {state.categories.map((c) => (
+            <button key={c.id} className={`chip ${cat === c.id ? 'active' : ''}`} onClick={() => setCat(c.id)}>{c.name}</button>
+          ))}
+        </div>
+      </div>
+      {!list.length && <p className="muted">Jeszcze nie ma zakończonych meczów. Wyniki pojawią się tu zaraz po każdym meczu.</p>}
+      {!!list.length && (
+        <div className="table-card">
+          <div className="table-scroll">
+            <table className="results">
+              <thead>
+                <tr>
+                  <th className="left">Godz.</th>
+                  <th className="left">Mecz</th>
+                  <th>Wynik</th>
+                  <th className="left hide-narrow">Faza</th>
+                </tr>
+              </thead>
+              <tbody>
+                {list.map((m) => {
+                  const t = tally(rules, m.sets)
+                  const single = m.sets.length === 1
+                  return (
+                    <tr key={m.id}>
+                      <td className="left when">
+                        <b>{formatTime(m.start)}</b>
+                        <span className="muted small">{formatDay(m.start)} · B{m.court}</span>
+                      </td>
+                      <td className="left teams">
+                        <span className={t.setsA > t.setsB ? 'win' : ''}>{side(m, 'a')}</span>
+                        <span className={t.setsB > t.setsA ? 'win' : ''}>{side(m, 'b')}</span>
+                      </td>
+                      <td className="score">
+                        {single ? (
+                          <b>{m.sets[0].a}:{m.sets[0].b}</b>
+                        ) : (
+                          <>
+                            <b>{t.setsA}:{t.setsB}</b>
+                            <span className="muted small">{m.sets.map((s) => `${s.a}:${s.b}`).join(', ')}</span>
+                          </>
+                        )}
+                      </td>
+                      <td className="left hide-narrow muted small">{stageName(m)}</td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </>
   )
 }

@@ -6,7 +6,7 @@ import { buildGroupSchedule, roundRobin } from './schedule'
 import { canAddPoint, isMatchDecided, resultProblem, setProblem, setWinner, standings, tally } from './scoring'
 
 // Senior-style rules for the generic tests; the youth defaults are tested separately below.
-const rules: Rules = { ...defaultRules, setPoints: 25, lastSetPoints: 15, pointsLoss: 0 }
+const rules: Rules = { ...defaultRules, setsMode: 'bestOf', sets: 3, setPoints: 25, lastSetPoints: 15, pointsLoss: 0 }
 
 describe('sets', () => {
   it('needs the target and a 2-point lead', () => {
@@ -94,38 +94,45 @@ describe('import', () => {
   })
 })
 
-describe('youth rules (sets to 15, deciding set to 11)', () => {
+describe('youth rules: one set to 15', () => {
   const youth = defaultRules
 
-  it('uses mini volleyball defaults', () => {
-    expect(youth).toMatchObject({ setsMode: 'bestOf', sets: 3, setPoints: 15, lastSetPoints: 11, winBy: 2, pointsWin: 2, pointsLoss: 1 })
+  it('uses the Albatros CUP defaults', () => {
+    expect(youth).toMatchObject({ setsMode: 'fixed', sets: 1, setPoints: 15, winBy: 2, pointsWin: 2, pointsLoss: 1 })
   })
 
-  it('stops adding points once a set is won', () => {
+  it('ends the match with the single set', () => {
+    expect(isMatchDecided(youth, [{ a: 15, b: 9 }])).toBe(true)
+    expect(isMatchDecided(youth, [{ a: 15, b: 14 }])).toBe(false)
+    expect(isMatchDecided(youth, [{ a: 17, b: 15 }])).toBe(true)
+  })
+
+  it('stops adding points once the set is won', () => {
     expect(canAddPoint(youth, 0, { a: 14, b: 10 })).toBe(true)
     expect(canAddPoint(youth, 0, { a: 15, b: 10 })).toBe(false)
     expect(canAddPoint(youth, 0, { a: 15, b: 14 })).toBe(true)
     expect(canAddPoint(youth, 0, { a: 17, b: 15 })).toBe(false)
-    expect(canAddPoint(youth, 2, { a: 11, b: 9 })).toBe(false)
   })
 
   it('rejects impossible and unfinished set scores', () => {
     expect(setProblem(youth, 0, { a: 15, b: 13 })).toBeNull()
     expect(setProblem(youth, 0, { a: 18, b: 16 })).toBeNull()
     expect(setProblem(youth, 0, { a: 18, b: 12 })).toBe('impossible')
-    expect(setProblem(youth, 0, { a: 25, b: 20 })).toBe('impossible')
+    expect(setProblem(youth, 0, { a: 21, b: 10 })).toBe('impossible')
     expect(setProblem(youth, 0, { a: 15, b: 14 })).toBe('unfinished')
     expect(setProblem(youth, 0, { a: 12, b: 10 })).toBe('unfinished')
-    expect(setProblem(youth, 2, { a: 11, b: 7 })).toBeNull()
-    expect(setProblem(youth, 2, { a: 15, b: 7 })).toBe('impossible')
   })
 
   it('checks a whole result', () => {
-    expect(resultProblem(youth, [{ a: 15, b: 10 }, { a: 15, b: 12 }])).toBeNull()
-    expect(resultProblem(youth, [{ a: 15, b: 10 }, { a: 10, b: 15 }, { a: 11, b: 9 }])).toBeNull()
-    expect(resultProblem(youth, [{ a: 15, b: 10 }, { a: 10, b: 15 }])).toMatch(/nie jest jeszcze rozstrzygnięty/)
-    expect(resultProblem(youth, [{ a: 15, b: 10 }, { a: 15, b: 12 }, { a: 11, b: 3 }])).toMatch(/zbędne/)
-    expect(resultProblem(youth, [{ a: 25, b: 10 }, { a: 15, b: 12 }])).toMatch(/niemożliwy/)
+    expect(resultProblem(youth, [{ a: 15, b: 10 }])).toBeNull()
+    expect(resultProblem(youth, [{ a: 15, b: 10 }, { a: 15, b: 12 }])).toMatch(/zbędne/)
+    expect(resultProblem(youth, [{ a: 25, b: 10 }])).toMatch(/niemożliwy/)
     expect(resultProblem(youth, [])).not.toBeNull()
+  })
+
+  it('also supports sets to 21', () => {
+    const r21 = { ...youth, setPoints: 21, lastSetPoints: 21 }
+    expect(setProblem(r21, 0, { a: 21, b: 19 })).toBeNull()
+    expect(setProblem(r21, 0, { a: 15, b: 10 })).toBe('unfinished')
   })
 })

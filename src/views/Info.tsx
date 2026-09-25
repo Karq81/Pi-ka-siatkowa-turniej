@@ -5,7 +5,7 @@ import { info } from '../content/info'
 
 /** Start page for families and teams: key facts, schedule, costs and a QR code to live results. */
 export function Info({ nav }: { nav: ReactNode }) {
-  const resultsUrl = `${location.origin}${location.pathname}#na-zywo`
+  const resultsUrl = `${location.origin}${location.pathname}#wyniki`
   const [qr, setQr] = useState('')
   const [copied, setCopied] = useState(false)
   useEffect(() => {
@@ -60,7 +60,7 @@ export function Info({ nav }: { nav: ReactNode }) {
             Wszystkie mecze, tabele grup i drabinkę zobaczysz w telefonie, na bieżąco w trakcie turnieju.
             Zeskanuj kod albo kliknij przycisk.
           </p>
-          <a className="btn btn-primary btn-lg" href="#na-zywo">Zobacz wyniki</a>
+          <a className="btn btn-primary btn-lg" href="#wyniki">Zobacz wyniki</a>
         </div>
         <div className="info-qr" aria-label="Kod QR do wyników" dangerouslySetInnerHTML={{ __html: qr }} />
       </section>

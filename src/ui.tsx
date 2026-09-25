@@ -74,6 +74,7 @@ export function StatusPill({ status }: { status: Match['status'] }) {
 export function ScoreLine({ match, rules }: { match: Match; rules: Rules }) {
   if (match.status === 'scheduled') return <span className="muted">{formatTime(match.start)}</span>
   if (!match.sets.length) return <span className="muted">wynik po meczu</span>
+  if (match.sets.length === 1) return <span className="scoreline"><b>{match.sets[0].a}:{match.sets[0].b}</b></span>
   const t = tally(rules, match.sets)
   return (
     <span className="scoreline">

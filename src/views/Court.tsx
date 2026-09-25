@@ -15,7 +15,7 @@ export function CourtPicker() {
   return (
     <div className="page">
       <header className="bar">
-        <a href="#na-zywo" className="back">← Wyniki</a>
+        <a href="#panel" className="back">← Panel organizatora</a>
         <h1>Tryb sędziego</h1>
       </header>
       <p className="muted">
@@ -27,17 +27,19 @@ export function CourtPicker() {
           const { current } = courtMatch(state, c)
           const mine = canScore(session, c)
           return (
-            <li key={c}>
-              <a href={`#boisko-${c}`} className={current?.status === 'live' ? 'is-live' : ''}>
-                <span className="picker-head">
-                  <b>Boisko {c}</b>
-                  {current?.status === 'live' && <StatusPill status="live" />}
-                </span>
-                <span className="muted small">
-                  {current ? `${formatTime(current.start)} ${side(current, 'a')} – ${side(current, 'b')}` : 'Brak meczów'}
-                </span>
-                <span className="picker-cta">{mine ? 'Otwórz punktację →' : 'Sędziuj (wymaga klucza) →'}</span>
-              </a>
+            <li key={c} className={`picker-card ${current?.status === 'live' ? 'is-live' : ''}`}>
+              <span className="picker-head">
+                <b>Boisko {c}</b>
+                {current?.status === 'live' && <StatusPill status="live" />}
+              </span>
+              <span className="muted small">
+                {current ? `${formatTime(current.start)} ${side(current, 'a')} – ${side(current, 'b')}` : 'Brak meczów'}
+              </span>
+              <span className="ref-links">
+                <a className="btn btn-ref" href={`#boisko-${c}`}>Sędziuj na żywo</a>
+                <a className="btn btn-ref" href={`#wynik-${c}`}>Podaj wynik</a>
+              </span>
+              {!mine && <span className="muted small">Wymaga klucza boiska {c}</span>}
             </li>
           )
         })}
@@ -206,7 +208,11 @@ function LiveScoring({ state, match, meta, onFinish }: { state: State; match: Ma
   return (
     <section className="scoring">
       <p className="muted center">{meta}</p>
-      <p className="set-label">Set {idx + 1} · do {setTarget(rules, idx)} · sety {t.setsA}:{t.setsB}</p>
+      <p className="set-label">
+        {rules.sets > 1
+          ? `Set ${idx + 1} · do ${setTarget(rules, idx)} · sety ${t.setsA}:${t.setsB}`
+          : `Do ${setTarget(rules, idx)} pkt · przewaga ${rules.winBy}`}
+      </p>
       <div className="pads">
         {(['a', 'b'] as const).map((s) => (
           <div key={s} className={`pad ${winner === s ? 'pad-won' : ''}`}>
