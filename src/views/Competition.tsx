@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { clubOf } from '../logic/draw'
-import { bracketView, type BracketSlot } from '../logic/knockout'
+import { bracketView, groupFinished, tierForGroupPlace } from '../logic/knockout'
 import { useFavorites, toggleFavorite, setFavorites } from '../favorites'
+import { BracketTree } from './BracketTree'
 import { formatRatio, standings, tally } from '../logic/scoring'
 import type { Match, State, Team } from '../types'
 import { BackBar, formatDay, formatTime, StatusPill, useLookups } from '../ui'
@@ -251,7 +252,6 @@ export function MatchCard({ state, match: m, label }: { state: State; match: Mat
 
 /* ---------- Knockout phase ---------- */
 
-const ROUND_TITLES = { QF: 'Ćwierćfinały', SF: 'Półfinały', P: 'Mecze o miejsca' } as const
 
 function KnockoutView({ state, categoryId }: { state: State; categoryId: string }) {
   const slots = bracketView(state, categoryId)
@@ -268,7 +268,8 @@ function KnockoutView({ state, categoryId }: { state: State; categoryId: string 
     <>
       {projected && (
         <p className="notice-inline">
-          Tak będzie wyglądać faza pucharowa. Pary uzupełnią się po meczach grupowych; teraz widać układ wg aktualnych tabel.
+          Tak będzie wyglądać faza pucharowa. Drużyny wpiszą się w drabinkę, gdy ich grupa rozegra wszystkie mecze;
+          do tego czasu widać, które miejsce z której grupy gdzie trafi.
         </p>
       )}
       <div className="seg seg-tiers" role="tablist" aria-label="Miejsca">
@@ -286,21 +287,7 @@ function KnockoutView({ state, categoryId }: { state: State; categoryId: string 
           ? 'Dwie pierwsze drużyny z każdej grupy grają o miejsca 1–8: na krzyż, 1A–2B, 1C–2D, 1B–2A, 1D–2C.'
           : `Drużyny z dalszych miejsc w grupach grają o miejsca ${current}–${to}. Każda drużyna rozegra mecze o konkretne miejsce.`}
       </p>
-      <div className="ko-cols">
-        {(['QF', 'SF', 'P'] as const).map((round) => {
-          const list = inTier.filter((s) => s.match.ko!.round === round)
-          if (!list.length) return null
-          const sorted = round === 'P' ? [...list].sort((a, b) => (a.match.ko!.place ?? 0) - (b.match.ko!.place ?? 0)) : list
-          return (
-            <section key={round} className="ko-col">
-              <h3>{current !== 1 && round !== 'P' ? (round === 'QF' ? 'Pierwsza runda' : 'Druga runda') : ROUND_TITLES[round]}</h3>
-              {sorted.map((s: BracketSlot) => (
-                <MatchCard key={s.match.id} state={state} match={s.match} label={s.match.ko!.label} />
-              ))}
-            </section>
-          )
-        })}
-      </div>
+      <BracketTree state={state} slots={inTier} />
     </>
   )
 }
@@ -348,7 +335,9 @@ export function TeamPage({ state, teamId }: { state: State; teamId: string }) {
   const next = matches.find((m) => m.status === 'live') ?? matches.find((m) => m.status === 'scheduled' && new Date(m.start).getTime() >= now - 15 * 60000)
   const days = [...new Set(matches.map((m) => m.start.slice(0, 10)))]
   // Where the team would play in the knockout phase, by the current table.
-  const ko = bracketView(state, team.categoryId)?.find((s) => s.match.teamA === team.id || s.match.teamB === team.id)
+  // Places the team plays for in the knockout phase, from its current place in the group.
+  const koTier = group && pos >= 0 ? tierForGroupPlace(state, group.id, pos + 1) : null
+  const groupOver = group ? groupFinished(state, group.id) : false
   const opponent = (m: Match) => state.teams.find((t) => t.id === (m.teamA === team.id ? m.teamB : m.teamA))
   const won = matches.filter((m) => m.status === 'finished').filter((m) => {
     const t = tally(rules, m.sets)
@@ -384,10 +373,10 @@ export function TeamPage({ state, teamId }: { state: State; teamId: string }) {
         </section>
       )}
 
-      {ko && (
+      {koTier && (
         <p className="notice-inline">
-          W fazie pucharowej gra o miejsca <b>{ko.match.ko!.tierFrom}–{ko.match.ko!.tierTo}</b>
-          {ko.projected ? ' (według aktualnej tabeli grupy).' : '.'}
+          W fazie pucharowej {groupOver ? 'gra' : 'zagra'} o miejsca <b>{koTier[0]}–{koTier[1]}</b>
+          {groupOver ? '.' : ' (jeśli utrzyma obecne miejsce w grupie).'}
         </p>
       )}
 

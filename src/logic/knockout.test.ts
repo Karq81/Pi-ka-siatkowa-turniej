@@ -82,6 +82,18 @@ describe('knockout: full classification', () => {
     expect(applyMatchUpdate(s, koId('c1', 'T1-Q1'), win).find((m) => m.id === sf)).toBeUndefined()
   })
 
+  it('shows group places, not team names, until the group has finished', () => {
+    const s = drawnState(rng(5))
+    const slots = bracketView(s, 'c1')!
+    expect(slots.every((x) => !x.match.teamA && !x.match.teamB)).toBe(true)
+    // Finish only group A: its places fill in, the others stay empty.
+    const [A] = s.groups.filter((g) => g.categoryId === 'c1')
+    const partly = { ...s, matches: s.matches.map((m) => (m.groupId === A.id ? { ...m, status: 'finished' as const, sets: [{ a: 15, b: 9 }] } : m)) }
+    const q1 = bracketView(partly, 'c1')!.find((x) => x.match.id === koId('c1', 'T1-Q1'))!.match
+    expect(q1.teamA).not.toBe('')
+    expect(q1.teamB).toBe('')
+  })
+
   it('shows a projected bracket before it is created', () => {
     const slots = bracketView(drawnState(rng(3)), 'c2')!
     expect(slots).toHaveLength(40)

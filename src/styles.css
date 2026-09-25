@@ -660,3 +660,53 @@ a.mp-name:hover { color: var(--ball); }
   .my-card { grid-template-columns: auto 1fr; }
   .my-next { grid-column: 1 / -1; flex-direction: row; flex-wrap: wrap; align-items: baseline; justify-content: flex-start; gap: 4px 10px; text-align: left; padding-top: 6px; border-top: 1px dashed var(--line); }
 }
+
+/* ===== Tennis-style draw ===== */
+.draw { display: flex; flex-direction: column; gap: 14px; }
+.draw-sub { margin-top: 10px; font-family: var(--display); font-size: 1.2rem; }
+.tree-scroll { overflow-x: auto; padding-bottom: 8px; }
+.tree-hint { display: none; font-size: 0.8rem; color: var(--muted); }
+@media (max-width: 700px) { .tree-hint { display: block; } }
+.tree { --gap: 30px; --line-c: color-mix(in srgb, var(--muted) 55%, transparent); display: flex; gap: var(--gap); min-width: max-content; }
+.tree-round { display: flex; flex-direction: column; width: 210px; }
+.tree-round h4 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 8px; min-height: 1.2em; }
+.tree-body { flex: 1; display: flex; flex-direction: column; }
+.tree-pair { flex: 1; display: flex; flex-direction: column; position: relative; }
+.tree-slot { flex: 1; display: flex; align-items: center; position: relative; padding-block: 6px; }
+.tree-slot > * { width: 100%; }
+/* line out of every match to the right */
+.tree-round:not(.tree-winner) .tree-slot::after {
+  content: ''; position: absolute; right: calc(var(--gap) / -2); top: 50%; width: calc(var(--gap) / 2); border-top: 2px solid var(--line-c);
+}
+/* vertical line joining a pair */
+.tree-pair::after {
+  content: ''; position: absolute; right: calc(var(--gap) / -2); top: 25%; bottom: 25%; border-right: 2px solid var(--line-c);
+}
+/* line into every match after the first round */
+.tree-round + .tree-round .tree-slot::before {
+  content: ''; position: absolute; left: calc(var(--gap) / -2); top: 50%; width: calc(var(--gap) / 2); border-top: 2px solid var(--line-c);
+}
+.tree-winner { width: 150px; }
+
+/* match box in the draw */
+.bm { display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; color: var(--ink); text-decoration: none; }
+a.bm:hover { border-color: var(--accent); }
+.bm.is-live { border-color: var(--live); box-shadow: 0 0 0 1px var(--live); }
+.bm header { display: flex; justify-content: space-between; align-items: center; gap: 6px; padding: 4px 8px; font-size: 0.68rem; color: var(--muted); background: var(--surface-2); border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+.bm header span:first-child { font-weight: 700; color: var(--ink); text-transform: uppercase; letter-spacing: 0.03em; }
+.bm-row { display: grid; grid-template-columns: 26px 1fr auto; align-items: center; gap: 7px; padding: 5px 8px; min-height: 36px; }
+.bm-row + .bm-row { border-top: 1px solid var(--line); }
+.bm-row.won { font-weight: 700; }
+.bm-row.won .bm-score { color: var(--accent); }
+.bm-row.lost { color: var(--muted); }
+.bm-row.mine { background: color-mix(in srgb, var(--ball) 20%, transparent); }
+.bm-name { font-size: 0.82rem; line-height: 1.2; overflow-wrap: anywhere; }
+.bm-name.tbd { color: var(--muted); font-style: italic; font-size: 0.76rem; }
+.bm-dot { width: 26px; height: 26px; border-radius: 50%; border: 1px dashed var(--line); }
+.bm-score { font-family: var(--display); font-size: 1.15rem; font-variant-numeric: tabular-nums; min-width: 1.3em; text-align: right; }
+.bm-empty { min-height: 88px; border-style: dashed; }
+.champ { display: flex; align-items: center; gap: 8px; padding: 10px; border-radius: 10px; border: 2px dashed var(--ball); color: var(--muted); font-weight: 600; font-size: 0.85rem; }
+.champ.has { border-style: solid; background: color-mix(in srgb, var(--ball) 25%, var(--surface)); color: var(--ink); }
+.champ-place { font-family: var(--display); font-size: 1.4rem; }
+.draw-extra { max-width: 260px; display: flex; flex-direction: column; gap: 6px; }
+.draw-extra h4 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }

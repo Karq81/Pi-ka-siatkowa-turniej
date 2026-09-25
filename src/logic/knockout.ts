@@ -121,11 +121,29 @@ function outcome(state: State, matchId: string, take: 'winner' | 'loser'): strin
   return (take === 'winner') === aWon ? m.teamA : m.teamB
 }
 
-/** Team currently in a group place (from the live table). */
+/** Whether every match of a group has been played. */
+export function groupFinished(state: State, groupId: string): boolean {
+  const ms = state.matches.filter((m) => m.groupId === groupId)
+  return ms.length > 0 && ms.every((m) => m.status === 'finished')
+}
+
+/**
+ * Team in a group place, only once the group has finished: until then the bracket
+ * shows the place ("1. miejsce · Grupa A"), not whoever leads the table right now.
+ */
 function groupPlace(state: State, groupId: string, pos: number): string {
   const group = state.groups.find((x) => x.id === groupId)
-  if (!group) return ''
+  if (!group || !groupFinished(state, groupId)) return ''
   return standings(state.tournament.rules, group, state.matches, state.teams)[pos - 1]?.teamId ?? ''
+}
+
+/** Places a group position plays for in the knockout phase, e.g. 2nd in a group → [1, 8]. */
+export function tierForGroupPlace(state: State, groupId: string, pos: number): [number, number] | null {
+  const group = state.groups.find((x) => x.id === groupId)
+  if (!group) return null
+  const plan = bracketPlan(group.categoryId, groupsOf(state, group.categoryId))
+  const item = plan?.find((p) => [p.info.srcA, p.info.srcB].some((s) => s.kind === 'group' && s.groupId === groupId && s.pos === pos))
+  return item ? [item.info.tierFrom, item.info.tierTo] : null
 }
 
 export function resolveSource(state: State, src: KoSource): string {
@@ -136,7 +154,7 @@ export function resolveSource(state: State, src: KoSource): string {
 export function sourceLabel(state: State, src: KoSource): string {
   if (src.kind === 'group') {
     const name = state.groups.find((x) => x.id === src.groupId)?.name ?? ''
-    return `${src.pos}. miejsce, ${name}`
+    return `${src.pos}. miejsce · ${name}`
   }
   return `${src.take === 'winner' ? 'Zwycięzca' : 'Przegrany'}: ${src.label}`
 }
