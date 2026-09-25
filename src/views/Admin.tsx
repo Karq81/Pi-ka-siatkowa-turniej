@@ -336,7 +336,7 @@ function Settings({ state }: { state: State }) {
   )
 }
 
-function AdminPinForm({ onSave, saveLabel }: { onSave: (pin: string) => Promise<void>; saveLabel: string }) {
+export function AdminPinForm({ onSave, saveLabel }: { onSave: (pin: string) => Promise<void>; saveLabel: string }) {
   const [pin, setPin] = useState('')
   const [msg, setMsg] = useState('')
   const valid = /^\d{4,}$/.test(pin)
@@ -383,6 +383,21 @@ function PinSettings() {
   )
 }
 
+/**
+ * First setup of an empty online database: sets the admin PIN, generates the court
+ * keys and saves the qualified teams (not drawn yet).
+ */
+export async function setupTournament(adminPin: string) {
+  const pins = { adminPin, courts: courtKeys(10, { adminPin, courts: {} }) }
+  try {
+    await store.setPins(pins)
+  } catch (e) {
+    // Keys already set by an interrupted earlier setup: continue if the admin PIN matches.
+    if (!(await store.login(adminPin))) throw e
+  }
+  await store.replace(initialState())
+}
+
 /** Shown once, when the online database has no tournament yet. */
 function FirstSetup() {
   return (
@@ -390,20 +405,12 @@ function FirstSetup() {
       <h2>Ustaw PIN i utwórz turniej</h2>
       <p className="muted">
         Baza jest pusta. Ustaw PIN sędziego głównego. Klucze dla każdego boiska wygenerują się same, znajdziesz je
-        w zakładce „Klucze boisk”. Wczytają się zespoły z listy zakwalifikowanych, a potem w panelu organizatora
-        rozlosujesz je do grup (osobno dwójki i trójki).
+        w zakładce „Klucze boisk”. Potem w panelu organizatora rozlosujesz zespoły do grup.
       </p>
       <AdminPinForm
         saveLabel="Utwórz turniej"
         onSave={async (adminPin) => {
-          const pins = { adminPin, courts: courtKeys(10, { adminPin, courts: {} }) }
-          try {
-            await store.setPins(pins)
-          } catch (e) {
-            // Keys already set by an interrupted earlier setup: continue if the admin PIN matches.
-            if (!(await store.login(adminPin))) throw e
-          }
-          await store.replace(initialState())
+          await setupTournament(adminPin)
           location.hash = 'panel'
         }}
       />

@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { DEFAULT_SCHEDULE, GROUPS_DEFAULT } from '../logic/demo'
 import { clubOf, drawCategory, isDrawn } from '../logic/draw'
-import { store, useSession, useStore } from '../store/store'
+import { store, useSession, useStore, useSync } from '../store/store'
+import { AdminPinForm, setupTournament } from './Admin'
 import type { Category, State } from '../types'
 import { PinGate, useLookups } from '../ui'
 import { CourtList } from './Court'
@@ -54,22 +55,50 @@ function Empty() {
 
 /** Step 1: every team by category and club, then one draw button per category. */
 function TeamsAndDraw({ state }: { state: State }) {
+  const sync = useSync()
+  const allDrawn = state.categories.length > 0 && state.categories.every((c) => isDrawn(state, c.id))
   return (
     <>
-      <p className="muted">
-        Zespoły z listy zakwalifikowanych. Pod listą losujesz grupy dla każdej kategorii. Zasada losowania:
-        drużyny z tego samego klubu nigdy nie trafiają do jednej grupy.
-      </p>
+      <div className="org-intro">
+        <p className="muted">
+          Zgłoszone zespoły z listy zakwalifikowanych. Pod listą losujesz grupy, osobno dla dwójek i trójek.
+          Zasada losowania: drużyny z tego samego klubu nigdy nie trafiają do jednej grupy.
+        </p>
+        {/* Scrolls instead of a #link: the hash is the page route. */}
+        <button className="btn btn-primary" onClick={() => document.getElementById('losowanie')?.scrollIntoView({ behavior: 'smooth' })}>
+          {allDrawn ? 'Grupy rozlosowane ↓' : 'Przejdź do losowania ↓'}
+        </button>
+      </div>
       <div className="org-cats">
         {state.categories.map((c) => <CategoryTeams key={c.id} state={state} category={c} />)}
       </div>
-      <section className="panel">
+      <section className="panel" id="losowanie">
         <h2>Losowanie grup</h2>
-        <PinGate label="Losowanie (sędzia główny)">
-          <div className="org-draws">
-            {state.categories.map((c) => <DrawCategory key={c.id} state={state} category={c} />)}
-          </div>
-        </PinGate>
+        {sync.empty ? (
+          <>
+            <p>
+              Najpierw ustaw swój <b>PIN sędziego głównego</b> (co najmniej 4 cyfry). Będzie potrzebny do losowania,
+              wpisywania i poprawiania wyników. Zapamiętaj go.
+            </p>
+            <AdminPinForm saveLabel="Ustaw PIN i przejdź do losowania" onSave={setupTournament} />
+          </>
+        ) : (
+          <PinGate label="Losowanie (sędzia główny)">
+            <div className="org-draws">
+              {state.categories.map((c) => <DrawCategory key={c.id} state={state} category={c} />)}
+            </div>
+            {allDrawn && (
+              <div className="notice org-ready">
+                <p><b>Turniej gotowy.</b> {state.groups.length} grup, {state.matches.length} meczów w terminarzu.</p>
+                <div className="actions">
+                  <a className="btn btn-primary" href="#panel-grupy">Zobacz grupy i terminarz</a>
+                  <a className="btn" href="#panel-sedziowie">Sędziowanie</a>
+                  <a className="btn" href="#">Strona dla kibiców</a>
+                </div>
+              </div>
+            )}
+          </PinGate>
+        )}
       </section>
     </>
   )

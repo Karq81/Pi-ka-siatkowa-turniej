@@ -4,7 +4,7 @@ import {
   collection, connectFirestoreEmulator, doc, getDoc, getFirestore, initializeFirestore, onSnapshot, persistentLocalCache,
   persistentMultipleTabManager, setDoc, updateDoc, writeBatch, type Firestore,
 } from 'firebase/firestore'
-import { defaultRules } from '../logic/demo'
+import { initialState } from '../logic/demo'
 import { applyMatchUpdate } from '../logic/knockout'
 import type { Match, Pins, Session, State } from '../types'
 import type { Store, SyncInfo } from './types'
@@ -17,10 +17,6 @@ import type { Store, SyncInfo } from './types'
  *   tournaments/{t}/sessions/{uid}  a device's role (and court), granted by the rules when the key matches
  */
 
-const EMPTY: State = {
-  tournament: { name: 'Turniej', subtitle: '', courts: 10, rules: defaultRules },
-  categories: [], groups: [], teams: [], matches: [],
-}
 
 const LOGIN_TIMEOUT_MS = 15000
 
@@ -44,7 +40,8 @@ export function createFirebaseStore(config: FirebaseOptions, tournamentId: strin
   const matchesRef = collection(tRef, 'matches')
   const roleKey = `siatkalive:role:${tournamentId}`
 
-  let state: State = EMPTY
+  // Until the tournament is saved, show the qualified teams, so the organiser can draw right away.
+  let state: State = initialState()
   let sync: SyncInfo = { mode: 'online', connected: false, pending: false, empty: false, error: null }
   let session: Session | null = null
   try { session = JSON.parse(localStorage.getItem(roleKey) ?? 'null') as Session | null } catch { /* no storage */ }

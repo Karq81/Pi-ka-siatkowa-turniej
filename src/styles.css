@@ -477,3 +477,6 @@ a.m-row:hover { background: var(--surface-2); }
 .org-group { background: var(--surface-2); border-radius: 8px; padding: 8px 10px; font-size: 0.88rem; }
 .org-group b { font-family: var(--display); font-size: 1.05rem; }
 .org-group ol { margin: 4px 0 0; padding-left: 1.2em; }
+.org-ready { margin-top: 16px; border-color: var(--ok); }
+.org-intro { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.org-intro p { flex: 1 1 320px; }
