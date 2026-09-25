@@ -6,7 +6,7 @@ import { AdminPinForm, setupTournament } from './Admin'
 import type { Category, State } from '../types'
 import { PinGate, useLookups } from '../ui'
 import { CourtList } from './Court'
-import { Groups } from './Groups'
+import { Competition } from './Competition'
 
 const TABS = [
   { route: 'panel', label: '1. Zespoły i losowanie' },
@@ -37,7 +37,7 @@ export function Organizer({ route }: { route: string }) {
       </header>
       {tab === 'panel' && <TeamsAndDraw state={state} />}
       {tab === 'panel-grupy' && (
-        state.groups.length ? <Groups state={state} /> : <Empty />
+        state.groups.length ? <Competition state={state} route="grupy" /> : <Empty />
       )}
       {tab === 'panel-sedziowie' && <CourtList />}
       {tab === 'panel-wiecej' && <More />}

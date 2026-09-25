@@ -5,8 +5,7 @@ import { isMatchDecided, standings, tally } from './scoring'
 export const ROUND_NAMES: Record<KoRound, string> = {
   QF: 'Ćwierćfinały',
   SF: 'Półfinały',
-  F: 'Finał',
-  '3P': 'Mecz o 3. miejsce',
+  P: 'Mecze o miejsca',
 }
 
 interface PlanItem {
@@ -22,48 +21,92 @@ export function koId(categoryId: string, key: string) {
   return `ko-${categoryId}-${key}`
 }
 
+export function placeLabel(place: number): string {
+  return place === 1 ? 'Finał' : `O ${place}. miejsce`
+}
+
+type Pair = [KoSource, KoSource]
+
 /**
- * Bracket shape for one category, depending on the number of groups.
- * Group winners from the same half (A/B) can only meet again in the final.
- * Returns null when the group count has no standard bracket yet.
+ * One part of the classification: 8, 4 or 2 teams playing for places from..from+n-1.
+ * 8 teams: quarter-finals, then winners and losers play on, every team gets a place.
+ */
+function tierPlan(categoryId: string, from: number, pairs: Pair[]): PlanItem[] {
+  const id = (key: string) => koId(categoryId, key)
+  const k = (x: string) => `T${from}-${x}`
+  const to = from + pairs.length * 2 - 1
+  const top = from === 1
+  const item = (key: string, round: KoRound, label: string, [srcA, srcB]: Pair, place?: number): PlanItem =>
+    ({ key: k(key), info: { round, tierFrom: from, tierTo: to, ...(place ? { place } : {}), label, srcA, srcB } })
+  const final = (place: number, a: KoSource, b: KoSource) => item(`P${place}`, 'P', placeLabel(place), [a, b], place)
+
+  if (pairs.length === 1) return [final(from, ...pairs[0])]
+
+  if (pairs.length === 2) {
+    const s1 = top ? 'Półfinał 1' : `Miejsca ${from}–${to}, mecz 1`
+    const s2 = top ? 'Półfinał 2' : `Miejsca ${from}–${to}, mecz 2`
+    return [
+      item('S1', 'SF', s1, pairs[0]),
+      item('S2', 'SF', s2, pairs[1]),
+      final(from, w(id(k('S1')), s1), w(id(k('S2')), s2)),
+      final(from + 2, l(id(k('S1')), s1), l(id(k('S2')), s2)),
+    ]
+  }
+
+  // 8 teams
+  const q = (n: number) => (top ? `Ćwierćfinał ${n}` : `Miejsca ${from}–${to}, mecz ${n}`)
+  const sw = (n: number) => (top ? `Półfinał ${n}` : `Miejsca ${from}–${from + 3}, półfinał ${n}`)
+  const sl = (n: number) => `Miejsca ${from + 4}–${to}, półfinał ${n}`
+  return [
+    ...pairs.map((p, i) => item(`Q${i + 1}`, 'QF', q(i + 1), p)),
+    item('W1', 'SF', sw(1), [w(id(k('Q1')), q(1)), w(id(k('Q2')), q(2))]),
+    item('W2', 'SF', sw(2), [w(id(k('Q3')), q(3)), w(id(k('Q4')), q(4))]),
+    item('L1', 'SF', sl(1), [l(id(k('Q1')), q(1)), l(id(k('Q2')), q(2))]),
+    item('L2', 'SF', sl(2), [l(id(k('Q3')), q(3)), l(id(k('Q4')), q(4))]),
+    final(from, w(id(k('W1')), sw(1)), w(id(k('W2')), sw(2))),
+    final(from + 2, l(id(k('W1')), sw(1)), l(id(k('W2')), sw(2))),
+    final(from + 4, w(id(k('L1')), sl(1)), w(id(k('L2')), sl(2))),
+    final(from + 6, l(id(k('L1')), sl(1)), l(id(k('L2')), sl(2))),
+  ]
+}
+
+/**
+ * Full classification for one category, like the PZPS youth tournaments: every team
+ * plays on for a final place. With 4 groups, places 1–2 of each group play for 1–8
+ * (1A–2B, 1C–2D, 1B–2A, 1D–2C), places 3–4 for 9–16, 5–6 for 17–24, and a lone 7th
+ * place for 25–28. Teams from the same group can meet again only in the later rounds.
+ * Supports 1, 2 or 4 groups; returns null otherwise.
  */
 export function bracketPlan(categoryId: string, groups: Group[]): PlanItem[] | null {
-  const id = (key: string) => koId(categoryId, key)
-  const item = (key: string, round: KoRound, label: string, srcA: KoSource, srcB: KoSource): PlanItem =>
-    ({ key, info: { round, label, srcA, srcB } })
-  const finals = [
-    item('F', 'F', 'Finał', w(id('SF1'), 'Półfinał 1'), w(id('SF2'), 'Półfinał 2')),
-    item('3P', '3P', 'Mecz o 3. miejsce', l(id('SF1'), 'Półfinał 1'), l(id('SF2'), 'Półfinał 2')),
-  ]
-  if (groups.length === 4) {
-    const [A, B, C, D] = groups
-    return [
-      item('QF1', 'QF', 'Ćwierćfinał 1', g(A, 1), g(B, 2)),
-      item('QF2', 'QF', 'Ćwierćfinał 2', g(C, 1), g(D, 2)),
-      item('QF3', 'QF', 'Ćwierćfinał 3', g(B, 1), g(A, 2)),
-      item('QF4', 'QF', 'Ćwierćfinał 4', g(D, 1), g(C, 2)),
-      item('SF1', 'SF', 'Półfinał 1', w(id('QF1'), 'Ćwierćfinał 1'), w(id('QF2'), 'Ćwierćfinał 2')),
-      item('SF2', 'SF', 'Półfinał 2', w(id('QF3'), 'Ćwierćfinał 3'), w(id('QF4'), 'Ćwierćfinał 4')),
-      ...finals,
-    ]
-  }
-  if (groups.length === 2) {
-    const [A, B] = groups
-    return [
-      item('SF1', 'SF', 'Półfinał 1', g(A, 1), g(B, 2)),
-      item('SF2', 'SF', 'Półfinał 2', g(B, 1), g(A, 2)),
-      ...finals,
-    ]
-  }
-  if (groups.length === 1) {
+  const n = groups.length
+  if (n === 0 || ![1, 2, 4].includes(n)) return null
+  // Positions every group has, so each tier is complete.
+  const depth = Math.min(...groups.map((x) => x.teamIds.length))
+  const plan: PlanItem[] = []
+  if (n === 1) {
     const [A] = groups
-    return [
-      item('SF1', 'SF', 'Półfinał 1', g(A, 1), g(A, 4)),
-      item('SF2', 'SF', 'Półfinał 2', g(A, 2), g(A, 3)),
-      ...finals,
-    ]
+    if (depth >= 4) plan.push(...tierPlan(categoryId, 1, [[g(A, 1), g(A, 4)], [g(A, 2), g(A, 3)]]))
+    else if (depth >= 2) plan.push(...tierPlan(categoryId, 1, [[g(A, 1), g(A, 2)]]))
+    return plan.length ? plan : null
   }
-  return null
+  for (let p = 1; p <= depth; p += 2) {
+    const from = n * (p - 1) + 1
+    if (n === 4) {
+      const [A, B, C, D] = groups
+      if (p + 1 <= depth) {
+        plan.push(...tierPlan(categoryId, from, [
+          [g(A, p), g(B, p + 1)], [g(C, p), g(D, p + 1)], [g(B, p), g(A, p + 1)], [g(D, p), g(C, p + 1)],
+        ]))
+      } else {
+        plan.push(...tierPlan(categoryId, from, [[g(A, p), g(D, p)], [g(B, p), g(C, p)]]))
+      }
+    } else {
+      const [A, B] = groups
+      if (p + 1 <= depth) plan.push(...tierPlan(categoryId, from, [[g(A, p), g(B, p + 1)], [g(B, p), g(A, p + 1)]]))
+      else plan.push(...tierPlan(categoryId, from, [[g(A, p), g(B, p)]]))
+    }
+  }
+  return plan.length ? plan : null
 }
 
 /** Winner/loser of a finished, decided match, or '' if not known yet. */
@@ -125,11 +168,15 @@ export interface KnockoutOptions {
 export function createKnockout(state: State, categoryId: string, opts: KnockoutOptions): Match[] {
   const plan = bracketPlan(categoryId, groupsOf(state, categoryId))
   if (!plan) return []
-  const rounds: KoRound[][] = [['QF'], ['SF'], ['F', '3P']]
+  // Round by round across all tiers; placement matches last, the final at the very end.
+  const rounds: PlanItem[][] = [
+    plan.filter((p) => p.info.round === 'QF'),
+    plan.filter((p) => p.info.round === 'SF'),
+    plan.filter((p) => p.info.round === 'P').sort((x, y) => (y.info.place ?? 0) - (x.info.place ?? 0)),
+  ]
   const result: Match[] = []
   let slot = new Date(opts.start)
-  for (const roundSet of rounds) {
-    const items = plan.filter((p) => roundSet.includes(p.info.round))
+  for (const items of rounds) {
     if (!items.length) continue
     let court = 0
     for (const p of items) {
@@ -137,12 +184,11 @@ export function createKnockout(state: State, categoryId: string, opts: KnockoutO
         court = 0
         slot = new Date(slot.getTime() + opts.slotMinutes * 60000)
       }
-      const draft: Match = {
+      result.push({
         id: koId(categoryId, p.key), categoryId, groupId: '', ko: p.info,
         court: opts.courts[court++], start: toLocalIso(slot),
         teamA: '', teamB: '', sets: [], status: 'scheduled', updatedAt: 0,
-      }
-      result.push(draft)
+      })
     }
     slot = new Date(slot.getTime() + opts.slotMinutes * 60000)
   }
@@ -159,7 +205,7 @@ export function propagate(state: State): Match[] {
   const changed: Match[] = []
   let current = state
   // Repeat so a correction can flow through several rounds.
-  for (let pass = 0; pass < 3; pass++) {
+  for (let pass = 0; pass < 5; pass++) {
     let any = false
     for (const m of current.matches) {
       if (!m.ko || m.status !== 'scheduled') continue

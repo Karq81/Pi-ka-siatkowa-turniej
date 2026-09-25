@@ -1,79 +1,6 @@
-import { useState } from 'react'
 import { tally } from '../logic/scoring'
 import type { Match, State } from '../types'
 import { formatDay, formatTime, StatusPill, useLookups } from '../ui'
-import { GroupTable, MatchList } from './Public'
-
-/** All teams, split into categories and groups. Each group opens its own page. */
-export function Groups({ state }: { state: State }) {
-  const { teamName } = useLookups(state)
-  const [cat, setCat] = useState('')
-  const cats = state.categories.filter((c) => !cat || c.id === cat)
-  if (!state.groups.length) return <p className="notice-inline">Grupy nie są jeszcze rozlosowane. Pojawią się tutaj po losowaniu.</p>
-  return (
-    <>
-      <div className="chips">
-        <button className={`chip ${cat === '' ? 'active' : ''}`} onClick={() => setCat('')}>Wszystkie</button>
-        {state.categories.map((c) => (
-          <button key={c.id} className={`chip ${cat === c.id ? 'active' : ''}`} onClick={() => setCat(c.id)}>{c.name}</button>
-        ))}
-      </div>
-      {cats.map((c) => {
-        const groups = state.groups.filter((g) => g.categoryId === c.id)
-        const teams = groups.reduce((n, g) => n + g.teamIds.length, 0)
-        return (
-          <section key={c.id}>
-            <h2>{c.name} <span className="muted small">{teams} zespołów · {groups.length} grupy</span></h2>
-            <div className="group-cards">
-              {groups.map((g) => {
-                const ms = state.matches.filter((m) => m.groupId === g.id)
-                const done = ms.filter((m) => m.status === 'finished').length
-                const live = ms.some((m) => m.status === 'live')
-                return (
-                  <a key={g.id} href={`#grupa-${g.id}`} className={`group-card ${live ? 'is-live' : ''}`}>
-                    <header>
-                      <b>{g.name}</b>
-                      {live ? <StatusPill status="live" /> : <span className="muted small">{done}/{ms.length} meczów</span>}
-                    </header>
-                    <ol>
-                      {g.teamIds.map((id) => <li key={id}>{teamName(id)}</li>)}
-                    </ol>
-                    <span className="group-cta">Tabela i mecze →</span>
-                  </a>
-                )
-              })}
-            </div>
-          </section>
-        )
-      })}
-    </>
-  )
-}
-
-/** One group: table and every match (who plays whom, when, where, result). */
-export function GroupPage({ state, groupId }: { state: State; groupId: string }) {
-  const { categoryName } = useLookups(state)
-  const group = state.groups.find((g) => g.id === groupId)
-  if (!group) return <NotFound />
-  const matches = state.matches
-    .filter((m) => m.groupId === group.id)
-    .sort((a, b) => a.start.localeCompare(b.start) || a.court - b.court)
-  const days = [...new Set(matches.map((m) => m.start.slice(0, 10)))]
-  return (
-    <>
-      <p><a href="#grupy" className="back">← Wszystkie grupy</a></p>
-      <h2 className="page-title">{categoryName(group.categoryId)} · {group.name}</h2>
-      <GroupTable state={state} groupId={group.id} title={false} />
-      <h2>Mecze</h2>
-      {days.map((d) => (
-        <section key={d}>
-          <h3 className="day-title">{formatDay(d)}</h3>
-          <MatchList state={state} matches={matches.filter((m) => m.start.startsWith(d))} />
-        </section>
-      ))}
-    </>
-  )
-}
 
 /** One match: a big scoreboard that updates live. */
 export function MatchPage({ state, matchId }: { state: State; matchId: string }) {
@@ -127,5 +54,5 @@ function MatchSide({ name, score, win }: { name: string; score?: number; win: bo
 }
 
 function NotFound() {
-  return <p className="muted">Nie znaleziono. <a href="#grupy">Wróć do grup</a>.</p>
+  return <p className="muted">Nie znaleziono. <a href="#grupy">Wróć do rozgrywek</a>.</p>
 }

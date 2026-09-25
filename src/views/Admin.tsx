@@ -537,7 +537,8 @@ function KnockoutPanel({ state }: { state: State }) {
   const supported = !!bracketPlan(cat, groups)
   const open = openGroupMatches(state, cat)
   const exists = hasKnockout(state, cat)
-  const courts = [0, 1, 2, 3].map((i) => firstCourt + i).filter((c) => c <= state.tournament.courts)
+  // All courts from the chosen one up: the classification has many matches per round.
+  const courts = Array.from({ length: state.tournament.courts - firstCourt + 1 }, (_, i) => firstCourt + i)
 
   const create = async () => {
     const ko = createKnockout(state, cat, { start, slotMinutes: slot, courts })
@@ -552,7 +553,8 @@ function KnockoutPanel({ state }: { state: State }) {
     <section className="panel">
       <h2>Faza pucharowa (drabinka)</h2>
       <p className="muted">
-        4 grupy: ćwierćfinały 1A–2B, 1C–2D, 1B–2A, 1D–2C, potem półfinały, finał i mecz o 3. miejsce.
+        Pełna klasyfikacja: każda drużyna gra o konkretne miejsce. Przy 4 grupach miejsca 1–2 grają o 1–8
+        (1A–2B, 1C–2D, 1B–2A, 1D–2C), 3–4 o 9–16, 5–6 o 17–24, a 7. miejsca o 25–28.
         2 grupy: od razu półfinały. Kolejne rundy uzupełniają się same po każdym wyniku.
       </p>
       <div className="chips">

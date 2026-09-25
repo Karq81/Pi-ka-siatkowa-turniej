@@ -49,7 +49,8 @@ export interface SetScore {
 
 export type MatchStatus = 'scheduled' | 'live' | 'finished'
 
-export type KoRound = 'QF' | 'SF' | 'F' | '3P'
+/** QF: first round of a tier, SF: second round, P: match for a place (the final is P for place 1). */
+export type KoRound = 'QF' | 'SF' | 'P'
 
 /** Where a knockout team comes from: a group place, or the winner/loser of an earlier match. */
 export type KoSource =
@@ -58,7 +59,12 @@ export type KoSource =
 
 export interface KoInfo {
   round: KoRound
-  /** e.g. "Ćwierćfinał 1", "Finał" */
+  /** Places this part of the bracket decides, e.g. 1–8 or 9–16. */
+  tierFrom: number
+  tierTo: number
+  /** For round P: the better place at stake (1 = final, 3 = match for 3rd place, …). */
+  place?: number
+  /** e.g. "Ćwierćfinał 1", "Finał", "O 5. miejsce" */
   label: string
   srcA: KoSource
   srcB: KoSource

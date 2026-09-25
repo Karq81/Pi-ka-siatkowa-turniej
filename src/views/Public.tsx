@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { formatRatio, standings, tally } from '../logic/scoring'
 import { useStore } from '../store/store'
 import type { Match, State } from '../types'
-import { Bracket } from './Bracket'
-import { GroupPage, Groups, MatchPage } from './Groups'
+import { Competition } from './Competition'
+import { MatchPage } from './Groups'
 import { Info } from './Info'
 import { courtMatch, formatDay, formatTime, ScoreLine, StatusPill, useLookups } from '../ui'
 
@@ -14,23 +14,21 @@ import { courtMatch, formatDay, formatTime, ScoreLine, StatusPill, useLookups } 
  */
 const TABS = [
   { route: '', label: 'Start' },
-  { route: 'grupy', label: 'Grupy' },
+  { route: 'grupy', label: 'Rozgrywki' },
   { route: 'na-zywo', label: 'Na żywo' },
   { route: 'wyniki', label: 'Wyniki' },
-  { route: 'drabinka', label: 'Drabinka', onlyWithBracket: true },
 ]
-const HIDDEN_ROUTES = ['tabele', 'terminarz']
+const HIDDEN_ROUTES = ['tabele', 'terminarz', 'drabinka']
 
 export function Public({ route }: { route: string }) {
   const state = useStore()
-  // Group and match pages sit under the "Grupy" tab.
+  // Group links, match pages and the bracket all sit under "Rozgrywki".
   const detail = /^(grupa|mecz)-(.+)$/.exec(route)
   const known = TABS.some((t) => t.route === route) || HIDDEN_ROUTES.includes(route)
-  const tab = detail ? 'grupy' : known ? route : ''
-  const bracket = state.matches.some((m) => m.ko)
+  const tab = detail || route === 'drabinka' ? 'grupy' : known ? route : ''
   const nav = (
     <nav className="tabs" aria-label="Sekcje">
-      {TABS.filter((t) => !t.onlyWithBracket || bracket).map((t) => (
+      {TABS.map((t) => (
         <a key={t.route} href={`#${t.route}`} className={tab === t.route ? 'active' : ''}>
           {t.label}
         </a>
@@ -53,12 +51,10 @@ export function Public({ route }: { route: string }) {
       )}
       <main>
         {tab === 'wyniki' && <Results state={state} />}
-        {tab === 'grupy' && !detail && <Groups state={state} />}
-        {detail?.[1] === 'grupa' && <GroupPage state={state} groupId={detail[2]} />}
+        {tab === 'grupy' && detail?.[1] !== 'mecz' && <Competition state={state} route={route} />}
         {detail?.[1] === 'mecz' && <MatchPage state={state} matchId={detail[2]} />}
         {tab === 'na-zywo' && <LiveCourts state={state} />}
         {tab === 'tabele' && <Tables state={state} />}
-        {tab === 'drabinka' && <Bracket state={state} />}
         {tab === 'terminarz' && <Schedule state={state} />}
       </main>
       {/* Public pages are view-only: the organiser panel lives at #panel and is not linked from here. */}
