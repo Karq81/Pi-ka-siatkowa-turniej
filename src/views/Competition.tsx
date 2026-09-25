@@ -3,7 +3,7 @@ import { clubOf } from '../logic/draw'
 import { bracketView, type BracketSlot } from '../logic/knockout'
 import { formatRatio, standings, tally } from '../logic/scoring'
 import type { Match, State, Team } from '../types'
-import { formatDay, formatTime, StatusPill, useLookups } from '../ui'
+import { BackBar, formatDay, formatTime, StatusPill, useLookups } from '../ui'
 
 type Phase = 'groups' | 'ko'
 
@@ -351,7 +351,7 @@ export function TeamPage({ state, teamId }: { state: State; teamId: string }) {
 
   return (
     <div className="team-page">
-      <p><a href={group ? `#grupa-${group.id}` : '#grupy'} className="back">← {group ? `${category?.name} · ${group.name}` : 'Rozgrywki'}</a></p>
+      <BackBar fallback={group ? `grupa-${group.id}` : 'grupy'} label={group ? `${category?.name} · ${group.name}` : 'Rozgrywki'} />
       <header className="team-head">
         <TeamBadge team={team} size="lg" />
         <div>

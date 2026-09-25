@@ -1,6 +1,6 @@
 import { tally } from '../logic/scoring'
 import type { Match, State } from '../types'
-import { formatDay, formatTime, StatusPill, useLookups } from '../ui'
+import { BackBar, formatDay, formatTime, StatusPill, useLookups } from '../ui'
 
 /** One match: a big scoreboard that updates live. */
 export function MatchPage({ state, matchId }: { state: State; matchId: string }) {
@@ -16,7 +16,7 @@ export function MatchPage({ state, matchId }: { state: State; matchId: string })
   const scoreB = single ? cur?.b : t.setsB
   return (
     <>
-      <p><a href={back} className="back">← {m.groupId ? stageName(m) : 'Drabinka'}</a></p>
+      <BackBar fallback={back.slice(1)} label={m.groupId ? stageName(m) : 'Faza pucharowa'} />
       <article className={`match-page ${m.status === 'live' ? 'is-live' : ''}`}>
         <header>
           <span>{categoryName(m.categoryId)} · {stageName(m)}</span>

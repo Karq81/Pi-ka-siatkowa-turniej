@@ -17,6 +17,37 @@ export function useRoute(): string {
   return route
 }
 
+// Screens visited in this session, so "Wstecz" only goes back within the site.
+const currentRoute = () => location.hash.replace(/^#\/?/, '')
+const visited: string[] = [currentRoute()]
+window.addEventListener('hashchange', () => {
+  const r = currentRoute()
+  // Going back (by our button or the phone's) lands on the previous entry.
+  if (visited.length > 1 && visited[visited.length - 2] === r) visited.pop()
+  else visited.push(r)
+})
+
+/**
+ * Big "back" button for phones: returns to the previous screen, or to `fallback`
+ * when the page was opened straight from a link (nothing to go back to).
+ */
+export function BackBar({ fallback, label }: { fallback: string; label?: string }) {
+  return (
+    <div className="backbar">
+      <button
+        className="btn-back"
+        onClick={() => {
+          if (visited.length > 1) history.back()
+          else location.hash = fallback
+        }}
+      >
+        <span aria-hidden="true">←</span> Wstecz
+      </button>
+      {label && <a href={`#${fallback}`} className="backbar-ctx">{label}</a>}
+    </div>
+  )
+}
+
 export function go(route: string) {
   location.hash = route
 }
