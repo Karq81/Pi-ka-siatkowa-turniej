@@ -41,6 +41,19 @@ describe('court board', () => {
     expect([b.mode, b.match?.id]).toEqual(['finished', 'm2'])
   })
 
+  it('drops a result once it is cleared, instead of showing an older one', () => {
+    const done1 = { ...first, status: 'finished' as const, sets: [{ a: 15, b: 3 }], updatedAt: 100 }
+    const cleared = { ...second, updatedAt: 200 }
+    const b = courtBoard(state([done1, cleared]), 1, t('15:55'))
+    expect([b.mode, b.match?.id]).toEqual(['next', 'm2'])
+  })
+
+  it('does not show a later result ahead of an earlier unplayed match', () => {
+    const done2 = { ...second, status: 'finished' as const, sets: [{ a: 15, b: 3 }], updatedAt: 100 }
+    const b = courtBoard(state([first, done2]), 1, t('15:00'))
+    expect([b.mode, b.match?.id]).toEqual(['next', 'm1'])
+  })
+
   it('does not treat knockout matches without teams as being played', () => {
     expect(isUnderway({ ...first, teamB: '' }, t('16:00'))).toBe(false)
   })

@@ -32,7 +32,12 @@ export function courtBoard(state: State, court: number, now: number): CourtBoard
   const playing = upcoming.find((m) => isUnderway(m, now))
   if (playing) return { mode: 'live', match: playing, next: upcoming.find((m) => m !== playing && at(m) >= at(playing)) }
   const next = upcoming[0]
-  const lastDone = onCourt.filter((m) => m.status === 'finished').at(-1)
+  // The result on show is the last one played before the next match. A result that
+  // was cleared afterwards (next changed later than it) no longer counts: the board
+  // moves on to the cleared match instead of an older score.
+  const lastDone = onCourt
+    .filter((m) => m.status === 'finished' && (!next || (at(m) <= at(next) && m.updatedAt >= next.updatedAt)))
+    .at(-1)
   if (lastDone && (!next || now < at(next) - NEXT_MATCH_LEAD_MS)) return { mode: 'finished', match: lastDone, next }
   if (next) return { mode: 'next', match: next, next: upcoming[1] }
   return { mode: 'none' }
