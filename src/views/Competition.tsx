@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { clubOf } from '../logic/draw'
 import { bracketView, type BracketSlot } from '../logic/knockout'
+import { useFavorites, toggleFavorite, setFavorites } from '../favorites'
 import { formatRatio, standings, tally } from '../logic/scoring'
 import type { Match, State, Team } from '../types'
 import { BackBar, formatDay, formatTime, StatusPill, useLookups } from '../ui'
@@ -14,7 +15,10 @@ type Phase = 'groups' | 'ko'
 export function Competition({ state, route }: { state: State; route: string }) {
   // Deep links: #grupa-<id> opens that group, #drabinka the knockout phase.
   const linkedGroup = /^grupa-(.+)$/.exec(route)?.[1]
+  const mine = useFavorites()
+  // Open on a linked group, else on the group of the first followed team.
   const start = state.groups.find((g) => g.id === linkedGroup)
+    ?? state.groups.find((g) => mine.some((id) => g.teamIds.includes(id)))
   const [cat, setCat] = useState(start?.categoryId ?? state.categories[0]?.id ?? '')
   const [phase, setPhase] = useState<Phase>(route === 'drabinka' ? 'ko' : 'groups')
   const groups = state.groups.filter((g) => g.categoryId === cat)
@@ -152,6 +156,7 @@ function NextMatch({ state, categoryId }: { state: State; categoryId: string }) 
 /* ---------- Group phase ---------- */
 
 function GroupView({ state, groupId }: { state: State; groupId: string }) {
+  const mine = useFavorites()
   const group = state.groups.find((g) => g.id === groupId)!
   const rules = state.tournament.rules
   const rows = standings(rules, group, state.matches, state.teams)
@@ -179,7 +184,7 @@ function GroupView({ state, groupId }: { state: State; groupId: string }) {
             const t = team(r.teamId)
             const tr = trend(r.teamId)
             return (
-              <li key={r.teamId} className={i < 2 ? 'top' : ''}>
+              <li key={r.teamId} className={`${i < 2 ? 'top' : ''} ${mine.includes(r.teamId) ? 'mine' : ''}`}>
                 <span className="pos">{i + 1}</span>
                 <TeamBadge team={t} />
                 <a className="name plain-link" href={`#druzyna-${r.teamId}`}>{t?.name}</a>
@@ -206,6 +211,7 @@ function GroupView({ state, groupId }: { state: State; groupId: string }) {
 
 /** One match as a card: when and where, both teams with badges, the score. */
 export function MatchCard({ state, match: m, label }: { state: State; match: Match; label?: string }) {
+  const mine = useFavorites()
   const { side } = useLookups(state)
   const rules = state.tournament.rules
   const t = tally(rules, m.sets)
@@ -238,7 +244,8 @@ export function MatchCard({ state, match: m, label }: { state: State; match: Mat
       </div>
     </>
   )
-  const cls = `mcard ${m.status === 'live' ? 'is-live' : ''} ${done ? 'is-done' : ''}`
+  const followed = mine.includes(m.teamA) || mine.includes(m.teamB)
+  const cls = `mcard ${m.status === 'live' ? 'is-live' : ''} ${done ? 'is-done' : ''} ${followed ? 'mine' : ''}`
   return m.start ? <a href={`#mecz-${m.id}`} className={cls}>{body}</a> : <div className={cls}>{body}</div>
 }
 
@@ -358,6 +365,7 @@ export function TeamPage({ state, teamId }: { state: State; teamId: string }) {
           <h2>{team.name}</h2>
           <p className="muted">{category?.name}{group ? ` · ${group.name}` : ''}</p>
         </div>
+        <FollowToggle teamId={team.id} />
       </header>
       <div className="team-stats">
         <div><b>{pos >= 0 ? `${pos + 1}.` : '–'}</b><span>miejsce w grupie</span></div>
@@ -396,5 +404,114 @@ export function TeamPage({ state, teamId }: { state: State; teamId: string }) {
         </section>
       ))}
     </div>
+  )
+}
+
+/* ---------- Followed teams ("Moje drużyny") ---------- */
+
+function FollowToggle({ teamId }: { teamId: string }) {
+  const mine = useFavorites()
+  const on = mine.includes(teamId)
+  return (
+    <button className={`follow ${on ? 'on' : ''}`} onClick={() => toggleFavorite(teamId)} aria-pressed={on}>
+      {on ? '★ Obserwujesz' : '☆ Obserwuj'}
+    </button>
+  )
+}
+
+/**
+ * Choose any number of teams to follow, then confirm. Opens inline (no pop-up window),
+ * with a search box and teams grouped by category.
+ */
+export function FollowPicker({ state, onClose }: { state: State; onClose: () => void }) {
+  const mine = useFavorites()
+  const [picked, setPicked] = useState<string[]>(mine)
+  const [q, setQ] = useState('')
+  const query = q.trim().toLowerCase()
+  const toggle = (id: string) => setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]))
+  return (
+    <section className="follow-picker" aria-label="Wybierz drużyny do obserwowania">
+      <header>
+        <h3>Wybierz drużyny do obserwowania</h3>
+        <p className="muted small">Zaznacz jedną albo kilka (np. wszystkie drużyny Twojego klubu) i potwierdź.</p>
+      </header>
+      <input id="follow-search" type="search" placeholder="Szukaj, np. Opty" value={q} onChange={(e) => setQ(e.target.value)} />
+      <div className="fp-lists">
+        {state.categories.map((c) => {
+          const teams = state.teams
+            .filter((t) => t.categoryId === c.id && (!query || t.name.toLowerCase().includes(query)))
+            .sort((a, b) => a.name.localeCompare(b.name, 'pl'))
+          if (!teams.length) return null
+          return (
+            <fieldset key={c.id}>
+              <legend>{c.name}</legend>
+              {teams.map((t) => (
+                <label key={t.id} className={`fp-item ${picked.includes(t.id) ? 'on' : ''}`}>
+                  <input type="checkbox" checked={picked.includes(t.id)} onChange={() => toggle(t.id)} />
+                  <TeamBadge team={t} size="sm" />
+                  <span>{t.name}</span>
+                </label>
+              ))}
+            </fieldset>
+          )
+        })}
+      </div>
+      <div className="fp-actions">
+        <button className="btn btn-primary btn-lg" onClick={() => { setFavorites(picked); onClose() }}>
+          {picked.length ? `Potwierdź: obserwuj ${picked.length} ${picked.length === 1 ? 'drużynę' : picked.length < 5 ? 'drużyny' : 'drużyn'}` : 'Potwierdź: nie obserwuj żadnej'}
+        </button>
+        <button className="btn" onClick={onClose}>Anuluj</button>
+      </div>
+    </section>
+  )
+}
+
+/** Start page block: followed teams with their next match, or a button to choose them. */
+export function MyTeams({ state }: { state: State }) {
+  const mine = useFavorites()
+  const [picking, setPicking] = useState(false)
+  const now = useNow(30000)
+  const teams = mine.map((id) => state.teams.find((t) => t.id === id)).filter((t): t is Team => !!t)
+  if (picking) return <FollowPicker state={state} onClose={() => setPicking(false)} />
+  return (
+    <section className="my-teams">
+      <header>
+        <h2>Moje drużyny</h2>
+        <button className="btn" onClick={() => setPicking(true)}>{teams.length ? 'Zmień' : 'Wybierz'}</button>
+      </header>
+      {!teams.length && (
+        <button className="my-empty" onClick={() => setPicking(true)}>
+          <b>☆ Wybierz drużyny, które chcesz obserwować</b>
+          <span>Jedną albo kilka. Będą wyróżnione w tabelach i meczach, a tu zobaczysz ich najbliższe mecze.</span>
+        </button>
+      )}
+      <div className="my-list">
+        {teams.map((t) => {
+          const ms = state.matches.filter((m) => m.teamA === t.id || m.teamB === t.id).sort((a, b) => a.start.localeCompare(b.start))
+          const next = ms.find((m) => m.status === 'live') ?? ms.find((m) => m.status === 'scheduled' && new Date(m.start).getTime() >= now - 15 * 60000)
+          const opp = next ? state.teams.find((x) => x.id === (next.teamA === t.id ? next.teamB : next.teamA)) : undefined
+          const group = state.groups.find((g) => g.teamIds.includes(t.id))
+          return (
+            <a key={t.id} href={`#druzyna-${t.id}`} className={`my-card ${next?.status === 'live' ? 'is-live' : ''}`}>
+              <TeamBadge team={t} size="md" />
+              <span className="my-main">
+                <b>{t.name}</b>
+                <span className="muted small">{state.categories.find((c) => c.id === t.categoryId)?.name}{group ? ` · ${group.name}` : ''}</span>
+              </span>
+              <span className="my-next">
+                {next ? (
+                  <>
+                    {next.status === 'live' ? <StatusPill status="live" /> : <b>{formatDay(next.start)} {formatTime(next.start)}</b>}
+                    <span className="small">Boisko {next.court}{opp ? ` · z ${opp.name}` : ''}</span>
+                  </>
+                ) : (
+                  <span className="muted small">{ms.length ? 'Brak kolejnych meczów' : 'Mecze po losowaniu'}</span>
+                )}
+              </span>
+            </a>
+          )
+        })}
+      </div>
+    </section>
   )
 }

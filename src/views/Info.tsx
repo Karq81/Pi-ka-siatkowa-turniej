@@ -3,7 +3,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import logo from '../assets/logo-opty-mielno.png'
 import { info } from '../content/info'
 import { useStore } from '../store/store'
-import { TeamPicker } from './Competition'
+import { MyTeams } from './Competition'
 
 /** Start page for families and teams: key facts, schedule, costs and a QR code to live results. */
 export function Info({ nav }: { nav: ReactNode }) {
@@ -42,6 +42,8 @@ export function Info({ nav }: { nav: ReactNode }) {
         {nav}
       </header>
 
+      {state.teams.length > 0 && <MyTeams state={state} />}
+
       <section className="info-facts" aria-label="Najważniejsze">
         <div className="fact">
           <span className="fact-label">Termin</span>
@@ -73,7 +75,7 @@ export function Info({ nav }: { nav: ReactNode }) {
             <a className="btn btn-primary btn-lg" href="#grupy">Grupy i terminarz</a>
             <a className="btn btn-lg" href="#na-zywo">Wyniki na żywo</a>
           </div>
-          {state.teams.length > 0 && <TeamPicker state={state} />}
+
         </div>
         <div className="info-qr" aria-label="Kod QR do wyników" dangerouslySetInnerHTML={{ __html: qr }} />
       </section>

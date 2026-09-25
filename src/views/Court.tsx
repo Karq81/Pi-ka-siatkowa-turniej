@@ -4,14 +4,14 @@ import { canScore } from '../logic/pins'
 import { store, useSession, useStore } from '../store/store'
 import type { Match, State } from '../types'
 import { ResultForm } from './ResultForm'
-import { courtMatch, formatTime, PinGate, StatusPill, useLookups } from '../ui'
+import { BackBar, courtMatch, formatTime, PinGate, StatusPill, useLookups } from '../ui'
 
 /** List of courts for referees to pick from. */
 export function CourtPicker() {
   return (
     <div className="page">
+      <BackBar fallback="panel-sedziowie" label="Panel organizatora" />
       <header className="bar">
-        <a href="#panel-sedziowie" className="back">← Panel organizatora</a>
         <h1>Tryb sędziego</h1>
       </header>
       <CourtList />
@@ -69,8 +69,8 @@ export function Court({ court, manual = false }: { court: number; manual?: boole
   useWakeLock()
   return (
     <div className="page page-court">
+      <BackBar fallback="panel-sedziowie" label="Boiska" />
       <header className="bar">
-        <a href="#sedzia" className="back">← Boiska</a>
         <h1>Boisko {court}</h1>
       </header>
       <PinGate court={court} label={`Boisko ${court}`}>

@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { formatRatio, standings, tally } from '../logic/scoring'
+import { useFavorites } from '../favorites'
 import { useStore } from '../store/store'
 import type { Match, State } from '../types'
 import { Competition, TeamPage } from './Competition'
 import { MatchPage } from './Groups'
 import { Info } from './Info'
-import { courtMatch, formatDay, formatTime, ScoreLine, StatusPill, useLookups } from '../ui'
+import { BackBar, courtMatch, formatDay, formatTime, ScoreLine, StatusPill, useLookups } from '../ui'
 
 /**
  * What visitors see: the invitation, groups (each with its table and schedule), live
@@ -50,6 +51,8 @@ export function Public({ route }: { route: string }) {
         </header>
       )}
       <main>
+        {/* Every screen except the start page gets a back button; team and match pages have their own. */}
+        {tab !== '' && !detail && <BackBar fallback="" label="Start" />}
         {tab === 'wyniki' && <Results state={state} />}
         {tab === 'grupy' && detail?.[1] !== 'mecz' && detail?.[1] !== 'druzyna' && <Competition state={state} route={route} />}
         {detail?.[1] === 'druzyna' && <TeamPage state={state} teamId={detail[2]} />}
@@ -66,6 +69,7 @@ export function Public({ route }: { route: string }) {
 
 /** `referee`: show the scoring buttons (organiser panel only, never on public pages). */
 export function CourtCard({ state, court, big = false, referee = false }: { state: State; court: number; big?: boolean; referee?: boolean }) {
+  const mine = useFavorites()
   const { categoryName, stageName, side } = useLookups(state)
   const { current, next } = courtMatch(state, court)
   const rules = state.tournament.rules
@@ -90,7 +94,7 @@ export function CourtCard({ state, court, big = false, referee = false }: { stat
   const multi = rules.sets > 1
   const cur = counting ? current.sets[current.sets.length - 1] : undefined
   return (
-    <article className={`court ${live ? 'court-live' : ''} ${big ? 'court-big' : ''}`}>
+    <article className={`court ${live ? 'court-live' : ''} ${big ? 'court-big' : ''} ${mine.includes(current.teamA) || mine.includes(current.teamB) ? 'mine' : ''}`}>
       <header>
         <span className="court-no">Boisko {court}</span>
         {live ? <StatusPill status="live" /> : <span className="pill">Start {formatTime(current.start)}</span>}
@@ -293,6 +297,7 @@ function Schedule({ state }: { state: State }) {
 
 /** Finished matches as a results table, newest first, for parents and coaches. */
 function Results({ state }: { state: State }) {
+  const mine = useFavorites()
   const { side, stageName } = useLookups(state)
   const [cat, setCat] = useState('')
   const [q, setQ] = useState('')
@@ -332,7 +337,7 @@ function Results({ state }: { state: State }) {
                   const t = tally(rules, m.sets)
                   const single = m.sets.length === 1
                   return (
-                    <tr key={m.id}>
+                    <tr key={m.id} className={mine.includes(m.teamA) || mine.includes(m.teamB) ? 'mine' : ''}>
                       <td className="left when">
                         <b>{formatTime(m.start)}</b>
                         <span className="muted small">{formatDay(m.start)} · B{m.court}</span>

@@ -9,7 +9,7 @@ import { parseTeams } from '../logic/importTeams'
 import { bracketPlan, createKnockout, hasKnockout, openGroupMatches } from '../logic/knockout'
 import { courtKeys } from '../logic/pins'
 import type { Match, MatchStatus, Pins, SetScore, State } from '../types'
-import { formatDay, formatTime, PinGate, useLookups } from '../ui'
+import { BackBar, formatDay, formatTime, PinGate, useLookups } from '../ui'
 import { CourtCard, MatchList } from './Public'
 import { ResultForm } from './ResultForm'
 
@@ -29,8 +29,8 @@ export function Admin() {
   if (sync.empty) {
     return (
       <div className="page">
+        <BackBar fallback="panel" label="Panel organizatora" />
         <header className="bar">
-          <a href="#panel" className="back">← Panel organizatora</a>
           <h1>Pierwsze uruchomienie</h1>
         </header>
         <FirstSetup />
@@ -39,8 +39,8 @@ export function Admin() {
   }
   return (
     <div className="page">
+      <BackBar fallback="panel" label="Panel organizatora" />
       <header className="bar">
-        <a href="#panel" className="back">← Panel organizatora</a>
         <h1>Sędzia główny</h1>
       </header>
       <PinGate label="Panel sędziego głównego">
@@ -482,8 +482,8 @@ export function PrintCards() {
   const state = useStore()
   return (
     <div className="page">
+      <BackBar fallback="panel-wiecej" label="Panel" />
       <header className="bar no-print">
-        <a href="#admin" className="back">← Panel</a>
         <h1>Kartki dla boisk</h1>
       </header>
       <PinGate label="Kartki z kluczami">

@@ -24,9 +24,9 @@ export function MatchPage({ state, matchId }: { state: State; matchId: string })
         </header>
         <p className="muted">{formatDay(m.start)}, godz. {formatTime(m.start)} · Boisko {m.court}</p>
         <div className="mp-board">
-          <MatchSide name={side(m, 'a')} score={m.status === 'scheduled' ? undefined : scoreA} win={isWin(m, t, 'a')} />
+          <MatchSide teamId={m.teamA} name={side(m, 'a')} score={m.status === 'scheduled' ? undefined : scoreA} win={isWin(m, t, 'a')} />
           <span className="mp-sep">:</span>
-          <MatchSide name={side(m, 'b')} score={m.status === 'scheduled' ? undefined : scoreB} win={isWin(m, t, 'b')} />
+          <MatchSide teamId={m.teamB} name={side(m, 'b')} score={m.status === 'scheduled' ? undefined : scoreB} win={isWin(m, t, 'b')} />
         </div>
         {m.status === 'live' && !m.sets.length && <p className="center muted">Mecz trwa. Wynik pojawi się po meczu.</p>}
         {!single && m.sets.length > 0 && (
@@ -44,11 +44,14 @@ function isWin(m: Match, t: ReturnType<typeof tally>, s: 'a' | 'b') {
   return s === 'a' ? t.setsA > t.setsB : t.setsB > t.setsA
 }
 
-function MatchSide({ name, score, win }: { name: string; score?: number; win: boolean }) {
+/** Team names lead to the team's page (its other matches), once the team is known. */
+function MatchSide({ teamId, name, score, win }: { teamId: string; name: string; score?: number; win: boolean }) {
   return (
     <div className={`mp-side ${win ? 'mp-win' : ''}`}>
       <span className="mp-score">{score ?? '–'}</span>
-      <span className="mp-name">{name}</span>
+      {teamId
+        ? <a className="mp-name" href={`#druzyna-${teamId}`}>{name} ›</a>
+        : <span className="mp-name">{name}</span>}
     </div>
   )
 }
