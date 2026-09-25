@@ -38,6 +38,8 @@ export interface Team {
   id: Id
   name: string
   categoryId: Id
+  /** Club, so the draw can keep a club's teams in different groups. */
+  club?: string
 }
 
 export interface SetScore {

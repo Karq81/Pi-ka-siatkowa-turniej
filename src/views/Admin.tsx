@@ -1,6 +1,7 @@
 import QRCode from 'qrcode'
 import { useEffect, useState } from 'react'
-import { demoState } from '../logic/demo'
+import { DEFAULT_SCHEDULE, initialState } from '../logic/demo'
+import { clubOf, drawTournament, resetResults } from '../logic/draw'
 import { buildGroupSchedule } from '../logic/schedule'
 import { tally } from '../logic/scoring'
 import { store, useStore, useSync } from '../store/store'
@@ -201,7 +202,8 @@ UKS Żak Brzesko;Dwójki;B
 UKS Delfin Niepołomice;Dwójki;B`
 
 function Data({ state }: { state: State }) {
-  const [text, setText] = useState(SAMPLE_CSV)
+  // Starts with the current teams, so the organiser can edit the list rather than type it again.
+  const [text, setText] = useState(() => currentTeamsCsv(state) || SAMPLE_CSV)
   const [start, setStart] = useState('2026-10-23T09:00')
   const [slot, setSlot] = useState(25)
   const [dayEnd, setDayEnd] = useState('18:00')
@@ -220,6 +222,8 @@ function Data({ state }: { state: State }) {
 
   return (
     <div className="data">
+      <DrawPanel state={state} />
+
       <section className="panel">
         <h2>Wczytaj drużyny z Excela</h2>
         <p className="muted">
@@ -260,18 +264,6 @@ function Data({ state }: { state: State }) {
         </div>
       </section>
 
-      <section className="panel">
-        <h2>Dane przykładowe</h2>
-        <p className="muted">Przywraca przykładowy turniej: 60 drużyn, 3 kategorie, 10 boisk.</p>
-        {confirm === 'demo' ? (
-          <div className="actions">
-            <button className="btn btn-danger" onClick={() => { store.replace(demoState()); setConfirm(null) }}>Tak, przywróć</button>
-            <button className="btn" onClick={() => setConfirm(null)}>Anuluj</button>
-          </div>
-        ) : (
-          <button className="btn" onClick={() => setConfirm('demo')}>Przywróć dane przykładowe</button>
-        )}
-      </section>
     </div>
   )
 }
@@ -398,7 +390,8 @@ function FirstSetup() {
       <h2>Ustaw PIN i utwórz turniej</h2>
       <p className="muted">
         Baza jest pusta. Ustaw PIN sędziego głównego. Klucze dla każdego boiska wygenerują się same, znajdziesz je
-        w zakładce „Klucze boisk”. Turniej zacznie się od danych przykładowych, które potem zastąpisz prawdziwymi drużynami.
+        w zakładce „Klucze boisk”. Zespoły z listy zakwalifikowanych zostaną rozlosowane do grup (po 4 grupy
+        w dwójkach i trójkach, drużyny jednego klubu zawsze w różnych grupach). Losowanie można potem powtórzyć.
       </p>
       <AdminPinForm
         saveLabel="Utwórz turniej"
@@ -410,7 +403,7 @@ function FirstSetup() {
             // Keys already set by an interrupted earlier setup: continue if the admin PIN matches.
             if (!(await store.login(adminPin))) throw e
           }
-          await store.replace(demoState())
+          await store.replace(initialState())
         }}
       />
     </section>
@@ -584,4 +577,99 @@ function KnockoutPanel({ state }: { state: State }) {
       {msg && <p className="ok">{msg}</p>}
     </section>
   )
+}
+
+/** Admin: redraw the groups (clubs kept apart) with a new schedule, or clear all results. */
+function DrawPanel({ state }: { state: State }) {
+  const firstStart = state.matches.map((m) => m.start).sort()[0]
+  const [counts, setCounts] = useState<Record<string, number>>(() =>
+    Object.fromEntries(state.categories.map((c) => [c.id, state.groups.filter((g) => g.categoryId === c.id).length || 4])))
+  const [start, setStart] = useState(firstStart ?? DEFAULT_SCHEDULE.start)
+  const [slot, setSlot] = useState(DEFAULT_SCHEDULE.slotMinutes)
+  const [dayStart, setDayStart] = useState(DEFAULT_SCHEDULE.dayStart)
+  const [dayEnd, setDayEnd] = useState(DEFAULT_SCHEDULE.dayEnd)
+  const [confirm, setConfirm] = useState<'draw' | 'reset' | null>(null)
+  const [msg, setMsg] = useState('')
+  const played = state.matches.filter((m) => m.status !== 'scheduled').length
+
+  const draw = async () => {
+    setConfirm(null)
+    setMsg('Losuję…')
+    const next = drawTournament(state, {
+      groups: counts,
+      schedule: { courts: state.tournament.courts, start, slotMinutes: slot, dayStart, dayEnd },
+    })
+    await store.replace(next)
+    setMsg(`Rozlosowano ${next.groups.length} grup i ułożono ${next.matches.length} meczów. Zobacz zakładkę „Grupy” na stronie.`)
+  }
+  const reset = async () => {
+    setConfirm(null)
+    await store.replace(resetResults(state))
+    setMsg('Wyzerowano wszystkie wyniki. Grupy i terminarz zostały bez zmian.')
+  }
+
+  return (
+    <section className="panel">
+      <h2>Losowanie grup</h2>
+      <p className="muted">
+        Losuje zespoły do grup od nowa i układa terminarz. Zasada: drużyny z tego samego klubu nigdy nie trafiają
+        do jednej grupy. Grupy wychodzą równe (różnica najwyżej 1 zespół).
+      </p>
+      <div className="form-row">
+        {state.categories.map((c) => {
+          const teams = state.teams.filter((t) => t.categoryId === c.id)
+          const maxPerClub = Math.max(0, ...[...new Set(teams.map(clubOf))].map((cl) => teams.filter((t) => clubOf(t) === cl).length))
+          return (
+            <label key={c.id}>{c.name}: liczba grup ({teams.length} zespołów)
+              <input
+                id={`draw-${c.id}`}
+                type="number"
+                min={Math.max(1, maxPerClub)}
+                max={teams.length}
+                value={counts[c.id] ?? 4}
+                onChange={(e) => setCounts((x) => ({ ...x, [c.id]: Math.max(1, Number(e.target.value) || 1) }))}
+              />
+            </label>
+          )
+        })}
+      </div>
+      <div className="form-row">
+        <label>Pierwszy mecz<input id="draw-start" type="datetime-local" value={start} onChange={(e) => setStart(e.target.value)} /></label>
+        <label>Mecz + przerwa (min)<input id="draw-slot" type="number" min={5} value={slot} onChange={(e) => setSlot(Number(e.target.value) || 20)} /></label>
+        <label>Kolejne dni od<input id="draw-daystart" type="time" value={dayStart} onChange={(e) => setDayStart(e.target.value)} /></label>
+        <label>Ostatni mecz dnia najpóźniej<input id="draw-dayend" type="time" value={dayEnd} onChange={(e) => setDayEnd(e.target.value)} /></label>
+      </div>
+      <p className="muted small">Drabinka (1, 2 lub 4 grupy) tworzy się osobno, w panelu „Faza pucharowa” poniżej.</p>
+      {confirm === 'draw' ? (
+        <div className="notice">
+          <p>{played ? `Uwaga: ${played} meczów ma już wynik. Nowe losowanie usunie wszystkie wyniki i drabinkę.` : 'Rozlosować grupy od nowa?'}</p>
+          <div className="actions">
+            <button className="btn btn-primary" onClick={draw}>Tak, losuj</button>
+            <button className="btn" onClick={() => setConfirm(null)}>Anuluj</button>
+          </div>
+        </div>
+      ) : confirm === 'reset' ? (
+        <div className="notice">
+          <p>Wyzerować wszystkie wyniki ({played} meczów)? Grupy i terminarz zostaną.</p>
+          <div className="actions">
+            <button className="btn btn-danger" onClick={reset}>Tak, wyzeruj</button>
+            <button className="btn" onClick={() => setConfirm(null)}>Anuluj</button>
+          </div>
+        </div>
+      ) : (
+        <div className="actions">
+          <button className="btn btn-primary" onClick={() => setConfirm('draw')}>Losuj grupy i ułóż terminarz</button>
+          <button className="btn btn-danger" disabled={!played} onClick={() => setConfirm('reset')}>Wyzeruj wszystkie wyniki</button>
+        </div>
+      )}
+      {msg && <p className="ok">{msg}</p>}
+    </section>
+  )
+}
+
+function currentTeamsCsv(state: State): string {
+  const cat = new Map(state.categories.map((c) => [c.id, c.name]))
+  const grp = new Map(state.groups.flatMap((g) => g.teamIds.map((id) => [id, g.name.replace(/^Grupa\s*/, '')] as const)))
+  const rows = state.teams.map((t) => `${t.name};${cat.get(t.categoryId) ?? ''};${grp.get(t.id) ?? ''}`)
+  return rows.length ? ['Drużyna;Kategoria;Grupa', ...rows].join('\n') : ''
 }

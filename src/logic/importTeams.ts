@@ -14,7 +14,7 @@ export function parseTeams(text: string): Pick<State, 'categories' | 'groups' | 
     const gName = /^grupa/i.test(grp) ? grp : `Grupa ${grp}`
     let g = groups.find((x) => x.categoryId === c.id && x.name === gName)
     if (!g) groups.push((g = { id: `${c.id}g${groups.length + 1}`, categoryId: c.id, name: gName, teamIds: [] }))
-    const team: Team = { id: `t${teams.length + 1}`, name, categoryId: c.id }
+    const team: Team = { id: `t${teams.length + 1}`, name, categoryId: c.id, club: name.replace(/\s+\d+$/, '') }
     teams.push(team)
     g.teamIds.push(team.id)
   }

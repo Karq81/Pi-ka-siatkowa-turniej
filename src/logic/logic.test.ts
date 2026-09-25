@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { Group, Match, Rules, Team } from '../types'
-import { defaultRules, demoState } from './demo'
+import { defaultRules, initialState } from './demo'
+import { clubOf, drawGroups, resetResults, rng } from './draw'
 import { parseTeams } from './importTeams'
 import { buildGroupSchedule, roundRobin } from './schedule'
 import { canAddPoint, isMatchDecided, resultProblem, setProblem, setWinner, standings, tally } from './scoring'
@@ -64,7 +65,7 @@ describe('schedule', () => {
   })
 
   it('never puts a team on two courts at once and respects court count', () => {
-    const { matches } = demoState()
+    const { matches } = initialState(rng(7))
     const bySlot = new Map<string, Match[]>()
     for (const x of matches) bySlot.set(x.start, [...(bySlot.get(x.start) ?? []), x])
     for (const slot of bySlot.values()) {
@@ -140,7 +141,7 @@ describe('youth rules: one set to 15', () => {
 
 describe('Albatros CUP team list', () => {
   it('has every qualified team, numbered per club', () => {
-    const s = demoState()
+    const s = initialState(rng(7))
     expect(s.teams.filter((t) => t.categoryId === 'c1')).toHaveLength(24)
     expect(s.teams.filter((t) => t.categoryId === 'c2')).toHaveLength(28)
     const names = s.teams.map((t) => t.name)
@@ -150,17 +151,50 @@ describe('Albatros CUP team list', () => {
     expect(new Set(s.teams.filter((t) => t.categoryId === 'c2').map((t) => t.name)).size).toBe(28)
   })
 
-  it('puts teams of the same club in different groups', () => {
-    const s = demoState()
-    const club = (id: string) => s.teams.find((t) => t.id === id)!.name.replace(/ \d$/, '')
-    for (const g of s.groups) {
-      const clubs = g.teamIds.map(club)
+  it('draws groups without two teams of one club together, in every draw', () => {
+    for (let seed = 1; seed <= 200; seed++) {
+      const s = initialState(rng(seed))
+      for (const g of s.groups) {
+        const clubs = g.teamIds.map((id) => clubOf(s.teams.find((t) => t.id === id)!))
+        expect(new Set(clubs).size).toBe(clubs.length)
+      }
+      const sizes = (cat: string) => s.groups.filter((g) => g.categoryId === cat).map((g) => g.teamIds.length).sort()
+      expect(sizes('c1')).toEqual([6, 6, 6, 6])
+      expect(sizes('c2')).toEqual([7, 7, 7, 7])
+    }
+  })
+
+  it('draws differently each time', () => {
+    const a = initialState(rng(1)).groups.map((g) => g.teamIds.join())
+    const b = initialState(rng(2)).groups.map((g) => g.teamIds.join())
+    expect(a).not.toEqual(b)
+  })
+
+  it('starts with no results at all', () => {
+    const s = initialState(rng(3))
+    expect(s.matches.every((m) => m.status === 'scheduled' && m.sets.length === 0)).toBe(true)
+  })
+
+  it('keeps clubs apart even with an uneven split', () => {
+    const s = initialState(rng(4))
+    const groups = drawGroups(s.teams, 'c2', 3, rng(9))
+    expect(groups.map((g) => g.teamIds.length).sort((x, y) => x - y)).toEqual([9, 9, 10])
+    for (const g of groups) {
+      const clubs = g.teamIds.map((id) => clubOf(s.teams.find((t) => t.id === id)!))
       expect(new Set(clubs).size).toBe(clubs.length)
     }
   })
 
+  it('clears all results but keeps the draw', () => {
+    const s = initialState(rng(5))
+    const played = { ...s, matches: s.matches.map((m, i) => (i < 5 ? { ...m, status: 'finished' as const, sets: [{ a: 15, b: 3 }] } : m)) }
+    const reset = resetResults(played)
+    expect(reset.groups).toEqual(s.groups)
+    expect(reset.matches.every((m) => m.status === 'scheduled' && !m.sets.length)).toBe(true)
+  })
+
   it('starts on Friday at 15:30 and continues on Saturday morning', () => {
-    const starts = [...new Set(demoState().matches.map((m) => m.start))].sort()
+    const starts = [...new Set(initialState(rng(7)).matches.map((m) => m.start))].sort()
     expect(starts[0]).toBe('2026-10-23T15:30')
     expect(starts.find((x) => x.startsWith('2026-10-24'))).toBe('2026-10-24T09:00')
   })

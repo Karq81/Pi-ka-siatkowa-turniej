@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import type { Match, State } from '../types'
-import { demoState } from './demo'
+import { initialState } from './demo'
+import { rng } from './draw'
 import { applyMatchUpdate, bracketView, createKnockout, koId } from './knockout'
 import { standings } from './scoring'
 
 /** Demo tournament with every group match finished (team A always wins 2:0). */
 function finishedGroups(): State {
-  const s = demoState()
+  const s = initialState(rng(7))
   return {
     ...s,
     matches: s.matches.map((m) => ({ ...m, status: 'finished' as const, sets: [{ a: 25, b: 10 }, { a: 25, b: 12 }] })),
@@ -63,7 +64,7 @@ describe('knockout', () => {
   })
 
   it('shows a projected bracket before it is created', () => {
-    const slots = bracketView(demoState(), 'c2')!
+    const slots = bracketView(initialState(rng(7)), 'c2')!
     expect(slots).toHaveLength(8)
     expect(slots.every((x) => x.projected)).toBe(true)
     expect(slots[0].match.teamA).not.toBe('')

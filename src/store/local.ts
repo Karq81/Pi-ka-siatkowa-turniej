@@ -1,9 +1,9 @@
-import { demoState } from '../logic/demo'
+import { initialState } from '../logic/demo'
 import { applyMatchUpdate } from '../logic/knockout'
 import type { Pins, Session, State } from '../types'
 import type { Store, SyncInfo } from './types'
 
-const KEY = 'siatkalive:v2'
+const KEY = 'siatkalive:v3'
 const PINS_KEY = 'siatkalive:pins'
 const ROLE_KEY = 'siatkalive:role'
 
@@ -26,7 +26,7 @@ function write(key: string, value: unknown, storage: () => Storage = () => local
 
 /** Browser-only store: syncs tabs on one device. Used when Firebase is not configured. */
 export function createLocalStore(): Store {
-  let state = read<State>(KEY) ?? demoState()
+  let state = read<State>(KEY) ?? initialState()
   // Demo keys: admin 1234, court N → 100N (e.g. court 3 → 1003).
   const demoPins: Pins = {
     adminPin: '1234',
