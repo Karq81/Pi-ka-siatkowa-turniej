@@ -72,7 +72,8 @@ describe('schedule', () => {
       const ids = slot.flatMap((x) => [x.teamA, x.teamB])
       expect(new Set(ids).size).toBe(ids.length)
     }
-    expect(matches).toHaveLength(120)
+    // Dwójki 4×6 teams (15 matches per group), Trójki 4×7 (21 per group).
+    expect(matches).toHaveLength(4 * 15 + 4 * 21)
   })
 
   it('moves to the next day after the day end', () => {
@@ -134,5 +135,33 @@ describe('youth rules: one set to 15', () => {
     const r21 = { ...youth, setPoints: 21, lastSetPoints: 21 }
     expect(setProblem(r21, 0, { a: 21, b: 19 })).toBeNull()
     expect(setProblem(r21, 0, { a: 15, b: 10 })).toBe('unfinished')
+  })
+})
+
+describe('Albatros CUP team list', () => {
+  it('has every qualified team, numbered per club', () => {
+    const s = demoState()
+    expect(s.teams.filter((t) => t.categoryId === 'c1')).toHaveLength(24)
+    expect(s.teams.filter((t) => t.categoryId === 'c2')).toHaveLength(28)
+    const names = s.teams.map((t) => t.name)
+    expect(names).toContain('UKS Opty Mielno 1')
+    expect(names).toContain('UKS Opty Mielno 2')
+    expect(names).toContain('AMPS Kołobrzeg')
+    expect(new Set(s.teams.filter((t) => t.categoryId === 'c2').map((t) => t.name)).size).toBe(28)
+  })
+
+  it('puts teams of the same club in different groups', () => {
+    const s = demoState()
+    const club = (id: string) => s.teams.find((t) => t.id === id)!.name.replace(/ \d$/, '')
+    for (const g of s.groups) {
+      const clubs = g.teamIds.map(club)
+      expect(new Set(clubs).size).toBe(clubs.length)
+    }
+  })
+
+  it('starts on Friday at 15:30 and continues on Saturday morning', () => {
+    const starts = [...new Set(demoState().matches.map((m) => m.start))].sort()
+    expect(starts[0]).toBe('2026-10-23T15:30')
+    expect(starts.find((x) => x.startsWith('2026-10-24'))).toBe('2026-10-24T09:00')
   })
 })

@@ -25,8 +25,10 @@ export interface ScheduleOptions {
   /** First slot, ISO local date-time. */
   start: string
   slotMinutes: number
-  /** Last slot of a day starts no later than this time (HH:MM); then move to next day's `start` time. */
+  /** Last slot of a day starts no later than this time (HH:MM); then play moves to the next day. */
   dayEnd: string
+  /** First slot on the following days (HH:MM); defaults to the time of `start`. */
+  dayStart?: string
 }
 
 function addMinutes(iso: string, minutes: number): string {
@@ -62,7 +64,7 @@ export function buildGroupSchedule(groups: Group[], opts: ScheduleOptions): Matc
   }
 
   const result: Match[] = []
-  const startTime = opts.start.slice(11)
+  const startTime = opts.dayStart ?? opts.start.slice(11)
   let slot = opts.start
   while (queue.length) {
     const busy = new Set<string>()

@@ -25,46 +25,65 @@ function rng(seed: number) {
   }
 }
 
-const CLUBS = [
-  'Orlik', 'Iskra', 'Sokół', 'Olimp', 'Tęcza', 'Grom', 'Płomyk', 'Żak', 'Jedynka', 'Dwójka',
-  'Wisełka', 'Pogoń', 'Czarni', 'Delfin', 'Kometa', 'Rakieta', 'Promyk', 'Huragan', 'Jastrząb', 'Lotos',
+/**
+ * Qualified teams of Albatros CUP 2026 (organiser's list): club → number of teams
+ * in Dwójki and Trójki.
+ */
+export const CLUBS: { name: string; dwojki: number; trojki: number }[] = [
+  { name: 'Akademia Siatkówki 13 Koszalin', dwojki: 1, trojki: 2 },
+  { name: 'SGS Goleniów', dwojki: 2, trojki: 2 },
+  { name: 'UKS Volley 71 Szczecin', dwojki: 2, trojki: 2 },
+  { name: 'UKS Pogodno Szczecin', dwojki: 2, trojki: 2 },
+  { name: 'MKS Gryf Szczecinek', dwojki: 2, trojki: 2 },
+  { name: 'UKS OPP Powiat Kołobrzeski', dwojki: 2, trojki: 2 },
+  { name: 'AMPS Kołobrzeg', dwojki: 0, trojki: 1 },
+  { name: 'UKS Tytan Ostrowy', dwojki: 2, trojki: 2 },
+  { name: 'PTPS Człuchów', dwojki: 2, trojki: 2 },
+  { name: 'MKS Sasvolley Stargard', dwojki: 2, trojki: 2 },
+  { name: 'UKS Piątka Turek', dwojki: 0, trojki: 2 },
+  { name: 'UKS Bukowe Szczecin', dwojki: 0, trojki: 2 },
+  { name: 'SP 18 Koszalin', dwojki: 2, trojki: 0 },
+  { name: 'TPS Czarni Słupsk', dwojki: 2, trojki: 2 },
+  { name: 'Akademia Siatkarska Energia Chojna', dwojki: 1, trojki: 1 },
+  { name: 'UKS Opty Mielno', dwojki: 2, trojki: 2 },
 ]
-const TOWNS = ['Kraków', 'Tarnów', 'Bochnia', 'Wieliczka', 'Myślenice', 'Niepołomice', 'Skawina', 'Brzesko']
 
-/** Example tournament: 60 teams in 3 categories, 4 groups of 5 each, 10 courts. */
+const GROUPS_PER_CATEGORY = 4
+
+/**
+ * Albatros CUP with the real team list: Dwójki and Trójki, 4 groups each (so the
+ * bracket starts with quarter-finals). A club with two teams gets "1" and "2", and
+ * its teams go to different groups. Results are made up, to show how the site looks.
+ */
 export function demoState(): State {
   const categories: Category[] = [
     { id: 'c1', name: 'Dwójki' },
     { id: 'c2', name: 'Trójki' },
-    { id: 'c3', name: 'Czwórki' },
   ]
   const teams: Team[] = []
   const groups: Group[] = []
-  let t = 0
   for (const c of categories) {
-    for (let g = 0; g < 4; g++) {
-      const group: Group = { id: `${c.id}g${g + 1}`, categoryId: c.id, name: `Grupa ${'ABCD'[g]}`, teamIds: [] }
-      for (let i = 0; i < 5; i++) {
-        const club = CLUBS[t % CLUBS.length]
-        const town = TOWNS[Math.floor(t / 3) % TOWNS.length]
-        const team: Team = { id: `t${++t}`, name: `UKS ${club} ${town}`, categoryId: c.id }
+    const key = c.id === 'c1' ? 'dwojki' : 'trojki'
+    const catGroups: Group[] = Array.from({ length: GROUPS_PER_CATEGORY }, (_, g) => ({
+      id: `${c.id}g${g + 1}`, categoryId: c.id, name: `Grupa ${'ABCDEFGH'[g]}`, teamIds: [],
+    }))
+    // Teams of one club are next to each other, so dealing them round the groups splits them up.
+    let i = 0
+    for (const club of CLUBS) {
+      const count = club[key]
+      for (let n = 1; n <= count; n++) {
+        const team: Team = { id: `${c.id}t${teams.length + 1}`, name: count > 1 ? `${club.name} ${n}` : club.name, categoryId: c.id }
         teams.push(team)
-        group.teamIds.push(team.id)
+        catGroups[i++ % GROUPS_PER_CATEGORY].teamIds.push(team.id)
       }
-      groups.push(group)
     }
-  }
-  // Make names unique where club+town repeat across categories.
-  const seen = new Map<string, number>()
-  for (const team of teams) {
-    const n = (seen.get(team.name) ?? 0) + 1
-    seen.set(team.name, n)
-    if (n > 1) team.name += ` ${'I'.repeat(n)}`
+    groups.push(...catGroups)
   }
 
   const rules = defaultRules
+  // Friday 23.10 from 15:30, then Saturday and Sunday from 9:00; one set to 15 ≈ 20 minutes with changeover.
   const matches = buildGroupSchedule(groups, {
-    courts: 10, start: '2026-10-23T09:00', slotMinutes: 25, dayEnd: '18:00',
+    courts: 10, start: '2026-10-23T15:30', slotMinutes: 20, dayEnd: '18:40', dayStart: '09:00',
   })
 
   // Example moment of the tournament: the first two rounds on the courts are finished,
@@ -92,7 +111,7 @@ export function demoState(): State {
   return {
     tournament: {
       name: 'Albatros CUP 2026',
-      subtitle: '23–25 października 2026 · Mielno · drużyny przykładowe',
+      subtitle: '23–25 października 2026 · Mielno · wyniki przykładowe (pokaz)',
       courts: 10,
       rules,
     },
