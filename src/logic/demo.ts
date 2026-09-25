@@ -58,11 +58,13 @@ export function albatrosTeams(): Team[] {
   return teams
 }
 
+export const GROUPS_DEFAULT = GROUPS_PER_CATEGORY
+
 /**
- * The tournament before it starts: Albatros CUP teams drawn into 4 groups per
- * category (teams of one club never in the same group), full schedule, no results.
+ * The tournament before the draw: Albatros CUP teams in Dwójki and Trójki,
+ * no groups and no matches yet. The organiser draws the groups in the panel.
  */
-export function initialState(rand: () => number = Math.random): State {
+export function initialState(): State {
   const base: State = {
     tournament: {
       name: 'Albatros CUP 2026',
@@ -78,5 +80,10 @@ export function initialState(rand: () => number = Math.random): State {
     teams: albatrosTeams(),
     matches: [],
   }
-  return drawTournament(base, { groups: { c1: GROUPS_PER_CATEGORY, c2: GROUPS_PER_CATEGORY }, schedule: DEFAULT_SCHEDULE }, rand)
+  return base
+}
+
+/** Both categories drawn into 4 groups each, with the default schedule. */
+export function drawnState(rand: () => number = Math.random): State {
+  return drawTournament(initialState(), { groups: { c1: GROUPS_PER_CATEGORY, c2: GROUPS_PER_CATEGORY }, schedule: DEFAULT_SCHEDULE }, rand)
 }

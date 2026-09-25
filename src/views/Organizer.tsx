@@ -1,27 +1,182 @@
-import { store, useSession } from '../store/store'
+import { useState } from 'react'
+import { DEFAULT_SCHEDULE, GROUPS_DEFAULT } from '../logic/demo'
+import { clubOf, drawCategory, isDrawn } from '../logic/draw'
+import { store, useSession, useStore } from '../store/store'
+import type { Category, State } from '../types'
+import { PinGate, useLookups } from '../ui'
+import { CourtList } from './Court'
+import { Groups } from './Groups'
 
-const TILES = [
-  { href: '#sedzia', title: 'Sędziowie boisk', text: 'Wybór boiska: liczenie punktów na żywo albo wpisanie wyniku z kartki. Wymaga klucza boiska.' },
-  { href: '#admin', title: 'Sędzia główny', text: 'Wszystkie boiska, wpisywanie i poprawianie wyników, klucze boisk, drużyny, terminarz, drabinka, ustawienia.' },
-  { href: '#kartki', title: 'Kartki z kodami QR', text: 'Do wydruku i przyklejenia przy boiskach: kod QR do panelu boiska i klucz.' },
-  { href: '#tv', title: 'Tryb TV', text: 'Na telewizor lub rzutnik na hali: boiska, tabele i drabinki zmieniają się same.' },
+const TABS = [
+  { route: 'panel', label: '1. Zespoły i losowanie' },
+  { route: 'panel-grupy', label: '2. Grupy' },
+  { route: 'panel-sedziowie', label: '3. Sędziowanie' },
+  { route: 'panel-wiecej', label: 'Więcej' },
 ]
 
 /**
- * Organiser entry point (#panel). Not linked from the public pages, so parents and
- * coaches only ever see results; every tool here still asks for a key.
+ * Organiser panel (#panel). Not linked from the public pages. Leads through the
+ * preparation: teams → draw → groups → refereeing; drawing needs the admin PIN.
  */
-export function Organizer() {
-  const session = useSession()
+export function Organizer({ route }: { route: string }) {
+  const state = useStore()
+  const tab = TABS.some((t) => t.route === route) ? route : 'panel'
   return (
     <div className="page">
-      <header className="bar">
-        <h1>Panel organizatora</h1>
+      <header className="org-head">
+        <div>
+          <p className="eyebrow">Panel organizatora</p>
+          <h1>{state.tournament.name}</h1>
+        </div>
+        <nav className="tabs" aria-label="Panel organizatora">
+          {TABS.map((t) => (
+            <a key={t.route} href={`#${t.route}`} className={tab === t.route ? 'active' : ''}>{t.label}</a>
+          ))}
+        </nav>
       </header>
+      {tab === 'panel' && <TeamsAndDraw state={state} />}
+      {tab === 'panel-grupy' && (
+        state.groups.length ? <Groups state={state} /> : <Empty />
+      )}
+      {tab === 'panel-sedziowie' && <CourtList />}
+      {tab === 'panel-wiecej' && <More />}
+    </div>
+  )
+}
+
+function Empty() {
+  return (
+    <p className="notice-inline">
+      Grupy nie są jeszcze rozlosowane. Zrób to w zakładce <a href="#panel">1. Zespoły i losowanie</a>.
+    </p>
+  )
+}
+
+/** Step 1: every team by category and club, then one draw button per category. */
+function TeamsAndDraw({ state }: { state: State }) {
+  return (
+    <>
       <p className="muted">
-        Ta strona jest tylko dla organizatorów i sędziów. Rodzicom i trenerom dajemy adres strony głównej
-        (albo kod QR z niej), gdzie są same wyniki, bez możliwości wpisywania.
+        Zespoły z listy zakwalifikowanych. Pod listą losujesz grupy dla każdej kategorii. Zasada losowania:
+        drużyny z tego samego klubu nigdy nie trafiają do jednej grupy.
       </p>
+      <div className="org-cats">
+        {state.categories.map((c) => <CategoryTeams key={c.id} state={state} category={c} />)}
+      </div>
+      <section className="panel">
+        <h2>Losowanie grup</h2>
+        <PinGate label="Losowanie (sędzia główny)">
+          <div className="org-draws">
+            {state.categories.map((c) => <DrawCategory key={c.id} state={state} category={c} />)}
+          </div>
+        </PinGate>
+      </section>
+    </>
+  )
+}
+
+function CategoryTeams({ state, category }: { state: State; category: Category }) {
+  const teams = state.teams.filter((t) => t.categoryId === category.id)
+  const clubs = [...new Set(teams.map(clubOf))]
+  const drawn = isDrawn(state, category.id)
+  const groups = state.groups.filter((g) => g.categoryId === category.id)
+  return (
+    <section className="org-cat">
+      <header>
+        <h2>{category.name}</h2>
+        <span className={`pill ${drawn ? 'pill-done' : ''}`}>{drawn ? `Rozlosowane: ${groups.length} grupy` : 'Nie rozlosowane'}</span>
+      </header>
+      <p className="muted small">{teams.length} zespołów z {clubs.length} klubów</p>
+      <ul className="org-clubs">
+        {clubs.map((club) => {
+          const own = teams.filter((t) => clubOf(t) === club)
+          return (
+            <li key={club}>
+              <span>{club}</span>
+              <b title="Liczba zespołów">{own.length > 1 ? `${own.length} zespoły` : '1 zespół'}</b>
+            </li>
+          )
+        })}
+      </ul>
+    </section>
+  )
+}
+
+function DrawCategory({ state, category }: { state: State; category: Category }) {
+  const { teamName } = useLookups(state)
+  const teams = state.teams.filter((t) => t.categoryId === category.id)
+  const maxPerClub = Math.max(1, ...[...new Set(teams.map(clubOf))].map((cl) => teams.filter((t) => clubOf(t) === cl).length))
+  const current = state.groups.filter((g) => g.categoryId === category.id)
+  const [count, setCount] = useState(current.length || GROUPS_DEFAULT)
+  const [confirm, setConfirm] = useState(false)
+  const [msg, setMsg] = useState('')
+  const drawn = isDrawn(state, category.id)
+  const played = state.matches.filter((m) => m.status !== 'scheduled').length
+  const per = count > 0 ? `${Math.floor(teams.length / count)}${teams.length % count ? `–${Math.ceil(teams.length / count)}` : ''}` : ''
+
+  const draw = async () => {
+    setConfirm(false)
+    setMsg('Losuję…')
+    const first = state.matches.map((m) => m.start).sort()[0] ?? DEFAULT_SCHEDULE.start
+    const next = drawCategory(state, category.id, count, { ...DEFAULT_SCHEDULE, courts: state.tournament.courts, start: first })
+    await store.replace(next)
+    setMsg(`Rozlosowano ${category.name.toLowerCase()} do ${count} grup.`)
+  }
+
+  return (
+    <div className="org-draw">
+      <h3>{category.name}</h3>
+      <label>Liczba grup
+        <input
+          id={`org-count-${category.id}`}
+          type="number"
+          min={maxPerClub}
+          max={teams.length}
+          value={count}
+          onChange={(e) => setCount(Math.max(maxPerClub, Number(e.target.value) || maxPerClub))}
+        />
+      </label>
+      <p className="muted small">{teams.length} zespołów → {count} grup po {per}.{count === 4 || count === 2 || count === 1 ? ' Drabinka zadziała.' : ' Drabinka jest gotowa dla 1, 2 lub 4 grup.'}</p>
+      {confirm ? (
+        <div className="notice">
+          <p>{played ? `Uwaga: są już wyniki (${played} meczów). Losowanie od nowa je usunie.` : drawn ? `Rozlosować ${category.name.toLowerCase()} od nowa?` : `Rozlosować ${category.name.toLowerCase()}?`}</p>
+          <div className="actions">
+            <button className="btn btn-primary" onClick={draw}>Tak, losuj</button>
+            <button className="btn" onClick={() => setConfirm(false)}>Anuluj</button>
+          </div>
+        </div>
+      ) : (
+        <button className="btn btn-primary btn-lg" onClick={() => setConfirm(true)}>
+          {drawn ? `Losuj ponownie: ${category.name}` : `Losuj grupy: ${category.name}`}
+        </button>
+      )}
+      {msg && <p className="ok">{msg}</p>}
+      {drawn && (
+        <div className="org-result">
+          {current.map((g) => (
+            <div key={g.id} className="org-group">
+              <b>{g.name}</b>
+              <ol>{g.teamIds.map((id) => <li key={id}>{teamName(id)}</li>)}</ol>
+            </div>
+          ))}
+          <a href="#panel-grupy" className="small">Zobacz grupy z terminarzem →</a>
+        </div>
+      )}
+    </div>
+  )
+}
+
+const TILES = [
+  { href: '#admin', title: 'Sędzia główny', text: 'Wpisywanie i poprawianie wyników, klucze boisk, terminarz, drabinka, ustawienia punktacji.' },
+  { href: '#kartki', title: 'Kartki z kodami QR', text: 'Do wydruku i przyklejenia przy boiskach: kod QR do panelu boiska i klucz.' },
+  { href: '#tv', title: 'Tryb TV', text: 'Na telewizor lub rzutnik na hali: boiska, tabele i drabinki zmieniają się same.' },
+  { href: '#', title: 'Strona dla kibiców', text: 'To, co widzą rodzice i trenerzy: informacje, wyniki, grupy. Bez możliwości wpisywania.' },
+]
+
+function More() {
+  const session = useSession()
+  return (
+    <>
       <ul className="organizer">
         {TILES.map((t) => (
           <li key={t.href}>
@@ -32,15 +187,12 @@ export function Organizer() {
           </li>
         ))}
       </ul>
-      <p className="small">
-        <a href="#">Strona dla kibiców (tylko wyniki) →</a>
-      </p>
       {session && (
         <p className="muted small">
           Ten telefon jest zalogowany jako {session.role === 'admin' ? 'sędzia główny' : `sędzia boiska ${session.court}`}.{' '}
           <button className="linklike" onClick={() => store.logout()}>Wyloguj</button>
         </p>
       )}
-    </div>
+    </>
   )
 }

@@ -8,19 +8,28 @@ import { courtMatch, formatTime, PinGate, StatusPill, useLookups } from '../ui'
 
 /** List of courts for referees to pick from. */
 export function CourtPicker() {
+  return (
+    <div className="page">
+      <header className="bar">
+        <a href="#panel-sedziowie" className="back">← Panel organizatora</a>
+        <h1>Tryb sędziego</h1>
+      </header>
+      <CourtList />
+    </div>
+  )
+}
+
+/** Every court with its current match and the two ways to score it. */
+export function CourtList() {
   const state = useStore()
   const session = useSession()
   const { side } = useLookups(state)
   const courts = Array.from({ length: state.tournament.courts }, (_, i) => i + 1)
   return (
-    <div className="page">
-      <header className="bar">
-        <a href="#panel" className="back">← Panel organizatora</a>
-        <h1>Tryb sędziego</h1>
-      </header>
+    <>
       <p className="muted">
-        Wybierz swoje boisko i wpisz klucz, który dostałeś od sędziego głównego. Przy każdym boisku wisi też kartka
-        z kodem QR, który prowadzi prosto tutaj.
+        Wybierz boisko i wpisz klucz, który dostałeś od sędziego głównego. Przy każdym boisku wisi też kartka
+        z kodem QR, który prowadzi prosto do tego boiska.
       </p>
       <ul className="court-picker">
         {courts.map((c) => {
@@ -50,7 +59,7 @@ export function CourtPicker() {
           <button className="linklike" onClick={() => store.logout()}>Wyloguj</button>
         </p>
       )}
-    </div>
+    </>
   )
 }
 

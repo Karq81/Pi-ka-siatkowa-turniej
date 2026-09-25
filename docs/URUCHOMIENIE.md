@@ -39,9 +39,10 @@ VITE_FIREBASE_APP_ID=...
 ## 4. Pierwsze uruchomienie
 
 1. Wejdź na `adres-strony/#admin`. Pokaże się **Pierwsze uruchomienie**.
-2. Ustaw PIN sędziego głównego → **Utwórz turniej** (startuje z danymi przykładowymi).
+2. Ustaw PIN sędziego głównego → **Utwórz turniej**. Wczytują się zespoły z listy zakwalifikowanych.
    Klucze dla każdego boiska generują się same: **Klucze boisk** (tam też kartki z kodami QR do wydruku).
-3. **Drużyny i terminarz** → wklej drużyny z Excela → **Wczytaj i ułóż terminarz**.
+3. **Panel organizatora** (`#panel`) → **1. Zespoły i losowanie** → „Losuj grupy” osobno dla dwójek
+   i trójek (drużyny jednego klubu nigdy w tej samej grupie). Losowanie można powtarzać.
 4. **Ustawienia** → zasady meczu (sety, punkty, punktacja tabeli).
 
 ## Adresy

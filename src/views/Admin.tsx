@@ -390,8 +390,8 @@ function FirstSetup() {
       <h2>Ustaw PIN i utwórz turniej</h2>
       <p className="muted">
         Baza jest pusta. Ustaw PIN sędziego głównego. Klucze dla każdego boiska wygenerują się same, znajdziesz je
-        w zakładce „Klucze boisk”. Zespoły z listy zakwalifikowanych zostaną rozlosowane do grup (po 4 grupy
-        w dwójkach i trójkach, drużyny jednego klubu zawsze w różnych grupach). Losowanie można potem powtórzyć.
+        w zakładce „Klucze boisk”. Wczytają się zespoły z listy zakwalifikowanych, a potem w panelu organizatora
+        rozlosujesz je do grup (osobno dwójki i trójki).
       </p>
       <AdminPinForm
         saveLabel="Utwórz turniej"
@@ -404,6 +404,7 @@ function FirstSetup() {
             if (!(await store.login(adminPin))) throw e
           }
           await store.replace(initialState())
+          location.hash = 'panel'
         }}
       />
     </section>

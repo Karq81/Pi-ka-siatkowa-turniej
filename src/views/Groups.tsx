@@ -9,6 +9,7 @@ export function Groups({ state }: { state: State }) {
   const { teamName } = useLookups(state)
   const [cat, setCat] = useState('')
   const cats = state.categories.filter((c) => !cat || c.id === cat)
+  if (!state.groups.length) return <p className="notice-inline">Grupy nie są jeszcze rozlosowane. Pojawią się tutaj po losowaniu.</p>
   return (
     <>
       <div className="chips">

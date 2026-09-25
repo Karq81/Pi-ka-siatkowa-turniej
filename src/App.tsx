@@ -20,7 +20,7 @@ function Screen() {
   if (court) return <Court key={court[1]} court={Number(court[1])} />
   const result = /^wynik-(\d+)$/.exec(route)
   if (result) return <Court key={`w${result[1]}`} court={Number(result[1])} manual />
-  if (route === 'panel') return <Organizer />
+  if (/^panel(-[a-z]+)?$/.test(route)) return <Organizer route={route} />
   if (route === 'sedzia') return <CourtPicker />
   if (route === 'admin') return <Admin />
   if (route === 'kartki') return <PrintCards />

@@ -82,3 +82,23 @@ export function resetResults(state: State): State {
     })),
   }
 }
+
+/**
+ * Draws one category into `count` groups and rebuilds the schedule for all groups.
+ * Groups of other categories stay as they are. Clears results and the bracket,
+ * so it is meant for before the tournament.
+ */
+export function drawCategory(
+  state: State, categoryId: string, count: number, schedule: ScheduleOptions, rand: () => number = Math.random,
+): State {
+  const drawn = drawGroups(state.teams, categoryId, count, rand)
+  // Keep categories in their usual order.
+  const groups = state.categories.flatMap((c) =>
+    c.id === categoryId ? drawn : state.groups.filter((g) => g.categoryId === c.id))
+  return { ...state, groups, matches: buildGroupSchedule(groups, schedule) }
+}
+
+/** Whether a category has been drawn into groups yet. */
+export function isDrawn(state: State, categoryId: string): boolean {
+  return state.groups.some((g) => g.categoryId === categoryId && g.teamIds.length > 0)
+}

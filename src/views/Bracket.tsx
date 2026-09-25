@@ -28,7 +28,13 @@ export function BracketBoard({ state, categoryId }: { state: State; categoryId: 
   const projected = slots?.some((s) => s.projected)
   return (
     <>
-      {!slots && <p className="muted">Dla tej liczby grup drabinka nie jest jeszcze przygotowana.</p>}
+      {!slots && (
+        <p className="muted">
+          {state.groups.some((g) => g.categoryId === categoryId)
+            ? 'Dla tej liczby grup drabinka nie jest jeszcze przygotowana.'
+            : 'Drabinka pojawi się po losowaniu grup.'}
+        </p>
+      )}
       {slots && projected && (
         <p className="notice-inline">
           Podgląd na podstawie aktualnych tabel. Drabinka ustali się po zakończeniu meczów grupowych.
