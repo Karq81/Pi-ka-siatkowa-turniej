@@ -312,7 +312,8 @@ function Settings({ state }: { state: State }) {
           <label>Liczba boisk<input id="set-courts" type="number" min={1} value={t.courts} onChange={(e) => update({ courts: num(e.target.value, 1) })} /></label>
         </div>
       </section>
-      <PinSettings />
+      {/* Changing the admin PIN is switched off while the organisers test the app, so nobody locks the others out. */}
+      {ALLOW_PIN_CHANGE && <PinSettings />}
       <section className="panel">
         <h2>Zasady meczu</h2>
         <div className="form-grid">
@@ -364,6 +365,8 @@ export function AdminPinForm({ onSave, saveLabel }: { onSave: (pin: string) => P
     </form>
   )
 }
+
+const ALLOW_PIN_CHANGE = false
 
 function PinSettings() {
   return (
