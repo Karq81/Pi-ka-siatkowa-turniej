@@ -114,3 +114,30 @@ export function retimeSchedule(
   }
   return matches.map((m) => (moved.has(m.start) && moved.get(m.start) !== m.start ? { ...m, start: moved.get(m.start)! } : m))
 }
+
+/**
+ * Every group on its own court (`courts[i]` for `groups[i]`): the group's round robin is
+ * played one match after another on that court, all courts starting together, moving
+ * to the next morning after `dayEnd`.
+ */
+export function buildGroupsOnOwnCourts(groups: Group[], courts: number[], opts: ScheduleOptions): Match[] {
+  const startTime = opts.dayStart ?? opts.start.slice(11)
+  const times: string[] = []
+  const timeAt = (i: number) => {
+    while (times.length <= i) {
+      if (!times.length) { times.push(opts.start); continue }
+      const prev = times[times.length - 1]
+      let next = addMinutes(prev, opts.slotMinutes)
+      if (next.slice(11) > opts.dayEnd) next = addMinutes(`${prev.slice(0, 10)}T${startTime}`, 24 * 60)
+      times.push(next)
+    }
+    return times[i]
+  }
+  const placed = groups.flatMap((g, gi) =>
+    roundRobin(g.teamIds).flat().map(([a, b], i) => ({
+      categoryId: g.categoryId, groupId: g.id, teamA: a, teamB: b,
+      court: courts[gi], start: timeAt(i), sets: [], status: 'scheduled' as const, updatedAt: 0,
+    })))
+  placed.sort((x, y) => x.start.localeCompare(y.start) || x.court - y.court)
+  return placed.map((m, i) => ({ id: `m${i + 1}`, ...m }))
+}

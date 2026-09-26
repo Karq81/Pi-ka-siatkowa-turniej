@@ -9,7 +9,7 @@ import { CorrectButton } from './Correction'
 import { useSession } from '../store/store'
 import { formatRatio, standings, tally } from '../logic/scoring'
 import type { Match, State, Team } from '../types'
-import { BackBar, formatDay, formatTime, StatusPill, useLookups, useNow } from '../ui'
+import { BackBar, courtLabel, formatDay, formatTime, StatusPill, useLookups, useNow } from '../ui'
 
 type Phase = 'groups' | 'ko'
 
@@ -235,7 +235,7 @@ export function MatchCard({ state, match: m, label }: { state: State; match: Mat
       {followed && <div className="mc-ribbon">★ Mecz Twojej drużyny</div>}
       <header>
         <span>{label ?? ''}{label && m.start ? ' · ' : ''}{m.start ? `${formatDay(m.start)} ${formatTime(m.start)}` : ''}</span>
-        <span>{m.court ? `Boisko ${m.court}` : ''}</span>
+        <span>{m.court ? `Boisko ${courtLabel(m.court)}` : ''}</span>
         {underway && <StatusPill status="live" />}
         {m.status === 'finished' && <StatusPill status="finished" />}
       </header>
@@ -408,7 +408,7 @@ export function TeamPage({ state, teamId }: { state: State; teamId: string }) {
       {next && (
         <section className={`team-next ${next.status === 'live' ? 'is-live' : ''}`}>
           <p className="eyebrow">{next.status === 'live' ? 'Gra teraz' : 'Następny mecz'}</p>
-          <p className="tn-when">{formatDay(next.start)}, <b>{formatTime(next.start)}</b> · Boisko <b>{next.court}</b></p>
+          <p className="tn-when">{formatDay(next.start)}, <b>{formatTime(next.start)}</b> · Boisko <b>{courtLabel(next.court)}</b></p>
           <p className="tn-vs">
             z <TeamBadge team={opponent(next)} size="sm" /> <b>{opponent(next)?.name ?? 'rywal do ustalenia'}</b>
           </p>
@@ -545,7 +545,7 @@ export function MyTeams({ state }: { state: State }) {
                 {next ? (
                   <>
                     {next.status === 'live' ? <StatusPill status="live" /> : <b>{formatDay(next.start)} {formatTime(next.start)}</b>}
-                    <span className="small">Boisko {next.court}{opp ? ` · z ${opp.name}` : ''}</span>
+                    <span className="small">Boisko {courtLabel(next.court)}{opp ? ` · z ${opp.name}` : ''}</span>
                   </>
                 ) : (
                   <span className="muted small">{ms.length ? 'Brak kolejnych meczów' : 'Mecze wkrótce'}</span>

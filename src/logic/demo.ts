@@ -1,6 +1,6 @@
 import type { Group, Rules, State, Team } from '../types'
 import { drawTournament } from './draw'
-import { buildGroupSchedule } from './schedule'
+import { buildGroupsOnOwnCourts } from './schedule'
 
 /**
  * Albatros CUP (girls aged 10–11): one set to 15 with a 2-point lead (the organiser may
@@ -40,9 +40,15 @@ export const CLUBS: { name: string; dwojki: number; trojki: number }[] = [
 
 const GROUPS_PER_CATEGORY = 4
 
+/**
+ * Albatros CUP courts: one per group, named like the groups. Dwójki play on courts A–D,
+ * Trójki on courts 1–5 (inside the app they are courts 1–9).
+ */
+export const COURT_NAMES = ['A', 'B', 'C', 'D', '1', '2', '3', '4', '5']
+
 /** Albatros CUP schedule: Friday 23.10 from 15:30, Saturday from 9:30; a match every 15 minutes (the organiser can change it). */
 export const DEFAULT_SCHEDULE = {
-  courts: 10, start: '2026-10-23T15:30', slotMinutes: 15, dayEnd: '18:40', dayStart: '09:30',
+  courts: COURT_NAMES.length, start: '2026-10-23T15:30', slotMinutes: 15, dayEnd: '18:40', dayStart: '09:30',
 }
 
 /** Qualified teams, one per entry; clubs with two teams in a category get "1" and "2". */
@@ -114,7 +120,7 @@ export function albatrosGroups(teams: Team[]): Group[] {
 
 /**
  * Albatros CUP as set up by the organiser: all teams in Dwójki and Trójki, in the
- * organiser's fixed groups, with the group schedule on 10 courts from Friday 15:30.
+ * organiser's fixed groups, each group on its own court, from Friday 15:30.
  */
 export function initialState(): State {
   const teams = albatrosTeams()
@@ -126,6 +132,7 @@ export function initialState(): State {
       courts: DEFAULT_SCHEDULE.courts,
       rules: defaultRules,
       slotMinutes: DEFAULT_SCHEDULE.slotMinutes,
+      courtNames: COURT_NAMES,
     },
     categories: [
       { id: 'c1', name: 'Dwójki' },
@@ -133,7 +140,8 @@ export function initialState(): State {
     ],
     groups,
     teams,
-    matches: buildGroupSchedule(groups, DEFAULT_SCHEDULE),
+    // Group A on court A … group D on court D, group 1 on court 1 … group 5 on court 5.
+    matches: buildGroupsOnOwnCourts(groups, groups.map((_, i) => i + 1), DEFAULT_SCHEDULE),
   }
 }
 

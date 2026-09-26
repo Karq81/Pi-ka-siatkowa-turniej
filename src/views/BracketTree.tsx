@@ -2,7 +2,7 @@ import { useFavorites } from '../favorites'
 import type { BracketSlot } from '../logic/knockout'
 import { tally } from '../logic/scoring'
 import type { Match, State } from '../types'
-import { formatDay, formatTime, StatusPill, useLookups } from '../ui'
+import { courtLabel, formatDay, formatTime, StatusPill, useLookups } from '../ui'
 import { TeamBadge } from './Competition'
 
 /**
@@ -152,7 +152,7 @@ function BMatch({ state, match: m }: { state: State; match?: Match }) {
     <>
       <header>
         <span>{m.ko!.label}</span>
-        {m.status === 'live' ? <StatusPill status="live" /> : m.start && <span>{formatDay(m.start)} {formatTime(m.start)} · B{m.court}</span>}
+        {m.status === 'live' ? <StatusPill status="live" /> : m.start && <span>{formatDay(m.start)} {formatTime(m.start)} · B{courtLabel(m.court)}</span>}
       </header>
       {row('a')}
       {row('b')}

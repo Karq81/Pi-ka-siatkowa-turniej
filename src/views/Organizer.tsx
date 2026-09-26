@@ -5,7 +5,7 @@ import { retimeSchedule } from '../logic/schedule'
 import { store, useSession, useStore, useSync } from '../store/store'
 import { AdminPinForm, setupTournament } from './Admin'
 import type { Category, State } from '../types'
-import { formatDay, formatTime, PinGate, useLookups } from '../ui'
+import { courtLabel, formatDay, formatTime, PinGate, useLookups } from '../ui'
 import { CourtList } from './Court'
 import { Competition } from './Competition'
 
@@ -205,7 +205,7 @@ function More() {
       </ul>
       {session && (
         <p className="muted small">
-          Ten telefon jest zalogowany jako {session.role === 'admin' ? 'sędzia główny' : `sędzia boiska ${session.court}`}.{' '}
+          Ten telefon jest zalogowany jako {session.role === 'admin' ? 'sędzia główny' : `sędzia boiska ${courtLabel(session.court ?? 0)}`}.{' '}
           <button className="linklike" onClick={() => store.logout()}>Wyloguj</button>
         </p>
       )}

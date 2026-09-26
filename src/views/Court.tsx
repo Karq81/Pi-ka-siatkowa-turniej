@@ -6,7 +6,7 @@ import { store, useSession, useStore } from '../store/store'
 import type { Match, State } from '../types'
 import { ResultForm } from './ResultForm'
 import { Upcoming } from './Public'
-import { BackBar, courtMatch, formatTime, PinGate, StatusPill, useLookups, useNow } from '../ui'
+import { BackBar, courtLabel, courtMatch, formatTime, PinGate, StatusPill, useLookups, useNow } from '../ui'
 
 /** List of courts for referees to pick from. */
 export function CourtPicker() {
@@ -43,7 +43,7 @@ export function CourtList() {
           return (
             <li key={c} className={`picker-card ${board.mode === 'live' ? 'is-live' : ''}`}>
               <span className="picker-head">
-                <b>Boisko {c}</b>
+                <b>Boisko {courtLabel(c)}</b>
                 {board.mode === 'live' && <StatusPill status="live" />}
                 {board.mode === 'finished' && <StatusPill status="finished" />}
                 {board.mode === 'next' && <span className="pill pill-next">Następne<span className="pill-long"> spotkanie</span></span>}
@@ -60,7 +60,7 @@ export function CourtList() {
                 <a className="btn btn-ref" href={`#boisko-${c}`}>Sędziuj na żywo</a>
                 <a className="btn btn-ref" href={`#wynik-${c}`}>Podaj wynik</a>
               </span>
-              {!mine && <span className="muted small">Wymaga klucza boiska {c}</span>}
+              {!mine && <span className="muted small">Wymaga klucza boiska {courtLabel(c)}</span>}
             </li>
           )
         })}
@@ -68,7 +68,7 @@ export function CourtList() {
       <Upcoming state={state} />
       {session && (
         <p className="muted small">
-          Ten telefon jest zalogowany jako {session.role === 'admin' ? 'sędzia główny' : `sędzia boiska ${session.court}`}.{' '}
+          Ten telefon jest zalogowany jako {session.role === 'admin' ? 'sędzia główny' : `sędzia boiska ${courtLabel(session.court ?? 0)}`}.{' '}
           <button className="linklike" onClick={() => store.logout()}>Wyloguj</button>
         </p>
       )}
@@ -84,9 +84,9 @@ export function Court({ court, manual = false }: { court: number; manual?: boole
     <div className="page page-court">
       <BackBar fallback="panel-sedziowie" />
       <header className="bar">
-        <h1>Boisko {court}</h1>
+        <h1>Boisko {courtLabel(court)}</h1>
       </header>
-      <PinGate court={court} label={`Boisko ${court}`}>
+      <PinGate court={court} label={`Boisko ${courtLabel(court)}`}>
         <CourtPanel state={state} court={court} manualFirst={manual} />
       </PinGate>
     </div>

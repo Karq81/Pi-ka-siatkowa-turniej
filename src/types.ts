@@ -22,6 +22,8 @@ export interface Tournament {
   rules: Rules
   /** Minutes from one match to the next on a court (match + changeover). */
   slotMinutes?: number
+  /** Names shown for courts 1, 2, 3… (e.g. "A" for court 1); the number when missing. */
+  courtNames?: string[]
 }
 
 export interface Category {

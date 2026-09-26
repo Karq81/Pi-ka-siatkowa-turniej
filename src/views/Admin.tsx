@@ -6,7 +6,7 @@ import { tally } from '../logic/scoring'
 import { store, useStore, useSync } from '../store/store'
 import { courtKeys } from '../logic/pins'
 import type { Match, MatchStatus, Pins, SetScore, State } from '../types'
-import { BackBar, formatDay, formatTime, PinGate, useLookups } from '../ui'
+import { BackBar, courtLabel, formatDay, formatTime, PinGate, useLookups } from '../ui'
 import { CourtCard, MatchList } from './Public'
 import { ResultForm } from './ResultForm'
 
@@ -84,7 +84,7 @@ function Matches({ state }: { state: State }) {
   const query = q.trim().toLowerCase()
   const list = state.matches
     .filter((m) => filter === 'all' || m.status === filter)
-    .filter((m) => !query || `${side(m, 'a')} ${side(m, 'b')} boisko ${m.court}`.toLowerCase().includes(query))
+    .filter((m) => !query || `${side(m, 'a')} ${side(m, 'b')} boisko ${courtLabel(m.court)}`.toLowerCase().includes(query))
     .sort((a, b) => a.start.localeCompare(b.start) || a.court - b.court)
   const current = editing ? state.matches.find((m) => m.id === editing) : undefined
 
@@ -116,7 +116,7 @@ function MatchEditor({ state, match, onClose }: { state: State; match: Match; on
     <section className="editor">
       <button className="back" onClick={onClose}>← Lista meczów</button>
       <h2>{side(match, 'a')} – {side(match, 'b')}</h2>
-      <p className="muted">Boisko {match.court} · {formatDay(match.start)} {formatTime(match.start)}</p>
+      <p className="muted">Boisko {courtLabel(match.court)} · {formatDay(match.start)} {formatTime(match.start)}</p>
       <ResultForm state={state} match={match} submitLabel="Zapisz jako zakończony" onSubmit={(sets) => save('finished', sets)}>
         <button type="button" className="btn" onClick={() => save('live', match.status === 'live' ? match.sets : [])}>Oznacz jako trwający</button>
         <button type="button" className="btn btn-danger" onClick={() => save('scheduled')}>Wyczyść wynik</button>
@@ -141,7 +141,7 @@ function QuickResults({ state }: { state: State }) {
     .filter((m) => m.status !== 'finished' && m.teamA && m.teamB)
     .sort((a, b) => (a.status === 'live' ? 0 : 1) - (b.status === 'live' ? 0 : 1) || a.start.localeCompare(b.start) || a.court - b.court)
   const list = waiting.filter((m) =>
-    !query || `${side(m, 'a')} ${side(m, 'b')} boisko ${m.court} b${m.court}`.toLowerCase().includes(query))
+    !query || `${side(m, 'a')} ${side(m, 'b')} boisko ${courtLabel(m.court)} b${courtLabel(m.court)}`.toLowerCase().includes(query))
   const match = current ? state.matches.find((m) => m.id === current) : undefined
 
   if (match) {
@@ -149,7 +149,7 @@ function QuickResults({ state }: { state: State }) {
       <section className="editor">
         <button className="back" onClick={() => setCurrent(null)}>← Wybierz inny mecz</button>
         <h2>{side(match, 'a')} – {side(match, 'b')}</h2>
-        <p className="muted">Boisko {match.court} · {formatTime(match.start)} · {categoryName(match.categoryId)} · {stageName(match)}</p>
+        <p className="muted">Boisko {courtLabel(match.court)} · {formatTime(match.start)} · {categoryName(match.categoryId)} · {stageName(match)}</p>
         <ResultForm
           key={match.id}
           state={state}
@@ -220,7 +220,7 @@ function exportCsv(state: State): string {
   for (const m of [...state.matches].sort((a, b) => a.start.localeCompare(b.start) || a.court - b.court)) {
     const t = tally(state.tournament.rules, m.sets)
     rows.push([
-      m.start.slice(0, 10), formatTime(m.start), String(m.court), cat.get(m.categoryId) ?? '', grp.get(m.groupId) ?? '',
+      m.start.slice(0, 10), formatTime(m.start), courtLabel(m.court), cat.get(m.categoryId) ?? '', grp.get(m.groupId) ?? '',
       team.get(m.teamA) ?? '', team.get(m.teamB) ?? '',
       m.status === 'scheduled' ? '' : String(t.setsA), m.status === 'scheduled' ? '' : String(t.setsB),
       m.sets.map((s) => `${s.a}:${s.b}`).join(' '), statusName[m.status],
@@ -401,7 +401,7 @@ function CourtKeys({ state }: { state: State }) {
       <ul className="keys">
         {Array.from({ length: count }, (_, i) => i + 1).map((c) => (
           <li key={c}>
-            <span className="keys-court">Boisko {c}</span>
+            <span className="keys-court">Boisko {courtLabel(c)}</span>
             <span className="keys-key">{pins.courts[String(c)] ?? '—'}</span>
             <span className="keys-link muted small">{base}#boisko-{c}</span>
             {renewing === c ? (
@@ -457,7 +457,7 @@ function Cards({ count, name }: { count: number; name: string }) {
         {Array.from({ length: count }, (_, i) => i + 1).map((c) => (
           <article key={c} className="card">
             <p className="card-title">{name}</p>
-            <h2>Boisko {c}</h2>
+            <h2>Boisko {courtLabel(c)}</h2>
             <div className="card-qr" dangerouslySetInnerHTML={{ __html: qr[c] ?? '' }} />
             <p>Zeskanuj telefonem, żeby liczyć punkty</p>
             <p className="card-key">Klucz: <b>{pins?.courts[String(c)] ?? '····'}</b></p>

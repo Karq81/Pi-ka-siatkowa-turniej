@@ -47,6 +47,11 @@ export function BackBar({ fallback }: { fallback: string }) {
   )
 }
 
+/** A court's name as shown to people: "A" for court 1 at Albatros CUP, else its number. */
+export function courtLabel(n: number): string {
+  return store.get().tournament.courtNames?.[n - 1] ?? String(n)
+}
+
 export function go(route: string) {
   location.hash = route
 }

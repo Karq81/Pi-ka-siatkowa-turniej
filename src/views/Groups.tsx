@@ -2,7 +2,7 @@ import { tally } from '../logic/scoring'
 import type { Match, State } from '../types'
 import { CorrectButton } from './Correction'
 import { isUnderway } from '../logic/courtBoard'
-import { BackBar, formatDay, formatTime, StatusPill, useLookups, useNow } from '../ui'
+import { BackBar, courtLabel, formatDay, formatTime, StatusPill, useLookups, useNow } from '../ui'
 
 /** One match: a big scoreboard that updates live. */
 export function MatchPage({ state, matchId }: { state: State; matchId: string }) {
@@ -25,7 +25,7 @@ export function MatchPage({ state, matchId }: { state: State; matchId: string })
           <span>{categoryName(m.categoryId)} · {stageName(m)}</span>
           <StatusPill status={isUnderway(m, now) ? 'live' : m.status} />
         </header>
-        <p className="muted">{formatDay(m.start)}, godz. {formatTime(m.start)} · Boisko {m.court}</p>
+        <p className="muted">{formatDay(m.start)}, godz. {formatTime(m.start)} · Boisko {courtLabel(m.court)}</p>
         <div className="mp-board">
           <MatchSide teamId={m.teamA} name={side(m, 'a')} score={m.status === 'scheduled' ? undefined : scoreA} win={isWin(m, t, 'a')} />
           <span className="mp-sep">:</span>

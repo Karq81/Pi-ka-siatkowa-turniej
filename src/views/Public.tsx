@@ -7,7 +7,7 @@ import type { Match, State } from '../types'
 import { Competition, NextMatch, TeamBadge, TeamPage } from './Competition'
 import { MatchPage } from './Groups'
 import { Info, InfoHero } from './Info'
-import { BackBar, formatDay, formatTime, ScoreLine, StatusPill, useLookups, useNow } from '../ui'
+import { BackBar, courtLabel, formatDay, formatTime, ScoreLine, StatusPill, useLookups, useNow } from '../ui'
 
 /**
  * What visitors see: the invitation, groups (each with its table and schedule), live
@@ -81,7 +81,7 @@ export function CourtCard({ state, court, big = false, referee = false }: { stat
   if (!current) {
     return (
       <article className="court court-idle">
-        <header><span className="court-no">Boisko {court}</span></header>
+        <header><span className="court-no">Boisko {courtLabel(court)}</span></header>
         <p className="muted">Brak kolejnych meczów</p>
       </article>
     )
@@ -98,7 +98,7 @@ export function CourtCard({ state, court, big = false, referee = false }: { stat
   return (
     <article className={`court mode-${board.mode} ${big ? 'court-big' : ''} ${mine.includes(current.teamA) || mine.includes(current.teamB) ? 'mine' : ''}`}>
       <header>
-        <span className="court-no">Boisko {court}</span>
+        <span className="court-no">Boisko {courtLabel(court)}</span>
         {live && <StatusPill status="live" />}
         {finished && <StatusPill status="finished" />}
         {board.mode === 'next' && <span className="pill pill-next">Następne<span className="pill-long"> spotkanie</span> · {formatTime(current.start)}</span>}
@@ -180,7 +180,7 @@ export function Upcoming({ state }: { state: State }) {
             {slot.matches.map((m) => (
               <a key={m.id} href={`#mecz-${m.id}`} className={`up-card ${mine.includes(m.teamA) || mine.includes(m.teamB) ? 'mine' : ''}`}>
                 <header>
-                  <span className="up-court">Boisko {m.court}</span>
+                  <span className="up-court">Boisko {courtLabel(m.court)}</span>
                   <span className="up-cat">{categoryName(m.categoryId)} · {stageName(m)}</span>
                 </header>
                 <span className={`up-team ${mine.includes(m.teamA) ? 'mine' : ''}`}>
@@ -286,7 +286,7 @@ export function MatchList({ state, matches, onPick }: { state: State; matches: M
           <>
             <span className="m-when">
               <b>{formatTime(m.start)}</b>
-              <span className="muted">Boisko {m.court}</span>
+              <span className="muted">Boisko {courtLabel(m.court)}</span>
             </span>
             <span className="m-teams">
               <span className={`${winA ? 'win' : ''} ${mine.includes(m.teamA) ? 'mine' : ''}`}>{mine.includes(m.teamA) && '★ '}{side(m, 'a')}</span>
@@ -394,7 +394,7 @@ function Results({ state }: { state: State }) {
                     <tr key={m.id} className={mine.includes(m.teamA) || mine.includes(m.teamB) ? 'mine' : ''}>
                       <td className="left when">
                         <b>{formatTime(m.start)}</b>
-                        <span className="muted small">{formatDay(m.start)} · B{m.court}</span>
+                        <span className="muted small">{formatDay(m.start)} · B{courtLabel(m.court)}</span>
                       </td>
                       <td className="left teams">
                         <a href={`#mecz-${m.id}`} className="plain-link">
