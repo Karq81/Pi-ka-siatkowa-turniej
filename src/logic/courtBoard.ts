@@ -45,17 +45,19 @@ export function courtBoard(state: State, court: number, now: number): CourtBoard
 }
 
 /**
- * Matches still to be played that are not on any court board right now, in time order:
- * the "Nadchodzące mecze" list under the boards.
+ * The next round of matches, not on any court board yet: every match of the earliest
+ * start time still to come (one per court, so up to 10). Once they start, the list
+ * moves on to the round after.
  */
-export function upcomingMatches(state: State, now: number, limit = 20): Match[] {
+export function upcomingMatches(state: State, now: number): Match[] {
   const onBoards = new Set<string>()
   for (let c = 1; c <= state.tournament.courts; c++) {
     const id = courtBoard(state, c, now).match?.id
     if (id) onBoards.add(id)
   }
-  return state.matches
+  const waiting = state.matches
     .filter((m) => m.status === 'scheduled' && !onBoards.has(m.id))
     .sort((a, b) => a.start.localeCompare(b.start) || a.court - b.court)
-    .slice(0, limit)
+  const first = waiting[0]?.start
+  return waiting.filter((m) => m.start === first)
 }
