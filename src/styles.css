@@ -648,9 +648,9 @@ a.mcard:hover { border-color: var(--accent); }
 .my-next b { font-family: var(--display); font-size: 1.1rem; }
 .follow-picker { display: flex; flex-direction: column; gap: 12px; padding: 16px; border-radius: 14px; background: var(--surface); border: 2px solid var(--ball); }
 .follow-picker h3 { font-size: 1.4rem; }
-.fp-lists { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; max-height: 55vh; overflow-y: auto; }
-.fp-lists fieldset { border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
-.fp-lists legend { font-family: var(--display); font-weight: 700; font-size: 1.15rem; margin-bottom: 4px; }
+.fp-cats .chip { font-size: 1.05rem; padding-inline: 16px; display: inline-flex; align-items: center; gap: 6px; }
+.fp-count { background: var(--ball); color: #0e1b2c; border-radius: 999px; min-width: 20px; padding: 0 6px; font-size: 0.8rem; font-weight: 700; text-align: center; }
+.fp-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 4px 12px; max-height: 55vh; overflow-y: auto; align-content: start; }
 .fp-item { flex-direction: row; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line); cursor: pointer; font-weight: 500; }
 .fp-item input { width: 20px; height: 20px; flex: none; accent-color: var(--accent); }
 .fp-item.on { border-color: var(--ball); background: color-mix(in srgb, var(--ball) 16%, transparent); }

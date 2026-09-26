@@ -426,33 +426,45 @@ export function FollowPicker({ state, onClose }: { state: State; onClose: () => 
   const [picked, setPicked] = useState<string[]>(mine)
   const [q, setQ] = useState('')
   const query = q.trim().toLowerCase()
+  // One category at a time: chosen at the top, its teams listed below.
+  const firstPicked = state.teams.find((t) => mine.includes(t.id))?.categoryId
+  const [cat, setCat] = useState(firstPicked ?? state.categories[0]?.id ?? '')
   const toggle = (id: string) => setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]))
+  const teams = state.teams
+    .filter((t) => t.categoryId === cat && (!query || t.name.toLowerCase().includes(query)))
+    .sort((a, b) => a.name.localeCompare(b.name, 'pl'))
   return (
     <section className="follow-picker" aria-label="Wybierz drużyny do obserwowania">
       <header>
         <h3>Wybierz drużyny do obserwowania</h3>
-        <p className="muted small">Zaznacz jedną albo kilka (np. wszystkie drużyny Twojego klubu) i potwierdź.</p>
+        <p className="muted small">Wybierz kategorię, zaznacz jedną albo kilka drużyn (np. wszystkie Twojego klubu) i potwierdź.</p>
       </header>
-      <input id="follow-search" type="search" placeholder="Szukaj, np. Opty" value={q} onChange={(e) => setQ(e.target.value)} />
-      <div className="fp-lists">
+      <div className="chips fp-cats" role="tablist" aria-label="Kategoria">
         {state.categories.map((c) => {
-          const teams = state.teams
-            .filter((t) => t.categoryId === c.id && (!query || t.name.toLowerCase().includes(query)))
-            .sort((a, b) => a.name.localeCompare(b.name, 'pl'))
-          if (!teams.length) return null
+          const n = picked.filter((id) => state.teams.find((t) => t.id === id)?.categoryId === c.id).length
           return (
-            <fieldset key={c.id}>
-              <legend>{c.name}</legend>
-              {teams.map((t) => (
-                <label key={t.id} className={`fp-item ${picked.includes(t.id) ? 'on' : ''}`}>
-                  <input type="checkbox" checked={picked.includes(t.id)} onChange={() => toggle(t.id)} />
-                  <TeamBadge team={t} size="sm" />
-                  <span>{t.name}</span>
-                </label>
-              ))}
-            </fieldset>
+            <button
+              key={c.id}
+              role="tab"
+              aria-selected={cat === c.id}
+              className={`chip ${cat === c.id ? 'active' : ''}`}
+              onClick={() => setCat(c.id)}
+            >
+              {c.name}{n > 0 && <span className="fp-count">{n}</span>}
+            </button>
           )
         })}
+      </div>
+      <input id="follow-search" type="search" placeholder="Szukaj, np. Opty" value={q} onChange={(e) => setQ(e.target.value)} />
+      <div className="fp-list" role="tabpanel">
+        {!teams.length && <p className="muted small">Brak drużyn o tej nazwie w tej kategorii.</p>}
+        {teams.map((t) => (
+          <label key={t.id} className={`fp-item ${picked.includes(t.id) ? 'on' : ''}`}>
+            <input type="checkbox" checked={picked.includes(t.id)} onChange={() => toggle(t.id)} />
+            <TeamBadge team={t} size="sm" />
+            <span>{t.name}</span>
+          </label>
+        ))}
       </div>
       <div className="fp-actions">
         <button className="btn btn-primary btn-lg" onClick={() => { setFavorites(picked); onClose() }}>
