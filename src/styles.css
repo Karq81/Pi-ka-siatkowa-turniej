@@ -630,7 +630,10 @@ a.mcard:hover { border-color: var(--accent); }
 .standings li.mine { background: color-mix(in srgb, var(--ball) 22%, transparent); }
 .standings li.mine .name::after { content: ' ★'; color: #b58900; }
 .mcard.mine { border-color: var(--ball); box-shadow: inset 4px 0 0 var(--ball); }
-.court.mine { box-shadow: inset 0 4px 0 var(--ball); }
+/* Followed teams on the court boards: yellow card edge and a highlighted team row. */
+.team-row.mine { background: color-mix(in srgb, var(--ball) 28%, transparent); border-radius: 6px; margin-inline: -6px; padding-inline: 6px; }
+.team-row.mine .team-name { font-weight: 700; color: #ffe27a; }
+.mine-star { color: var(--ball); }
 .results tr.mine td { background: color-mix(in srgb, var(--ball) 18%, transparent); }
 .my-teams { display: flex; flex-direction: column; gap: 10px; }
 .my-teams > header { display: flex; justify-content: space-between; align-items: center; }
@@ -757,3 +760,6 @@ a.board { display: block; color: var(--board-ink); text-decoration: none; }
   margin-left: 44px; color: var(--muted); font-size: 0.72rem; font-weight: 700;
   text-transform: uppercase; letter-spacing: 0.08em;
 }
+
+/* A followed team's court (a live court keeps its red frame; its team row is highlighted). */
+.court.mine:not(.mode-live) { border-color: var(--ball); box-shadow: 0 0 0 2px var(--ball); }

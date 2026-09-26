@@ -115,8 +115,8 @@ export function CourtCard({ state, court, big = false, referee = false }: { stat
       </header>
       <p className="court-meta">{categoryName(current.categoryId)} · {stageName(current)} · {formatTime(current.start)}</p>
       <a className="board" href={`#mecz-${current.id}`}>
-        <TeamRow name={side(current, 'a')} sets={multi ? t.setsA : undefined} points={cur?.a} live={shown} win={winA} />
-        <TeamRow name={side(current, 'b')} sets={multi ? t.setsB : undefined} points={cur?.b} live={shown} win={winB} />
+        <TeamRow name={side(current, 'a')} sets={multi ? t.setsA : undefined} points={cur?.a} live={shown} win={winA} mine={mine.includes(current.teamA)} />
+        <TeamRow name={side(current, 'b')} sets={multi ? t.setsB : undefined} points={cur?.b} live={shown} win={winB} mine={mine.includes(current.teamB)} />
       </a>
       {live && !current.sets.length && <p className="court-sets muted">Mecz trwa. Wynik pojawi się po meczu.</p>}
       {multi && current.sets.length > 1 && (live || finished) && (
@@ -128,10 +128,12 @@ export function CourtCard({ state, court, big = false, referee = false }: { stat
 }
 
 /** `sets` is left out when the match is a single set. */
-function TeamRow({ name, sets, points, live, win = false }: { name: string; sets?: number; points?: number; live: boolean; win?: boolean }) {
+function TeamRow({ name, sets, points, live, win = false, mine = false }: {
+  name: string; sets?: number; points?: number; live: boolean; win?: boolean; mine?: boolean
+}) {
   return (
-    <div className={`team-row ${win ? 'win' : ''}`}>
-      <span className="team-name">{name}</span>
+    <div className={`team-row ${win ? 'win' : ''} ${mine ? 'mine' : ''}`}>
+      <span className="team-name">{mine && <span className="mine-star" aria-label="Obserwowana">★ </span>}{name}</span>
       {live && sets !== undefined && <span className="sets" title="Wygrane sety">{sets}</span>}
       {live && <span className="points">{points ?? 0}</span>}
     </div>
