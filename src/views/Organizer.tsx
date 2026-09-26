@@ -11,7 +11,7 @@ import { Competition } from './Competition'
 const TABS = [
   { route: 'panel', label: '1. Zespoły i losowanie' },
   { route: 'panel-grupy', label: '2. Grupy' },
-  { route: 'panel-sedziowie', label: '3. Sędziowanie' },
+  { route: 'panel-sedziowie', label: '3. Na żywo' },
   { route: 'panel-wiecej', label: 'Więcej' },
 ]
 
@@ -92,7 +92,7 @@ function TeamsAndDraw({ state }: { state: State }) {
                 <p><b>Turniej gotowy.</b> {state.groups.length} grup, {state.matches.length} meczów w terminarzu.</p>
                 <div className="actions">
                   <a className="btn btn-primary" href="#panel-grupy">Zobacz grupy i terminarz</a>
-                  <a className="btn" href="#panel-sedziowie">Sędziowanie</a>
+                  <a className="btn" href="#panel-sedziowie">Na żywo</a>
                   <a className="btn" href="#">Strona dla kibiców</a>
                 </div>
               </div>
