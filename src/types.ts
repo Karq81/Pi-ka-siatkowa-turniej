@@ -20,6 +20,8 @@ export interface Tournament {
   subtitle: string
   courts: number
   rules: Rules
+  /** Minutes from one match to the next on a court (match + changeover). */
+  slotMinutes?: number
 }
 
 export interface Category {

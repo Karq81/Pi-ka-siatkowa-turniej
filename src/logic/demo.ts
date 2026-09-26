@@ -40,9 +40,9 @@ export const CLUBS: { name: string; dwojki: number; trojki: number }[] = [
 
 const GROUPS_PER_CATEGORY = 4
 
-/** Albatros CUP schedule: Friday 23.10 from 15:30, then from 9:00; one set to 15 ≈ 20 minutes with changeover. */
+/** Albatros CUP schedule: Friday 23.10 from 15:30, then from 9:00; a match every 15 minutes (the organiser can change it). */
 export const DEFAULT_SCHEDULE = {
-  courts: 10, start: '2026-10-23T15:30', slotMinutes: 20, dayEnd: '18:40', dayStart: '09:00',
+  courts: 10, start: '2026-10-23T15:30', slotMinutes: 15, dayEnd: '18:40', dayStart: '09:00',
 }
 
 /** Qualified teams, one per entry; clubs with two teams in a category get "1" and "2". */
@@ -125,6 +125,7 @@ export function initialState(): State {
       subtitle: '23–25 października 2026 · Mielno',
       courts: DEFAULT_SCHEDULE.courts,
       rules: defaultRules,
+      slotMinutes: DEFAULT_SCHEDULE.slotMinutes,
     },
     categories: [
       { id: 'c1', name: 'Dwójki' },

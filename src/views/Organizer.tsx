@@ -1,8 +1,11 @@
+import { useState } from 'react'
+import { DEFAULT_SCHEDULE } from '../logic/demo'
 import { clubOf } from '../logic/draw'
+import { retimeSchedule } from '../logic/schedule'
 import { store, useSession, useStore, useSync } from '../store/store'
 import { AdminPinForm, setupTournament } from './Admin'
 import type { Category, State } from '../types'
-import { useLookups } from '../ui'
+import { formatDay, formatTime, PinGate, useLookups } from '../ui'
 import { CourtList } from './Court'
 import { Competition } from './Competition'
 
@@ -38,7 +41,7 @@ export function Organizer({ route }: { route: string }) {
       {tab === 'panel-grupy' && (
         state.groups.length ? <Competition state={state} route="grupy" /> : <Empty />
       )}
-      {tab === 'panel-sedziowie' && <CourtList />}
+      {tab === 'panel-sedziowie' && <><CourtList /><MatchInterval state={state} /></>}
       {tab === 'panel-wiecej' && <More />}
     </div>
   )
@@ -73,6 +76,7 @@ function TeamsAndDraw({ state }: { state: State }) {
           <AdminPinForm saveLabel="Ustaw PIN i zapisz turniej" onSave={setupTournament} />
         </section>
       )}
+      {!sync.empty && <MatchInterval state={state} />}
       <div className="org-cats">
         {state.categories.map((c) => <CategoryTeams key={c.id} state={state} category={c} />)}
       </div>
@@ -89,6 +93,43 @@ function TeamsAndDraw({ state }: { state: State }) {
         )}
       </section>
     </>
+  )
+}
+
+/**
+ * How many minutes from one match to the next. Changing it re-times every match still
+ * to be played (the next round keeps its time), so it also works during the tournament.
+ */
+function MatchInterval({ state }: { state: State }) {
+  const current = state.tournament.slotMinutes ?? DEFAULT_SCHEDULE.slotMinutes
+  const [minutes, setMinutes] = useState(current)
+  const [msg, setMsg] = useState('')
+  const next = [...new Set(state.matches.filter((m) => m.status === 'scheduled').map((m) => m.start))].sort()[0]
+  const save = async () => {
+    const matches = retimeSchedule(state.matches, { slotMinutes: minutes, dayEnd: DEFAULT_SCHEDULE.dayEnd, dayStart: DEFAULT_SCHEDULE.dayStart })
+    await store.replace({ ...state, tournament: { ...state.tournament, slotMinutes: minutes }, matches })
+    const last = matches.map((m) => m.start).sort().at(-1)
+    setMsg(`Zapisano: mecz co ${minutes} min. Ostatni mecz: ${last ? `${formatDay(last)} ${formatTime(last)}` : '–'}.`)
+  }
+  return (
+    <section className="panel">
+      <h2>Co ile minut mecze</h2>
+      <p className="muted">
+        Teraz: <b>mecz co {current} minut</b> na każdym boisku (mecz + przerwa). Zmiana przelicza godziny wszystkich
+        meczów, które się jeszcze nie zaczęły{next ? `, od najbliższej rundy (${formatDay(next)} ${formatTime(next)}), która zostaje o swojej godzinie` : ''}.
+        Rozegrane mecze się nie zmieniają. Po {DEFAULT_SCHEDULE.dayEnd} gry przechodzą na następny dzień od {DEFAULT_SCHEDULE.dayStart}.
+      </p>
+      <PinGate label="Zmiana godzin meczów (sędzia główny)">
+        <div className="form-row">
+          <label>Minut od meczu do meczu
+            <input id="slot-minutes" type="number" min={5} max={90} step={5} value={minutes}
+              onChange={(e) => setMinutes(Math.max(5, Math.min(90, Number(e.target.value) || current)))} />
+          </label>
+        </div>
+        <button className="btn btn-primary" disabled={minutes === current} onClick={save}>Zapisz i przelicz godziny</button>
+        {msg && <p className="ok">{msg}</p>}
+      </PinGate>
+    </section>
   )
 }
 

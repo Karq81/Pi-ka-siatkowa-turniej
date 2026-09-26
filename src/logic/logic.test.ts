@@ -3,7 +3,7 @@ import type { Group, Match, Rules, Team } from '../types'
 import { defaultRules, DEFAULT_SCHEDULE, drawnState, initialState } from './demo'
 import { clubOf, drawCategory, drawGroups, isDrawn, resetResults, rng } from './draw'
 import { parseTeams } from './importTeams'
-import { buildGroupSchedule, roundRobin } from './schedule'
+import { buildGroupSchedule, retimeSchedule, roundRobin } from './schedule'
 import { canAddPoint, isMatchDecided, resultProblem, setProblem, setWinner, standings, tally } from './scoring'
 
 // Senior-style rules for the generic tests; the youth defaults are tested separately below.
@@ -224,5 +224,37 @@ describe('Albatros CUP team list', () => {
     const starts = [...new Set(drawnState(rng(7)).matches.map((m) => m.start))].sort()
     expect(starts[0]).toBe('2026-10-23T15:30')
     expect(starts.find((x) => x.startsWith('2026-10-24'))).toBe('2026-10-24T09:00')
+  })
+})
+
+describe('changing the match interval', () => {
+  const opts = { slotMinutes: 20, dayEnd: '18:40', dayStart: '09:00' }
+
+  it('plays the fixed groups every 15 minutes: Friday from 15:30, the rest on Saturday morning', () => {
+    const starts = [...new Set(initialState().matches.map((m) => m.start))].sort()
+    expect(starts.slice(0, 3)).toEqual(['2026-10-23T15:30', '2026-10-23T15:45', '2026-10-23T16:00'])
+    expect(starts.filter((x) => x.startsWith('2026-10-23')).at(-1)).toBe('2026-10-23T18:30')
+    expect(starts.find((x) => x.startsWith('2026-10-24'))).toBe('2026-10-24T09:00')
+  })
+
+  it('re-times every slot from the first one, keeping courts and pairings', () => {
+    const s = initialState()
+    const out = retimeSchedule(s.matches, opts)
+    const starts = [...new Set(out.map((m) => m.start))].sort()
+    expect(starts.slice(0, 3)).toEqual(['2026-10-23T15:30', '2026-10-23T15:50', '2026-10-23T16:10'])
+    expect(starts.filter((x) => x.startsWith('2026-10-23')).at(-1)).toBe('2026-10-23T18:30')
+    expect(starts.find((x) => x.startsWith('2026-10-24'))).toBe('2026-10-24T09:00')
+    expect(out.map((m) => [m.id, m.court, m.teamA, m.teamB])).toEqual(s.matches.map((m) => [m.id, m.court, m.teamA, m.teamB]))
+  })
+
+  it('does not move slots that have started, and continues from the next one', () => {
+    const s = initialState()
+    const [t1, t2, t3] = [...new Set(s.matches.map((m) => m.start))].sort()
+    const played = s.matches.map((m) => (m.start === t1 ? { ...m, status: 'finished' as const, sets: [{ a: 15, b: 3 }] } : m))
+    const out = retimeSchedule(played, { ...opts, slotMinutes: 25 })
+    expect(out.filter((m) => m.start === t1)).toHaveLength(played.filter((m) => m.start === t1).length)
+    const at = (old: string) => out.find((m) => m.id === s.matches.find((x) => x.start === old)!.id)!.start
+    expect(at(t2)).toBe(t2)
+    expect(at(t3)).toBe('2026-10-23T16:10')
   })
 })

@@ -84,3 +84,33 @@ export function buildGroupSchedule(groups: Group[], opts: ScheduleOptions): Matc
   }
   return result
 }
+
+/**
+ * New match interval for the rest of the tournament. Time slots that have started
+ * (a match in them is live or finished) keep their times; the first slot still to be
+ * played keeps its time too, and every later slot follows it at `slotMinutes`,
+ * moving to the next morning (`dayStart`) after `dayEnd`. Courts and pairings stay.
+ */
+export function retimeSchedule(
+  matches: Match[], opts: { slotMinutes: number; dayEnd: string; dayStart: string },
+): Match[] {
+  const starts = [...new Set(matches.map((m) => m.start).filter(Boolean))].sort()
+  let first = 0
+  starts.forEach((s, i) => {
+    if (matches.some((m) => m.start === s && m.status !== 'scheduled')) first = i + 1
+  })
+  if (first >= starts.length) return matches
+  const moved = new Map<string, string>()
+  let time = starts[first]
+  moved.set(time, time)
+  for (let i = first + 1; i < starts.length; i++) {
+    let next = addMinutes(time, opts.slotMinutes)
+    // Past the day's end: next morning.
+    if (next.slice(11) > opts.dayEnd) {
+      next = `${addMinutes(`${time.slice(0, 10)}T00:00`, 24 * 60).slice(0, 10)}T${opts.dayStart}`
+    }
+    moved.set(starts[i], next)
+    time = next
+  }
+  return matches.map((m) => (moved.has(m.start) && moved.get(m.start) !== m.start ? { ...m, start: moved.get(m.start)! } : m))
+}
