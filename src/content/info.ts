@@ -24,6 +24,14 @@ export const info = {
     checkIn: 'od godziny 11:00 w piątek',
     maps: 'https://www.google.com/maps/search/?api=1&query=Albatros+Medical+SPA+Mielno+Ko%C5%9Bciuszki+6',
   },
+  /** Who the meals are for, shown under the programme. */
+  mealsNote: {
+    title: 'Ważne: posiłki',
+    lines: [
+      'Śniadania i obiadokolacje w Albatros Medical SPA są dla zespołów, które nocują.',
+      'Zespoły dojeżdżające (bez noclegu) mają tylko obiad w sobotę na hali (12:00–14:00).',
+    ],
+  },
   days: [
     {
       day: 'Piątek',

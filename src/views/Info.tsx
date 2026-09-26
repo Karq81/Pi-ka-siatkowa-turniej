@@ -78,6 +78,10 @@ export function Info() {
             </article>
           ))}
         </div>
+        <div className="meals-note" role="note">
+          <b>⚠️ {info.mealsNote.title}</b>
+          {info.mealsNote.lines.map((l) => <p key={l}>{l}</p>)}
+        </div>
       </section>
 
       <div className="info-cols">
