@@ -42,6 +42,16 @@ function useViewport(route: string) {
   }, [route])
 }
 
+// Every screen opens from the top (e.g. "Na żywo" shows all ten courts from court 1),
+// also after a reload; the browser would otherwise keep the previous scroll position.
+if ('scrollRestoration' in history) history.scrollRestoration = 'manual'
+
+function useScrollTop(route: string) {
+  useEffect(() => {
+    scrollTo(0, 0)
+  }, [route])
+}
+
 export function App() {
   return (
     <>
@@ -54,6 +64,7 @@ export function App() {
 function Screen() {
   const route = useRoute()
   useViewport(route)
+  useScrollTop(route)
   const court = /^boisko-(\d+)$/.exec(route)
   if (court) return <Court key={court[1]} court={Number(court[1])} />
   const result = /^wynik-(\d+)$/.exec(route)
