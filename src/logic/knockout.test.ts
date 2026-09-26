@@ -16,9 +16,9 @@ const lose = (m: Match): Match => ({ ...m, status: 'finished', sets: [{ a: 10, b
 const opts = { start: '2026-10-25T09:00', slotMinutes: 20, courts: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] }
 
 describe('knockout: full classification', () => {
-  it('gives every team a place: dwójki 1–24, trójki 1–28', () => {
+  it('gives every team a place: 4 groups of 7 → places 1–28', () => {
     const s = drawnState(rng(1))
-    for (const [cat, teams] of [['c1', 24], ['c2', 28]] as const) {
+    for (const [cat, teams] of [['c1', 28]] as const) {
       const plan = bracketPlan(cat, s.groups.filter((g) => g.categoryId === cat))!
       const places = plan.filter((p) => p.info.round === 'P').flatMap((p) => [p.info.place!, p.info.place! + 1]).sort((a, b) => a - b)
       expect(places).toEqual(Array.from({ length: teams }, (_, i) => i + 1))
@@ -30,7 +30,7 @@ describe('knockout: full classification', () => {
     const [A, B] = s.groups.filter((g) => g.categoryId === 'c1')
     const pos = (g: typeof A, i: number) => standings(s.tournament.rules, g, s.matches, s.teams)[i].teamId
     const ko = createKnockout(s, 'c1', opts)
-    expect(ko).toHaveLength(36)
+    expect(ko).toHaveLength(40)
     const q1 = ko.find((m) => m.id === koId('c1', 'T1-Q1'))!
     expect([q1.teamA, q1.teamB]).toEqual([pos(A, 0), pos(B, 1)])
     const q9 = ko.find((m) => m.id === koId('c1', 'T9-Q1'))!

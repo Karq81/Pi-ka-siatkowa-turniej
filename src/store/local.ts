@@ -3,7 +3,7 @@ import { applyMatchUpdate } from '../logic/knockout'
 import type { Pins, Session, State } from '../types'
 import type { Store, SyncInfo } from './types'
 
-const KEY = 'siatkalive:v5'
+const KEY = 'siatkalive:v6'
 const PINS_KEY = 'siatkalive:pins'
 const ROLE_KEY = 'siatkalive:role'
 

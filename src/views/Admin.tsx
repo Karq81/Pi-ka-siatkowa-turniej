@@ -1,12 +1,9 @@
 import QRCode from 'qrcode'
 import { useEffect, useState } from 'react'
-import { DEFAULT_SCHEDULE, initialState } from '../logic/demo'
-import { clubOf, drawTournament, resetResults } from '../logic/draw'
-import { buildGroupSchedule } from '../logic/schedule'
+import { initialState } from '../logic/demo'
+import { resetResults } from '../logic/draw'
 import { tally } from '../logic/scoring'
 import { store, useStore, useSync } from '../store/store'
-import { parseTeams } from '../logic/importTeams'
-import { bracketPlan, createKnockout, hasKnockout, openGroupMatches } from '../logic/knockout'
 import { courtKeys } from '../logic/pins'
 import type { Match, MatchStatus, Pins, SetScore, State } from '../types'
 import { BackBar, formatDay, formatTime, PinGate, useLookups } from '../ui'
@@ -191,69 +188,14 @@ function QuickResults({ state }: { state: State }) {
   )
 }
 
-const SAMPLE_CSV = `Drużyna;Kategoria;Grupa
-UKS Orlik Kraków;Dwójki;A
-MKS Iskra Tarnów;Dwójki;A
-UKS Sokół Bochnia;Dwójki;A
-SP 5 Wieliczka;Dwójki;A
-UKS Tęcza Skawina;Dwójki;B
-UKS Grom Myślenice;Dwójki;B
-UKS Żak Brzesko;Dwójki;B
-UKS Delfin Niepołomice;Dwójki;B`
 
 function Data({ state }: { state: State }) {
-  // Starts with the current teams, so the organiser can edit the list rather than type it again.
-  const [text, setText] = useState(() => currentTeamsCsv(state) || SAMPLE_CSV)
-  const [start, setStart] = useState('2026-10-23T09:00')
-  const [slot, setSlot] = useState(25)
-  const [dayEnd, setDayEnd] = useState('18:00')
-  const [confirm, setConfirm] = useState<'import' | 'demo' | null>(null)
   const [msg, setMsg] = useState('')
-  const parsed = parseTeams(text)
   const csv = exportCsv(state)
-
-  const doImport = () => {
-    const matches = buildGroupSchedule(parsed.groups, { courts: state.tournament.courts, start, slotMinutes: slot, dayEnd })
-    setConfirm(null)
-    setMsg('Zapisuję…')
-    store.replace({ ...state, ...parsed, matches }).then(() =>
-      setMsg(`Wczytano ${parsed.teams.length} drużyn i ułożono ${matches.length} meczów.`))
-  }
 
   return (
     <div className="data">
-      <DrawPanel state={state} />
-
-      <section className="panel">
-        <h2>Wczytaj drużyny z Excela</h2>
-        <p className="muted">
-          Skopiuj z Excela trzy kolumny: <b>Drużyna</b>, <b>Kategoria</b>, <b>Grupa</b> i wklej poniżej.
-          Terminarz grup ułoży się sam na {state.tournament.courts} boiskach.
-        </p>
-        <textarea id="import-text" rows={8} value={text} onChange={(e) => setText(e.target.value)} />
-        <div className="form-row">
-          <label>Start pierwszego meczu<input id="import-start" type="datetime-local" value={start} onChange={(e) => setStart(e.target.value)} /></label>
-          <label>Mecz + przerwa (min)<input id="import-slot" type="number" min={5} value={slot} onChange={(e) => setSlot(Number(e.target.value) || 25)} /></label>
-          <label>Ostatni mecz dnia najpóźniej o<input id="import-end" type="time" value={dayEnd} onChange={(e) => setDayEnd(e.target.value)} /></label>
-        </div>
-        <p className="muted small">
-          Rozpoznano: {parsed.teams.length} drużyn, {parsed.categories.length} kategorii, {parsed.groups.length} grup.
-        </p>
-        {confirm === 'import' ? (
-          <div className="notice">
-            <p>To zastąpi obecne drużyny, mecze i wyniki. Na pewno?</p>
-            <div className="actions">
-              <button className="btn btn-danger" onClick={doImport}>Tak, wczytaj</button>
-              <button className="btn" onClick={() => setConfirm(null)}>Anuluj</button>
-            </div>
-          </div>
-        ) : (
-          <button className="btn btn-primary" disabled={!parsed.teams.length} onClick={() => setConfirm('import')}>Wczytaj i ułóż terminarz</button>
-        )}
-        {msg && <p className="ok">{msg}</p>}
-      </section>
-
-      <KnockoutPanel state={state} />
+      <ResetPanel state={state} />
 
       <section className="panel">
         <h2>Eksport do Excela</h2>
@@ -262,6 +204,7 @@ function Data({ state }: { state: State }) {
           <button className="btn" onClick={() => download('wyniki.csv', csv)}>Pobierz CSV</button>
           <button className="btn" onClick={() => navigator.clipboard?.writeText(csv).then(() => setMsg('Skopiowano wyniki do schowka.'), () => setMsg('Nie udało się skopiować.'))}>Kopiuj do schowka</button>
         </div>
+        {msg && <p className="ok">{msg}</p>}
       </section>
 
     </div>
@@ -525,164 +468,39 @@ function Cards({ count, name }: { count: number; name: string }) {
   )
 }
 
-function KnockoutPanel({ state }: { state: State }) {
-  const [cat, setCat] = useState(state.categories[0]?.id ?? '')
-  const lastGroupMatch = state.matches.filter((m) => !m.ko && m.categoryId === cat).map((m) => m.start).sort().at(-1)
-  const [start, setStart] = useState(lastGroupMatch ?? '2026-10-25T12:00')
-  const [slot, setSlot] = useState(30)
-  const [firstCourt, setFirstCourt] = useState(1)
+/**
+ * Admin: clear all results. Groups are fixed (the organiser's list), so there is no
+ * redraw here.
+ */
+function ResetPanel({ state }: { state: State }) {
   const [confirm, setConfirm] = useState(false)
   const [msg, setMsg] = useState('')
-  const groups = state.groups.filter((g) => g.categoryId === cat)
-  const supported = !!bracketPlan(cat, groups)
-  const open = openGroupMatches(state, cat)
-  const exists = hasKnockout(state, cat)
-  // All courts from the chosen one up: the classification has many matches per round.
-  const courts = Array.from({ length: state.tournament.courts - firstCourt + 1 }, (_, i) => firstCourt + i)
-
-  const create = async () => {
-    const ko = createKnockout(state, cat, { start, slotMinutes: slot, courts })
-    const matches = [...state.matches.filter((m) => !(m.ko && m.categoryId === cat)), ...ko]
-    setConfirm(false)
-    setMsg('Zapisuję…')
-    await store.replace({ ...state, matches })
-    setMsg(`Utworzono drabinkę: ${ko.length} meczów. Zobacz zakładkę „Drabinka” na stronie wyników.`)
-  }
-
-  return (
-    <section className="panel">
-      <h2>Faza pucharowa (drabinka)</h2>
-      <p className="muted">
-        Pełna klasyfikacja: każda drużyna gra o konkretne miejsce. Przy 4 grupach miejsca 1–2 grają o 1–8
-        (1A–2B, 1C–2D, 1B–2A, 1D–2C), 3–4 o 9–16, 5–6 o 17–24, a 7. miejsca o 25–28.
-        2 grupy: od razu półfinały. Kolejne rundy uzupełniają się same po każdym wyniku.
-      </p>
-      <div className="chips">
-        {state.categories.map((c) => (
-          <button key={c.id} className={`chip ${cat === c.id ? 'active' : ''}`} onClick={() => { setCat(c.id); setConfirm(false); setMsg('') }}>{c.name}</button>
-        ))}
-      </div>
-      {!supported && <p className="error">Drabinka jest przygotowana dla 1, 2 lub 4 grup w kategorii. Ta kategoria ma {groups.length}.</p>}
-      {supported && (
-        <>
-          <div className="form-row">
-            <label>Start pierwszej rundy<input id="ko-start" type="datetime-local" value={start} onChange={(e) => setStart(e.target.value)} /></label>
-            <label>Mecz + przerwa (min)<input id="ko-slot" type="number" min={5} value={slot} onChange={(e) => setSlot(Number(e.target.value) || 30)} /></label>
-            <label>Boiska od numeru<input id="ko-court" type="number" min={1} max={state.tournament.courts} value={firstCourt} onChange={(e) => setFirstCourt(Math.max(1, Number(e.target.value) || 1))} /></label>
-          </div>
-          <p className="muted small">
-            Mecze na boiskach {courts.join(', ')}.
-            {open > 0 ? ` Uwaga: ${open} meczów grupowych jeszcze się nie skończyło. Pary będą się aktualizować, dopóki mecz drabinki się nie zacznie.` : ' Wszystkie mecze grupowe zakończone.'}
-          </p>
-          {confirm ? (
-            <div className="notice">
-              <p>{exists ? 'Drabinka tej kategorii już istnieje. Utworzenie nowej usunie jej mecze i wyniki.' : 'Utworzyć drabinkę?'}</p>
-              <div className="actions">
-                <button className="btn btn-primary" onClick={create}>Tak, utwórz</button>
-                <button className="btn" onClick={() => setConfirm(false)}>Anuluj</button>
-              </div>
-            </div>
-          ) : (
-            <button className="btn btn-primary" onClick={() => setConfirm(true)}>{exists ? 'Utwórz drabinkę od nowa' : 'Utwórz drabinkę'}</button>
-          )}
-        </>
-      )}
-      {msg && <p className="ok">{msg}</p>}
-    </section>
-  )
-}
-
-/** Admin: redraw the groups (clubs kept apart) with a new schedule, or clear all results. */
-function DrawPanel({ state }: { state: State }) {
-  const firstStart = state.matches.map((m) => m.start).sort()[0]
-  const [counts, setCounts] = useState<Record<string, number>>(() =>
-    Object.fromEntries(state.categories.map((c) => [c.id, state.groups.filter((g) => g.categoryId === c.id).length || 4])))
-  const [start, setStart] = useState(firstStart ?? DEFAULT_SCHEDULE.start)
-  const [slot, setSlot] = useState(DEFAULT_SCHEDULE.slotMinutes)
-  const [dayStart, setDayStart] = useState(DEFAULT_SCHEDULE.dayStart)
-  const [dayEnd, setDayEnd] = useState(DEFAULT_SCHEDULE.dayEnd)
-  const [confirm, setConfirm] = useState<'draw' | 'reset' | null>(null)
-  const [msg, setMsg] = useState('')
   const played = state.matches.filter((m) => m.status !== 'scheduled').length
-
-  const draw = async () => {
-    setConfirm(null)
-    setMsg('Losuję…')
-    const next = drawTournament(state, {
-      groups: counts,
-      schedule: { courts: state.tournament.courts, start, slotMinutes: slot, dayStart, dayEnd },
-    })
-    await store.replace(next)
-    setMsg(`Rozlosowano ${next.groups.length} grup i ułożono ${next.matches.length} meczów. Zobacz zakładkę „Grupy” na stronie.`)
-  }
   const reset = async () => {
-    setConfirm(null)
+    setConfirm(false)
     await store.replace(resetResults(state))
     setMsg('Wyzerowano wszystkie wyniki. Grupy i terminarz zostały bez zmian.')
   }
-
   return (
     <section className="panel">
-      <h2>Losowanie grup</h2>
+      <h2>Grupy i wyniki</h2>
       <p className="muted">
-        Losuje zespoły do grup od nowa i układa terminarz. Zasada: drużyny z tego samego klubu nigdy nie trafiają
-        do jednej grupy. Grupy wychodzą równe (różnica najwyżej 1 zespół).
+        Grupy są ustalone według listy organizatora (dwójki: 4 grupy po 7, trójki: 5 grup po 6), bez losowania.
+        Tu możesz wyzerować wszystkie wyniki, np. po meczach próbnych.
       </p>
-      <div className="form-row">
-        {state.categories.map((c) => {
-          const teams = state.teams.filter((t) => t.categoryId === c.id)
-          const maxPerClub = Math.max(0, ...[...new Set(teams.map(clubOf))].map((cl) => teams.filter((t) => clubOf(t) === cl).length))
-          return (
-            <label key={c.id}>{c.name}: liczba grup ({teams.length} zespołów)
-              <input
-                id={`draw-${c.id}`}
-                type="number"
-                min={Math.max(1, maxPerClub)}
-                max={teams.length}
-                value={counts[c.id] ?? 4}
-                onChange={(e) => setCounts((x) => ({ ...x, [c.id]: Math.max(1, Number(e.target.value) || 1) }))}
-              />
-            </label>
-          )
-        })}
-      </div>
-      <div className="form-row">
-        <label>Pierwszy mecz<input id="draw-start" type="datetime-local" value={start} onChange={(e) => setStart(e.target.value)} /></label>
-        <label>Mecz + przerwa (min)<input id="draw-slot" type="number" min={5} value={slot} onChange={(e) => setSlot(Number(e.target.value) || 20)} /></label>
-        <label>Kolejne dni od<input id="draw-daystart" type="time" value={dayStart} onChange={(e) => setDayStart(e.target.value)} /></label>
-        <label>Ostatni mecz dnia najpóźniej<input id="draw-dayend" type="time" value={dayEnd} onChange={(e) => setDayEnd(e.target.value)} /></label>
-      </div>
-      <p className="muted small">Drabinka (1, 2 lub 4 grupy) tworzy się osobno, w panelu „Faza pucharowa” poniżej.</p>
-      {confirm === 'draw' ? (
-        <div className="notice">
-          <p>{played ? `Uwaga: ${played} meczów ma już wynik. Nowe losowanie usunie wszystkie wyniki i drabinkę.` : 'Rozlosować grupy od nowa?'}</p>
-          <div className="actions">
-            <button className="btn btn-primary" onClick={draw}>Tak, losuj</button>
-            <button className="btn" onClick={() => setConfirm(null)}>Anuluj</button>
-          </div>
-        </div>
-      ) : confirm === 'reset' ? (
+      {confirm ? (
         <div className="notice">
           <p>Wyzerować wszystkie wyniki ({played} meczów)? Grupy i terminarz zostaną.</p>
           <div className="actions">
             <button className="btn btn-danger" onClick={reset}>Tak, wyzeruj</button>
-            <button className="btn" onClick={() => setConfirm(null)}>Anuluj</button>
+            <button className="btn" onClick={() => setConfirm(false)}>Anuluj</button>
           </div>
         </div>
       ) : (
-        <div className="actions">
-          <button className="btn btn-primary" onClick={() => setConfirm('draw')}>Losuj grupy i ułóż terminarz</button>
-          <button className="btn btn-danger" disabled={!played} onClick={() => setConfirm('reset')}>Wyzeruj wszystkie wyniki</button>
-        </div>
+        <button className="btn btn-danger" disabled={!played} onClick={() => setConfirm(true)}>Wyzeruj wszystkie wyniki</button>
       )}
       {msg && <p className="ok">{msg}</p>}
     </section>
   )
 }
 
-function currentTeamsCsv(state: State): string {
-  const cat = new Map(state.categories.map((c) => [c.id, c.name]))
-  const grp = new Map(state.groups.flatMap((g) => g.teamIds.map((id) => [id, g.name.replace(/^Grupa\s*/, '')] as const)))
-  const rows = state.teams.map((t) => `${t.name};${cat.get(t.categoryId) ?? ''};${grp.get(t.id) ?? ''}`)
-  return rows.length ? ['Drużyna;Kategoria;Grupa', ...rows].join('\n') : ''
-}

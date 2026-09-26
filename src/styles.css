@@ -828,3 +828,12 @@ a.board { display: block; color: var(--board-ink); text-decoration: none; }
 
 /* Countdown on "Na żywo", right under the back button. */
 .backbar + .next { margin-top: 10px; }
+
+/* Second stage (organiser's format): new round-robin groups for places. */
+.stage2 { display: flex; flex-direction: column; gap: 12px; }
+.stage2-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
+.stage2-group { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; }
+.stage2-group:first-child { border: 2px solid var(--ball); }
+.stage2-group header { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.stage2-group header b { font-family: var(--display); font-size: 1.15rem; }
+.stage2-group p { margin: 0; }

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { STAGE2 } from '../content/stage2'
 import { clubOf } from '../logic/draw'
 import { bracketView, groupFinished, tierForGroupPlace } from '../logic/knockout'
 import { useFavorites, toggleFavorite, setFavorites } from '../favorites'
@@ -34,7 +35,7 @@ export function Competition({ state, route }: { state: State; route: string }) {
   }, [start?.id])
 
   if (!state.groups.length) {
-    return <p className="notice-inline">Grupy nie są jeszcze rozlosowane. Pojawią się tutaj po losowaniu.</p>
+    return <p className="notice-inline">Grupy pojawią się tutaj wkrótce.</p>
   }
 
   return (
@@ -57,7 +58,7 @@ export function Competition({ state, route }: { state: State; route: string }) {
 
       <div className="phase" role="tablist" aria-label="Faza">
         <button role="tab" aria-selected={phase === 'groups'} className={phase === 'groups' ? 'on' : ''} onClick={() => setPhase('groups')}>Faza grupowa</button>
-        <button role="tab" aria-selected={phase === 'ko'} className={phase === 'ko' ? 'on' : ''} onClick={() => setPhase('ko')}>Faza pucharowa</button>
+        <button role="tab" aria-selected={phase === 'ko'} className={phase === 'ko' ? 'on' : ''} onClick={() => setPhase('ko')}>{STAGE2[cat] ? 'Drugi etap' : 'Faza pucharowa'}</button>
       </div>
 
       {phase === 'groups' && group && (
@@ -76,7 +77,7 @@ export function Competition({ state, route }: { state: State; route: string }) {
           <GroupView state={state} groupId={group.id} />
         </>
       )}
-      {phase === 'ko' && <KnockoutView state={state} categoryId={cat} />}
+      {phase === 'ko' && (STAGE2[cat] ? <Stage2View categoryId={cat} /> : <KnockoutView state={state} categoryId={cat} />)}
     </div>
   )
 }
@@ -201,7 +202,7 @@ function GroupView({ state, groupId }: { state: State; groupId: string }) {
             )
           })}
         </ol>
-        <p className="legend muted small">M: mecze · małe punkty · <b>Pkt</b> · 2 pierwsze miejsca grają o miejsca 1–8</p>
+        <p className="legend muted small">M: mecze · małe punkty · <b>Pkt</b> · {STAGE2[group.categoryId]?.legend ?? '2 pierwsze miejsca grają o miejsca 1–8'}</p>
       </section>
 
       <h3 className="list-title">Mecze grupy</h3>
@@ -269,6 +270,30 @@ export function MatchCard({ state, match: m, label }: { state: State; match: Mat
 
 /* ---------- Knockout phase ---------- */
 
+
+/** The organiser's second stage: new round-robin groups for places, filled after the group phase. */
+function Stage2View({ categoryId }: { categoryId: string }) {
+  const stage = STAGE2[categoryId]
+  return (
+    <section className="stage2">
+      <p className="muted">
+        Po fazie grupowej drużyny grają w nowych grupach, każdy z każdym, jak w pierwszym etapie. Jeden set do 15
+        lub 21 (zależnie od czasu). Składy grup pojawią się tu po zakończeniu fazy grupowej.
+      </p>
+      <div className="stage2-list">
+        {stage.groups.map((g) => (
+          <article key={g.name} className="stage2-group">
+            <header>
+              <b>{g.name}</b>
+              <span className="pill">miejsca {g.places}</span>
+            </header>
+            <p>{g.who}</p>
+          </article>
+        ))}
+      </div>
+    </section>
+  )
+}
 
 function KnockoutView({ state, categoryId }: { state: State; categoryId: string }) {
   const slots = bracketView(state, categoryId)
@@ -353,7 +378,7 @@ export function TeamPage({ state, teamId }: { state: State; teamId: string }) {
   const days = [...new Set(matches.map((m) => m.start.slice(0, 10)))]
   // Where the team would play in the knockout phase, by the current table.
   // Places the team plays for in the knockout phase, from its current place in the group.
-  const koTier = group && pos >= 0 ? tierForGroupPlace(state, group.id, pos + 1) : null
+  const koTier = group && pos >= 0 && !STAGE2[team.categoryId] ? tierForGroupPlace(state, group.id, pos + 1) : null
   const groupOver = group ? groupFinished(state, group.id) : false
   const opponent = (m: Match) => state.teams.find((t) => t.id === (m.teamA === team.id ? m.teamB : m.teamA))
   const won = matches.filter((m) => m.status === 'finished').filter((m) => {
@@ -398,7 +423,7 @@ export function TeamPage({ state, teamId }: { state: State; teamId: string }) {
       )}
 
       <h3 className="list-title">Wszystkie mecze</h3>
-      {!matches.length && <p className="muted">Terminarz pojawi się po losowaniu grup.</p>}
+      {!matches.length && <p className="muted">Terminarz pojawi się wkrótce.</p>}
       {days.map((d) => (
         <section key={d} className="team-day">
           <h4 className="day-title">{formatDay(d)}</h4>
@@ -523,7 +548,7 @@ export function MyTeams({ state }: { state: State }) {
                     <span className="small">Boisko {next.court}{opp ? ` · z ${opp.name}` : ''}</span>
                   </>
                 ) : (
-                  <span className="muted small">{ms.length ? 'Brak kolejnych meczów' : 'Mecze po losowaniu'}</span>
+                  <span className="muted small">{ms.length ? 'Brak kolejnych meczów' : 'Mecze wkrótce'}</span>
                 )}
               </span>
             </a>

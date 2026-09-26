@@ -1,23 +1,22 @@
-import { useState } from 'react'
-import { DEFAULT_SCHEDULE, GROUPS_DEFAULT } from '../logic/demo'
-import { clubOf, drawCategory, isDrawn } from '../logic/draw'
+import { clubOf } from '../logic/draw'
 import { store, useSession, useStore, useSync } from '../store/store'
 import { AdminPinForm, setupTournament } from './Admin'
 import type { Category, State } from '../types'
-import { PinGate, useLookups } from '../ui'
+import { useLookups } from '../ui'
 import { CourtList } from './Court'
 import { Competition } from './Competition'
 
 const TABS = [
-  { route: 'panel', label: '1. Zespoły i losowanie' },
+  { route: 'panel', label: '1. Zespoły i grupy' },
   { route: 'panel-grupy', label: '2. Grupy' },
   { route: 'panel-sedziowie', label: '3. Na żywo' },
   { route: 'panel-wiecej', label: 'Więcej' },
 ]
 
 /**
- * Organiser panel (#panel). Not linked from the public pages. Leads through the
- * preparation: teams → draw → groups → refereeing; drawing needs the admin PIN.
+ * Organiser panel (#panel). Not linked from the public pages: teams and the organiser's
+ * fixed groups → groups with the schedule → refereeing. There is no draw: the groups
+ * come from the organiser's list.
  */
 export function Organizer({ route }: { route: string }) {
   const state = useStore()
@@ -48,56 +47,45 @@ export function Organizer({ route }: { route: string }) {
 function Empty() {
   return (
     <p className="notice-inline">
-      Grupy nie są jeszcze rozlosowane. Zrób to w zakładce <a href="#panel">1. Zespoły i losowanie</a>.
+      Grupy nie są jeszcze zapisane w bazie. Ustaw PIN w zakładce <a href="#panel">1. Zespoły i grupy</a>.
     </p>
   )
 }
 
-/** Step 1: every team by category and club, then one draw button per category. */
+/** Step 1: every team by category and club, and the organiser's fixed groups. */
 function TeamsAndDraw({ state }: { state: State }) {
   const sync = useSync()
-  const allDrawn = state.categories.length > 0 && state.categories.every((c) => isDrawn(state, c.id))
   return (
     <>
       <div className="org-intro">
         <p className="muted">
-          Zgłoszone zespoły z listy zakwalifikowanych. Pod listą losujesz grupy, osobno dla dwójek i trójek.
-          Zasada losowania: drużyny z tego samego klubu nigdy nie trafiają do jednej grupy.
+          Zespoły i grupy według listy organizatora. Grupy są ustalone na stałe (bez losowania):
+          dwójki w 4 grupach po 7 zespołów, trójki w 5 grupach po 6 zespołów.
         </p>
-        {/* Scrolls instead of a #link: the hash is the page route. */}
-        <button className="btn btn-primary" onClick={() => document.getElementById('losowanie')?.scrollIntoView({ behavior: 'smooth' })}>
-          {allDrawn ? 'Grupy rozlosowane ↓' : 'Przejdź do losowania ↓'}
-        </button>
       </div>
+      {sync.empty && (
+        <section className="panel">
+          <h2>Pierwsze uruchomienie</h2>
+          <p>
+            Ustaw swój <b>PIN sędziego głównego</b> (co najmniej 4 cyfry). Zapisze on w bazie zespoły, grupy i
+            terminarz. Będzie potrzebny do wpisywania i poprawiania wyników.
+          </p>
+          <AdminPinForm saveLabel="Ustaw PIN i zapisz turniej" onSave={setupTournament} />
+        </section>
+      )}
       <div className="org-cats">
         {state.categories.map((c) => <CategoryTeams key={c.id} state={state} category={c} />)}
       </div>
-      <section className="panel" id="losowanie">
-        <h2>Losowanie grup</h2>
-        {sync.empty ? (
-          <>
-            <p>
-              Najpierw ustaw swój <b>PIN sędziego głównego</b> (co najmniej 4 cyfry). Będzie potrzebny do losowania,
-              wpisywania i poprawiania wyników. Zapamiętaj go.
-            </p>
-            <AdminPinForm saveLabel="Ustaw PIN i przejdź do losowania" onSave={setupTournament} />
-          </>
-        ) : (
-          <PinGate label="Losowanie (sędzia główny)">
-            <div className="org-draws">
-              {state.categories.map((c) => <DrawCategory key={c.id} state={state} category={c} />)}
-            </div>
-            {allDrawn && (
-              <div className="notice org-ready">
-                <p><b>Turniej gotowy.</b> {state.groups.length} grup, {state.matches.length} meczów w terminarzu.</p>
-                <div className="actions">
-                  <a className="btn btn-primary" href="#panel-grupy">Zobacz grupy i terminarz</a>
-                  <a className="btn" href="#panel-sedziowie">Na żywo</a>
-                  <a className="btn" href="#">Strona dla kibiców</a>
-                </div>
-              </div>
-            )}
-          </PinGate>
+      <section className="panel">
+        <h2>Grupy</h2>
+        <div className="org-draws">
+          {state.categories.map((c) => <CategoryGroups key={c.id} state={state} category={c} />)}
+        </div>
+        {state.groups.length > 0 && (
+          <div className="actions">
+            <a className="btn btn-primary" href="#panel-grupy">Zobacz grupy i terminarz</a>
+            <a className="btn" href="#panel-sedziowie">Na żywo</a>
+          </div>
         )}
       </section>
     </>
@@ -107,13 +95,12 @@ function TeamsAndDraw({ state }: { state: State }) {
 function CategoryTeams({ state, category }: { state: State; category: Category }) {
   const teams = state.teams.filter((t) => t.categoryId === category.id)
   const clubs = [...new Set(teams.map(clubOf))]
-  const drawn = isDrawn(state, category.id)
   const groups = state.groups.filter((g) => g.categoryId === category.id)
   return (
     <section className="org-cat">
       <header>
         <h2>{category.name}</h2>
-        <span className={`pill ${drawn ? 'pill-done' : ''}`}>{drawn ? `Rozlosowane: ${groups.length} grupy` : 'Nie rozlosowane'}</span>
+        <span className={`pill ${groups.length ? 'pill-done' : ''}`}>{groups.length ? `${groups.length} grup` : 'Bez grup'}</span>
       </header>
       <p className="muted small">{teams.length} zespołów z {clubs.length} klubów</p>
       <ul className="org-clubs">
@@ -131,65 +118,24 @@ function CategoryTeams({ state, category }: { state: State; category: Category }
   )
 }
 
-function DrawCategory({ state, category }: { state: State; category: Category }) {
+/** The fixed groups of one category, read-only. */
+function CategoryGroups({ state, category }: { state: State; category: Category }) {
   const { teamName } = useLookups(state)
-  const teams = state.teams.filter((t) => t.categoryId === category.id)
-  const maxPerClub = Math.max(1, ...[...new Set(teams.map(clubOf))].map((cl) => teams.filter((t) => clubOf(t) === cl).length))
-  const current = state.groups.filter((g) => g.categoryId === category.id)
-  const [count, setCount] = useState(current.length || GROUPS_DEFAULT)
-  const [confirm, setConfirm] = useState(false)
-  const [msg, setMsg] = useState('')
-  const drawn = isDrawn(state, category.id)
-  const played = state.matches.filter((m) => m.status !== 'scheduled').length
-  const per = count > 0 ? `${Math.floor(teams.length / count)}${teams.length % count ? `–${Math.ceil(teams.length / count)}` : ''}` : ''
-
-  const draw = async () => {
-    setConfirm(false)
-    setMsg('Losuję…')
-    const first = state.matches.map((m) => m.start).sort()[0] ?? DEFAULT_SCHEDULE.start
-    const next = drawCategory(state, category.id, count, { ...DEFAULT_SCHEDULE, courts: state.tournament.courts, start: first })
-    await store.replace(next)
-    setMsg(`Rozlosowano ${category.name.toLowerCase()} do ${count} grup.`)
-  }
-
+  const groups = state.groups.filter((g) => g.categoryId === category.id)
   return (
     <div className="org-draw">
       <h3>{category.name}</h3>
-      <label>Liczba grup
-        <input
-          id={`org-count-${category.id}`}
-          type="number"
-          min={maxPerClub}
-          max={teams.length}
-          value={count}
-          onChange={(e) => setCount(Math.max(maxPerClub, Number(e.target.value) || maxPerClub))}
-        />
-      </label>
-      <p className="muted small">{teams.length} zespołów → {count} grup po {per}.{count === 4 || count === 2 || count === 1 ? ' Drabinka zadziała.' : ' Drabinka jest gotowa dla 1, 2 lub 4 grup.'}</p>
-      {confirm ? (
-        <div className="notice">
-          <p>{played ? `Uwaga: są już wyniki (${played} meczów). Losowanie od nowa je usunie.` : drawn ? `Rozlosować ${category.name.toLowerCase()} od nowa?` : `Rozlosować ${category.name.toLowerCase()}?`}</p>
-          <div className="actions">
-            <button className="btn btn-primary" onClick={draw}>Tak, losuj</button>
-            <button className="btn" onClick={() => setConfirm(false)}>Anuluj</button>
-          </div>
-        </div>
-      ) : (
-        <button className="btn btn-primary btn-lg" onClick={() => setConfirm(true)}>
-          {drawn ? `Losuj ponownie: ${category.name}` : `Losuj grupy: ${category.name}`}
-        </button>
-      )}
-      {msg && <p className="ok">{msg}</p>}
-      {drawn && (
+      {groups.length ? (
         <div className="org-result">
-          {current.map((g) => (
+          {groups.map((g) => (
             <div key={g.id} className="org-group">
               <b>{g.name}</b>
               <ol>{g.teamIds.map((id) => <li key={id}>{teamName(id)}</li>)}</ol>
             </div>
           ))}
-          <a href="#panel-grupy" className="small">Zobacz grupy z terminarzem →</a>
         </div>
+      ) : (
+        <p className="muted">Brak grup w bazie.</p>
       )}
     </div>
   )

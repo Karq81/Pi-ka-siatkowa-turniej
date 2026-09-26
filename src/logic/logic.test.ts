@@ -73,8 +73,8 @@ describe('schedule', () => {
       const ids = slot.flatMap((x) => [x.teamA, x.teamB])
       expect(new Set(ids).size).toBe(ids.length)
     }
-    // Dwójki 4×6 teams (15 matches per group), Trójki 4×7 (21 per group).
-    expect(matches).toHaveLength(4 * 15 + 4 * 21)
+    // Dwójki 4×7 teams (21 matches per group), Trójki 7, 7, 8, 8 (21, 21, 28, 28).
+    expect(matches).toHaveLength(4 * 21 + 2 * 21 + 2 * 28)
   })
 
   it('moves to the next day after the day end', () => {
@@ -142,13 +142,14 @@ describe('youth rules: one set to 15', () => {
 describe('Albatros CUP team list', () => {
   it('has every qualified team, numbered per club', () => {
     const s = drawnState(rng(7))
-    expect(s.teams.filter((t) => t.categoryId === 'c1')).toHaveLength(24)
-    expect(s.teams.filter((t) => t.categoryId === 'c2')).toHaveLength(28)
+    expect(s.teams.filter((t) => t.categoryId === 'c1')).toHaveLength(28)
+    expect(s.teams.filter((t) => t.categoryId === 'c2')).toHaveLength(30)
     const names = s.teams.map((t) => t.name)
     expect(names).toContain('UKS Opty Mielno 1')
     expect(names).toContain('UKS Opty Mielno 2')
     expect(names).toContain('AMPS Kołobrzeg')
-    expect(new Set(s.teams.filter((t) => t.categoryId === 'c2').map((t) => t.name)).size).toBe(28)
+    expect(names).toContain('UKS Opty Mielno 4')
+    expect(new Set(s.teams.filter((t) => t.categoryId === 'c2').map((t) => t.name)).size).toBe(30)
   })
 
   it('draws groups without two teams of one club together, in every draw', () => {
@@ -159,8 +160,8 @@ describe('Albatros CUP team list', () => {
         expect(new Set(clubs).size).toBe(clubs.length)
       }
       const sizes = (cat: string) => s.groups.filter((g) => g.categoryId === cat).map((g) => g.teamIds.length).sort()
-      expect(sizes('c1')).toEqual([6, 6, 6, 6])
-      expect(sizes('c2')).toEqual([7, 7, 7, 7])
+      expect(sizes('c1')).toEqual([7, 7, 7, 7])
+      expect(sizes('c2')).toEqual([7, 7, 8, 8])
     }
   })
 
@@ -170,22 +171,30 @@ describe('Albatros CUP team list', () => {
     expect(a).not.toEqual(b)
   })
 
-  it('starts before the draw: teams only', () => {
+  it('starts with the organiser\'s fixed groups: Dwójki 4×7, Trójki 5×6', () => {
     const s = initialState()
-    expect(s.teams).toHaveLength(52)
-    expect(s.groups).toHaveLength(0)
-    expect(s.matches).toHaveLength(0)
-    expect(isDrawn(s, 'c1')).toBe(false)
+    expect(s.teams).toHaveLength(58)
+    const sizes = (cat: string) => s.groups.filter((g) => g.categoryId === cat).map((g) => g.teamIds.length)
+    expect(sizes('c1')).toEqual([7, 7, 7, 7])
+    expect(sizes('c2')).toEqual([6, 6, 6, 6, 6])
+    expect(s.groups.map((g) => g.name)).toEqual(['Grupa A', 'Grupa B', 'Grupa C', 'Grupa D', 'Grupa 1', 'Grupa 2', 'Grupa 3', 'Grupa 4', 'Grupa 5'])
+    // Every team in exactly one group of its category.
+    const placed = s.groups.flatMap((g) => g.teamIds)
+    expect(new Set(placed).size).toBe(58)
+    expect(s.groups.every((g) => g.teamIds.every((id) => s.teams.find((t) => t.id === id)!.categoryId === g.categoryId))).toBe(true)
+    const name = (id: string) => s.teams.find((t) => t.id === id)!.name
+    expect(s.groups[0].teamIds.map(name)).toContain('UKS Opty Mielno 1')
+    expect(s.groups[8].teamIds.map(name)).toEqual(['UKS Piątka Turek 1', 'MKS Sasvolley Stargard 1', 'UKS Volley 71 Szczecin 2', 'PTPS Człuchów 1', 'UKS Tytan Ostrowy 2', 'UKS Opty Mielno 4'])
+    expect(s.matches).toHaveLength(4 * 21 + 5 * 15)
+    expect(s.matches.every((m) => m.status === 'scheduled')).toBe(true)
   })
 
   it('draws one category at a time', () => {
-    const one = drawCategory(initialState(), 'c1', 4, DEFAULT_SCHEDULE, rng(1))
+    const empty = { ...initialState(), groups: [], matches: [] }
+    const one = drawCategory(empty, 'c1', 4, DEFAULT_SCHEDULE, rng(1))
     expect(isDrawn(one, 'c1')).toBe(true)
     expect(isDrawn(one, 'c2')).toBe(false)
-    expect(one.matches).toHaveLength(4 * 15)
-    const both = drawCategory(one, 'c2', 4, DEFAULT_SCHEDULE, rng(2))
-    expect(both.groups.filter((g) => g.categoryId === 'c1')).toEqual(one.groups)
-    expect(both.matches).toHaveLength(4 * 15 + 4 * 21)
+    expect(one.matches).toHaveLength(4 * 21)
   })
 
   it('starts with no results at all', () => {
@@ -193,10 +202,10 @@ describe('Albatros CUP team list', () => {
     expect(s.matches.every((m) => m.status === 'scheduled' && m.sets.length === 0)).toBe(true)
   })
 
-  it('keeps clubs apart even with an uneven split', () => {
+  it('keeps clubs apart with another number of groups', () => {
     const s = drawnState(rng(4))
-    const groups = drawGroups(s.teams, 'c2', 3, rng(9))
-    expect(groups.map((g) => g.teamIds.length).sort((x, y) => x - y)).toEqual([9, 9, 10])
+    const groups = drawGroups(s.teams, 'c2', 5, rng(9))
+    expect(groups.map((g) => g.teamIds.length).sort((x, y) => x - y)).toEqual([6, 6, 6, 6, 6])
     for (const g of groups) {
       const clubs = g.teamIds.map((id) => clubOf(s.teams.find((t) => t.id === id)!))
       expect(new Set(clubs).size).toBe(clubs.length)
