@@ -868,3 +868,24 @@ a.board { display: block; color: var(--board-ink); text-decoration: none; }
 .up-card .up-cat { text-align: left; }
 .compact .up-card header { flex-direction: row; align-items: center; }
 .compact .up-at { font-size: 1.15rem; }
+
+/* Court card: link to the court's page with its queue of matches. */
+a.court-link { color: inherit; text-decoration: none; }
+a.court-link:hover { color: var(--accent); }
+.court-queue-link { font-size: 0.85rem; font-weight: 600; color: var(--accent); text-decoration: none; margin-top: auto; }
+.compact .court-queue-link { font-size: 0.74rem; }
+
+/* Court page: queue of the court's next matches. */
+.court-page { display: flex; flex-direction: column; gap: 14px; }
+.court-page h2 { margin: 0; }
+.queue { list-style: none; padding: 0; margin: 10px 0 0; display: flex; flex-direction: column; gap: 6px; }
+.queue a { display: grid; grid-template-columns: 2em 5.6em minmax(0, 1fr); gap: 4px 12px; align-items: center; padding: 10px 12px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); color: var(--ink); text-decoration: none; }
+.queue li:first-child a { border: 2px solid var(--accent); }
+.queue li.mine a { border-color: var(--ball); background: color-mix(in srgb, var(--ball) 22%, var(--surface)); }
+.q-no { color: var(--muted); font-weight: 700; }
+.q-at { white-space: nowrap; color: var(--muted); display: flex; flex-direction: column; line-height: 1.1; }
+.q-at small { font-size: 0.72rem; }
+.q-at b { font-family: var(--display); font-size: 1.25rem; color: var(--accent); }
+.q-teams { display: flex; flex-direction: column; gap: 1px; font-weight: 600; line-height: 1.2; }
+.q-teams .mine { background: var(--ball); color: #0e1b2c; border-radius: 6px; padding: 0 6px; align-self: flex-start; }

@@ -26,8 +26,10 @@ export function Public({ route }: { route: string }) {
   const state = useStore()
   // Group links, match pages and the bracket all sit under "Grupy i terminarz".
   const detail = /^(grupa|mecz|druzyna)-(.+)$/.exec(route)
+  // One court's page (its board and queue) sits under "Na żywo".
+  const courtPage = /^kolejka-(\d+)$/.exec(route)
   const known = TABS.some((t) => t.route === route) || HIDDEN_ROUTES.includes(route)
-  const tab = detail || route === 'drabinka' ? 'grupy' : known ? route : ''
+  const tab = courtPage ? 'na-zywo' : detail || route === 'drabinka' ? 'grupy' : known ? route : ''
   const nav = (
     <nav className="tabs" aria-label="Sekcje">
       {TABS.map((t) => (
@@ -48,7 +50,7 @@ export function Public({ route }: { route: string }) {
         {tab === 'grupy' && detail?.[1] !== 'mecz' && detail?.[1] !== 'druzyna' && <Competition state={state} route={route} />}
         {detail?.[1] === 'druzyna' && <TeamPage state={state} teamId={detail[2]} />}
         {detail?.[1] === 'mecz' && <MatchPage state={state} matchId={detail[2]} />}
-        {tab === 'na-zywo' && <LiveCourts state={state} />}
+        {tab === 'na-zywo' && (courtPage ? <CourtPage state={state} court={Number(courtPage[1])} /> : <LiveCourts state={state} />)}
         {tab === 'tabele' && <Tables state={state} />}
         {tab === 'terminarz' && <Schedule state={state} />}
       </main>
@@ -98,7 +100,9 @@ export function CourtCard({ state, court, big = false, referee = false }: { stat
   return (
     <article className={`court mode-${board.mode} ${big ? 'court-big' : ''} ${mine.includes(current.teamA) || mine.includes(current.teamB) ? 'mine' : ''}`}>
       <header>
-        <span className="court-no">Boisko {courtLabel(court)}</span>
+        {referee || big
+          ? <span className="court-no">Boisko {courtLabel(court)}</span>
+          : <a className="court-no court-link" href={`#kolejka-${court}`}>Boisko {courtLabel(court)} ›</a>}
         {live && <StatusPill status="live" />}
         {finished && <StatusPill status="finished" />}
         {board.mode === 'next' && <span className="pill pill-next">Następne<span className="pill-long"> spotkanie</span> · {formatTime(current.start)}</span>}
@@ -125,6 +129,7 @@ export function CourtCard({ state, court, big = false, referee = false }: { stat
       {multi && current.sets.length > 1 && (live || finished) && (
         <p className="court-sets muted">Sety: {current.sets.map((s) => `${s.a}:${s.b}`).join(', ')}</p>
       )}
+      {!referee && !big && <a className="court-queue-link" href={`#kolejka-${court}`}>Kolejne mecze na boisku ›</a>}
       {refLink}
     </article>
   )
@@ -139,6 +144,58 @@ function TeamRow({ name, sets, points, live, win = false, mine = false }: {
       <span className="team-name">{mine && <span className="mine-star" aria-label="Obserwowana">★ </span>}{name}</span>
       {live && sets !== undefined && <span className="sets" title="Wygrane sety">{sets}</span>}
       {live && <span className="points">{points ?? 0}</span>}
+    </div>
+  )
+}
+
+/**
+ * One court (each group plays on its own court): its board, then every match still to
+ * come there in order with its approximate time, then the matches already played.
+ */
+function CourtPage({ state, court }: { state: State; court: number }) {
+  const now = useNow(15000)
+  const mine = useFavorites()
+  const { categoryName, stageName, side } = useLookups(state)
+  const onCourt = state.matches.filter((m) => m.court === court).sort((a, b) => a.start.localeCompare(b.start))
+  if (!onCourt.length) return <p className="muted">Na tym boisku nie ma meczów.</p>
+  const board = courtBoard(state, court, now)
+  const queue = onCourt.filter((m) => m.status === 'scheduled' && m.id !== board.match?.id)
+  const played = onCourt.filter((m) => m.status === 'finished').reverse()
+  const first = onCourt[0]
+  const slot = state.tournament.slotMinutes ?? 15
+  return (
+    <div className="court-page">
+      <h2>Boisko {courtLabel(court)} <span className="muted">· {categoryName(first.categoryId)} · {stageName(first)}</span></h2>
+      <CourtCard state={state} court={court} big />
+      <section>
+        <h3 className="list-title">Kolejne mecze na tym boisku</h3>
+        <p className="court-rule">
+          ⏱️ <b>Każdy mecz rozpocznie się 2 minuty po zakończeniu poprzedniego meczu na tym boisku.</b> Godziny są
+          przybliżone: mecz z przerwą trwa ok. {slot} minut, więc kolejne godziny liczymy co {slot} minut.
+        </p>
+        {!queue.length && <p className="muted">Na tym boisku nie ma już kolejnych meczów.</p>}
+        <ol className="queue">
+          {queue.map((m, i) => (
+            <li key={m.id} className={mine.includes(m.teamA) || mine.includes(m.teamB) ? 'mine' : ''}>
+              <a href={`#mecz-${m.id}`}>
+                <span className="q-no">{i + 1}.</span>
+                <span className="q-at">ok. <b>{formatTime(m.start)}</b>{m.start.slice(0, 10) !== onCourt[0].start.slice(0, 10) || i === 0 ? <small> {formatDay(m.start)}</small> : null}</span>
+                <span className="q-teams">
+                  <span className={mine.includes(m.teamA) ? 'mine' : ''}>{mine.includes(m.teamA) && '★ '}{side(m, 'a')}</span>
+                  <span className="muted small">vs</span>
+                  <span className={mine.includes(m.teamB) ? 'mine' : ''}>{mine.includes(m.teamB) && '★ '}{side(m, 'b')}</span>
+                </span>
+              </a>
+            </li>
+          ))}
+        </ol>
+      </section>
+      {played.length > 0 && (
+        <section>
+          <h3 className="list-title">Rozegrane na tym boisku</h3>
+          <MatchList state={state} matches={played} />
+        </section>
+      )}
     </div>
   )
 }
