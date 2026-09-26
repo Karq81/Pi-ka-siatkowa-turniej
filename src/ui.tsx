@@ -94,11 +94,28 @@ export function courtMatch(state: State, court: number): { current?: Match; next
   return live ? { current: live, next: waiting[0] } : { current: waiting[0], next: waiting[1] }
 }
 
+/**
+ * Test clock for trying the live views before the tournament: open the page with
+ * `?czas=2026-10-23T15:29` and every time-based display runs from that moment on.
+ * Only this browser tab is affected; no data changes.
+ */
+const clockOffset = (() => {
+  try {
+    const at = new URLSearchParams(location.search).get('czas')
+    const t = at ? new Date(at).getTime() : NaN
+    return Number.isNaN(t) ? 0 : t - Date.now()
+  } catch {
+    return 0
+  }
+})()
+
+export const clockNow = () => Date.now() + clockOffset
+
 /** Current time, refreshed every `ms`, for time-based displays (countdowns, "Trwa"). */
 export function useNow(ms = 1000) {
-  const [now, setNow] = useState(() => Date.now())
+  const [now, setNow] = useState(() => clockNow())
   useEffect(() => {
-    const t = setInterval(() => setNow(Date.now()), ms)
+    const t = setInterval(() => setNow(clockNow()), ms)
     return () => clearInterval(t)
   }, [ms])
   return now
@@ -163,11 +180,27 @@ export function PinGate({ court, label, children }: { court?: number; label: str
 /** Connection state and save errors, shown on every screen. */
 export function SyncBanner() {
   const sync = useSync()
+  const now = useNow(30000)
   if (sync.error) {
     return (
       <div className="banner banner-error" role="alert">
         <span>{sync.error}</span>
         <button className="btn" onClick={() => store.clearError()}>OK</button>
+      </div>
+    )
+  }
+  if (clockOffset) {
+    return (
+      <div className="banner" role="status">
+        Zegar testowy: strona udaje, że jest {formatDay(new Date(now).toISOString())}, {new Date(now).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })}.{' '}
+        <a href={location.pathname + location.hash}>Wyłącz</a>
+      </div>
+    )
+  }
+  if (sync.mode === 'local') {
+    return (
+      <div className="banner" role="status">
+        Tryb pokazowy: dane zapisują się tylko na tym urządzeniu i nikt inny ich nie widzi.
       </div>
     )
   }
