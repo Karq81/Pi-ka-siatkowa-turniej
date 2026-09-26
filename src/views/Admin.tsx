@@ -29,7 +29,7 @@ export function Admin() {
   if (sync.empty) {
     return (
       <div className="page">
-        <BackBar fallback="panel" label="Panel organizatora" />
+        <BackBar fallback="panel" />
         <header className="bar">
           <h1>Pierwsze uruchomienie</h1>
         </header>
@@ -39,7 +39,7 @@ export function Admin() {
   }
   return (
     <div className="page">
-      <BackBar fallback="panel" label="Panel organizatora" />
+      <BackBar fallback="panel" />
       <header className="bar">
         <h1>Sędzia główny</h1>
       </header>
@@ -482,7 +482,7 @@ export function PrintCards() {
   const state = useStore()
   return (
     <div className="page">
-      <BackBar fallback="panel-wiecej" label="Panel" />
+      <BackBar fallback="panel-wiecej" />
       <header className="bar no-print">
         <h1>Kartki dla boisk</h1>
       </header>

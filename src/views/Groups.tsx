@@ -19,7 +19,7 @@ export function MatchPage({ state, matchId }: { state: State; matchId: string })
   const scoreB = single ? cur?.b : t.setsB
   return (
     <>
-      <BackBar fallback={back.slice(1)} label={m.groupId ? stageName(m) : 'Faza pucharowa'} />
+      <BackBar fallback={back.slice(1)} />
       <article className={`match-page ${m.status === 'live' ? 'is-live' : ''}`}>
         <header>
           <span>{categoryName(m.categoryId)} · {stageName(m)}</span>

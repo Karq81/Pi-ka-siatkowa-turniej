@@ -53,7 +53,7 @@ export function Public({ route }: { route: string }) {
       )}
       <main>
         {/* Every screen except the start page gets a back button; team and match pages have their own. */}
-        {tab !== '' && !detail && <BackBar fallback="" label="Start" />}
+        {tab !== '' && !detail && <BackBar fallback="" />}
         {tab === 'wyniki' && <Results state={state} />}
         {tab === 'grupy' && detail?.[1] !== 'mecz' && detail?.[1] !== 'druzyna' && <Competition state={state} route={route} />}
         {detail?.[1] === 'druzyna' && <TeamPage state={state} teamId={detail[2]} />}

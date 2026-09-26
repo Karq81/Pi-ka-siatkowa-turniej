@@ -356,7 +356,7 @@ export function TeamPage({ state, teamId }: { state: State; teamId: string }) {
 
   return (
     <div className="team-page">
-      <BackBar fallback={group ? `grupa-${group.id}` : 'grupy'} label={group ? `${category?.name} · ${group.name}` : 'Rozgrywki'} />
+      <BackBar fallback={group ? `grupa-${group.id}` : 'grupy'} />
       <header className="team-head">
         <TeamBadge team={team} size="lg" />
         <div>

@@ -31,7 +31,7 @@ window.addEventListener('hashchange', () => {
  * Big "back" button for phones: returns to the previous screen, or to `fallback`
  * when the page was opened straight from a link (nothing to go back to).
  */
-export function BackBar({ fallback, label }: { fallback: string; label?: string }) {
+export function BackBar({ fallback }: { fallback: string }) {
   return (
     <div className="backbar">
       <button
@@ -43,7 +43,6 @@ export function BackBar({ fallback, label }: { fallback: string; label?: string 
       >
         <span aria-hidden="true">←</span> Wstecz
       </button>
-      {label && <a href={`#${fallback}`} className="backbar-ctx">{label}</a>}
     </div>
   )
 }

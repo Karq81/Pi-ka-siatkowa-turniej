@@ -12,7 +12,7 @@ import { BackBar, courtMatch, formatTime, PinGate, StatusPill, useLookups, useNo
 export function CourtPicker() {
   return (
     <div className="page">
-      <BackBar fallback="panel-sedziowie" label="Panel organizatora" />
+      <BackBar fallback="panel-sedziowie" />
       <header className="bar">
         <h1>Tryb sędziego</h1>
       </header>
@@ -82,7 +82,7 @@ export function Court({ court, manual = false }: { court: number; manual?: boole
   useWakeLock()
   return (
     <div className="page page-court">
-      <BackBar fallback="panel-sedziowie" label="Boiska" />
+      <BackBar fallback="panel-sedziowie" />
       <header className="bar">
         <h1>Boisko {court}</h1>
       </header>

@@ -623,8 +623,6 @@ a.mcard:hover { border-color: var(--accent); }
   font-family: var(--display); font-weight: 700; font-size: 1.1rem; letter-spacing: 0.02em; cursor: pointer;
 }
 .btn-back span { font-size: 1.3rem; line-height: 1; }
-.backbar-ctx { font-size: 0.9rem; color: var(--muted); text-decoration: none; text-align: right; }
-.backbar-ctx:hover { color: var(--accent); }
 
 /* Followed teams */
 .follow { flex: none; margin-left: auto; padding: 8px 14px; border-radius: 999px; border: 2px solid var(--ball); background: transparent; color: var(--ink); font-weight: 700; cursor: pointer; }

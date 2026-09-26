@@ -22,7 +22,7 @@ export function Correction({ matchId }: { matchId: string }) {
   const done = () => { history.length > 1 ? history.back() : (location.hash = `mecz-${matchId}`) }
   return (
     <div className="page page-court">
-      <BackBar fallback={`mecz-${matchId}`} label="Mecz" />
+      <BackBar fallback={`mecz-${matchId}`} />
       <header className="bar"><h1>Korekta wyniku</h1></header>
       <PinGate label="Korekta wyniku (sędzia główny)">
         {!m ? (
