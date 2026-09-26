@@ -192,14 +192,14 @@ export function Upcoming({ state }: { state: State }) {
                   <span className="up-court">Boisko {m.court}</span>
                   <span className="up-cat">{categoryName(m.categoryId)} · {stageName(m)}</span>
                 </header>
-                <span className="up-team">
+                <span className={`up-team ${mine.includes(m.teamA) ? 'mine' : ''}`}>
                   <TeamBadge team={team(m.teamA)} />
-                  <b className={m.teamA ? '' : 'tbd'}>{side(m, 'a')}</b>
+                  <b className={m.teamA ? '' : 'tbd'}>{mine.includes(m.teamA) && '★ '}{side(m, 'a')}</b>
                 </span>
                 <span className="up-vs">vs</span>
-                <span className="up-team">
+                <span className={`up-team ${mine.includes(m.teamB) ? 'mine' : ''}`}>
                   <TeamBadge team={team(m.teamB)} />
-                  <b className={m.teamB ? '' : 'tbd'}>{side(m, 'b')}</b>
+                  <b className={m.teamB ? '' : 'tbd'}>{mine.includes(m.teamB) && '★ '}{side(m, 'b')}</b>
                 </span>
               </a>
             ))}
