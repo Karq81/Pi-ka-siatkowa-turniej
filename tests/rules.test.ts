@@ -1,6 +1,6 @@
 // Firestore security rules tests. Run with: npm run test:rules (starts the Firebase emulator).
 import { assertFails, assertSucceeds, initializeTestEnvironment, type RulesTestEnvironment } from '@firebase/rules-unit-testing'
-import { deleteDoc, doc, getDoc, setDoc } from 'firebase/firestore'
+import { deleteDoc, doc, FieldPath, getDoc, setDoc, updateDoc } from 'firebase/firestore'
 import { readFileSync } from 'node:fs'
 import { afterAll, beforeAll, beforeEach, describe, it } from 'vitest'
 
@@ -25,6 +25,9 @@ beforeEach(async () => {
     await setDoc(doc(db, `${T}/matches/done`), { ...match, status: 'finished' })
     await setDoc(doc(db, `${T}/matches/court2`), { ...match, court: 2 })
     await setDoc(doc(db, `${T}/matches/sf`), { ...match, court: 2, status: 'scheduled', teamA: '', teamB: '' })
+    // Court sheets: all matches of a court in one document (the app's layout).
+    await setDoc(doc(db, `${T}/matches/court-1`), { court: 1, status: 'scheduled', matches: { m1: match, m7: { ...match, id: 'm7' } } })
+    await setDoc(doc(db, `${T}/matches/court-2`), { court: 2, status: 'scheduled', matches: { m2: { ...match, id: 'm2', court: 2 } } })
   })
 })
 
@@ -70,6 +73,17 @@ describe('firestore rules', () => {
     await assertFails(setDoc(doc(db, `${T}/matches/new`), match))
     await assertFails(setDoc(doc(db, T), { tournament: { name: 'hack' } }))
     await assertFails(setDoc(doc(db, `${T}/private/pins`), { adminPin: '1111', courts: {} }))
+  })
+
+  it('lets a court referee update matches on their own court sheet only', async () => {
+    await login('u', '1111', 1)
+    const db = as('u')
+    const scored = { ...match, sets: [{ a: 15, b: 9 }], status: 'finished' }
+    await assertSucceeds(updateDoc(doc(db, `${T}/matches/court-1`), new FieldPath('matches', 'm1'), scored, new FieldPath('matches', 'm7'), { ...match, id: 'm7', start: 'x' }))
+    await assertFails(updateDoc(doc(db, `${T}/matches/court-2`), new FieldPath('matches', 'm2'), { ...match, court: 2 }))
+    await assertFails(updateDoc(doc(db, `${T}/matches/court-1`), { court: 2 }))
+    await assertFails(deleteDoc(doc(db, `${T}/matches/court-1`)))
+    await assertSucceeds(getDoc(doc(as(null), `${T}/matches/court-2`)))
   })
 
   it('lets any referee fill in knockout teams on another court, but nothing else there', async () => {

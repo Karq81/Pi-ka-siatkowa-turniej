@@ -1,7 +1,7 @@
 import { initializeApp, type FirebaseOptions } from 'firebase/app'
 import { connectAuthEmulator, getAuth, onAuthStateChanged, signInAnonymously, type User } from 'firebase/auth'
 import {
-  collection, connectFirestoreEmulator, doc, getDoc, getFirestore, initializeFirestore, onSnapshot, persistentLocalCache,
+  collection, connectFirestoreEmulator, doc, FieldPath, getDoc, getFirestore, initializeFirestore, onSnapshot, persistentLocalCache,
   persistentMultipleTabManager, setDoc, updateDoc, writeBatch, type Firestore,
 } from 'firebase/firestore'
 import { initialState } from '../logic/demo'
@@ -12,7 +12,13 @@ import type { Store, SyncInfo } from './types'
 /*
  * Firestore layout (see firestore.rules):
  *   tournaments/{t}                 settings, categories, groups, teams (one small document)
- *   tournaments/{t}/matches/{id}    one document per match, so courts write independently
+ *   tournaments/{t}/matches/court-N one "sheet" per court: { court: N, status: 'scheduled',
+ *                                   matches: { [id]: Match } }. A phone opening the page
+ *                                   reads ~10 documents instead of one per match, and a
+ *                                   result (with the court's times moving) changes one.
+ *                                   Courts still write independently; `court` and `status`
+ *                                   are there for the access rules (a court's referee may
+ *                                   update only that court's sheet).
  *   tournaments/{t}/private/pins    admin PIN and one key per court, readable only by the admin
  *   tournaments/{t}/sessions/{uid}  a device's role (and court), granted by the rules when the key matches
  */
@@ -20,13 +26,26 @@ import type { Store, SyncInfo } from './types'
 
 const LOGIN_TIMEOUT_MS = 15000
 
+/** Court sheet documents are named court-1, court-2, … */
+const SHEET_PREFIX = 'court-'
+
+interface CourtSheet {
+  court: number
+  /** Always "scheduled": the access rules let a court's referee update a sheet that is not finished. */
+  status: 'scheduled'
+  matches: Record<string, Match>
+}
+
 export function createFirebaseStore(config: FirebaseOptions, tournamentId: string): Store {
   const app = initializeApp(config)
   const auth = getAuth(app)
   let db: Firestore
   try {
     // Keeps data and queued writes on the device, so a referee can keep scoring without signal.
-    db = initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) })
+    db = initializeFirestore(app, {
+      localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
+      ignoreUndefinedProperties: true,
+    })
   } catch {
     db = getFirestore(app)
   }
@@ -38,6 +57,7 @@ export function createFirebaseStore(config: FirebaseOptions, tournamentId: strin
 
   const tRef = doc(db, 'tournaments', tournamentId)
   const matchesRef = collection(tRef, 'matches')
+  const sheetRef = (court: number) => doc(matchesRef, `${SHEET_PREFIX}${court}`)
   const roleKey = `siatkalive:role:${tournamentId}`
 
   // Until the tournament is saved, show the qualified teams, so the organiser can draw right away.
@@ -71,8 +91,15 @@ export function createFirebaseStore(config: FirebaseOptions, tournamentId: strin
     setSync({ empty: !snap.exists() && !snap.metadata.fromCache, connected: !snap.metadata.fromCache })
   }, fail('Odczyt turnieju'))
 
+  // Documents in `matches` that are not court sheets (the old one-document-per-match layout).
+  let legacy: string[] = []
   onSnapshot(matchesRef, { includeMetadataChanges: true }, (snap) => {
-    state = { ...state, matches: snap.docs.map((d) => d.data() as Match) }
+    const sheets = snap.docs.filter((d) => d.id.startsWith(SHEET_PREFIX))
+    legacy = snap.docs.filter((d) => !d.id.startsWith(SHEET_PREFIX)).map((d) => d.id)
+    const matches = sheets.length
+      ? sheets.flatMap((d) => Object.values((d.data() as CourtSheet).matches ?? {}))
+      : snap.docs.map((d) => d.data() as Match)
+    state = { ...state, matches }
     setSync({ pending: snap.metadata.hasPendingWrites, connected: !snap.metadata.fromCache })
   }, fail('Odczyt meczów'))
 
@@ -125,15 +152,28 @@ export function createFirebaseStore(config: FirebaseOptions, tournamentId: strin
       // Also fills in knockout teams that follow from this result, in one atomic write.
       const changed = applyMatchUpdate(state, id, update)
       if (!changed.length) return
+      // Each changed match replaces its own entry in its court's sheet; other matches on
+      // the sheet (maybe written by another phone at the same time) are left alone.
       const b = writeBatch(db)
-      for (const m of changed) b.set(doc(matchesRef, m.id), m)
+      const byCourt = new Map<number, Match[]>()
+      for (const m of changed) byCourt.set(m.court, [...(byCourt.get(m.court) ?? []), m])
+      for (const [court, ms] of byCourt) {
+        const [first, ...more] = ms.flatMap((m) => [new FieldPath('matches', m.id), m])
+        b.update(sheetRef(court), first as FieldPath, more[0], ...more.slice(1))
+      }
       b.commit().catch(fail('Zapis wyniku'))
     },
     async replace(next) {
       const ops: ((b: ReturnType<typeof writeBatch>) => void)[] = []
-      const keep = new Set(next.matches.map((m) => m.id))
-      for (const m of state.matches) if (!keep.has(m.id)) ops.push((b) => b.delete(doc(matchesRef, m.id)))
-      for (const m of next.matches) ops.push((b) => b.set(doc(matchesRef, m.id), m))
+      const sheets = new Map<number, Record<string, Match>>()
+      for (const m of next.matches) sheets.set(m.court, { ...(sheets.get(m.court) ?? {}), [m.id]: m })
+      const old = new Set(state.matches.map((m) => m.court))
+      for (const c of old) if (!sheets.has(c)) ops.push((b) => b.delete(sheetRef(c)))
+      for (const id of legacy) ops.push((b) => b.delete(doc(matchesRef, id)))
+      for (const [court, matches] of sheets) {
+        const sheet: CourtSheet = { court, status: 'scheduled', matches }
+        ops.push((b) => b.set(sheetRef(court), sheet))
+      }
       try {
         await setDoc(tRef, stripMatches(next))
         for (let i = 0; i < ops.length; i += 400) {

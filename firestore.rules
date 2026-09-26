@@ -32,6 +32,9 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isAdmin();
 
+      // Matches are stored as one sheet per court (documents court-1 … court-9, each with
+      // { court, status: 'scheduled', matches: { id: match } }), so the rules below apply
+      // to a whole court: its referee may update their court's sheet.
       match /matches/{m} {
         allow read: if true;
         allow create, delete: if isAdmin();
