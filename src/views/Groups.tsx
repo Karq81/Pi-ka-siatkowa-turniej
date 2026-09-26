@@ -1,6 +1,7 @@
 import { tally } from '../logic/scoring'
 import type { Match, State } from '../types'
 import { CorrectButton } from './Correction'
+import { CourtQueue } from './CourtQueue'
 import { isUnderway } from '../logic/courtBoard'
 import { BackBar, courtLabel, formatDay, formatTime, StatusPill, useLookups, useNow } from '../ui'
 
@@ -25,7 +26,7 @@ export function MatchPage({ state, matchId }: { state: State; matchId: string })
           <span>{categoryName(m.categoryId)} · {stageName(m)}</span>
           <StatusPill status={isUnderway(m, now) ? 'live' : m.status} />
         </header>
-        <p className="muted">{formatDay(m.start)}, godz. {formatTime(m.start)} · Boisko {courtLabel(m.court)}</p>
+        <p className="muted">{formatDay(m.start)}, godz. {formatTime(m.start)} · <a href={`#kolejka-${m.court}`}>Boisko {courtLabel(m.court)} ›</a></p>
         <div className="mp-board">
           <MatchSide teamId={m.teamA} name={side(m, 'a')} score={m.status === 'scheduled' ? undefined : scoreA} win={isWin(m, t, 'a')} />
           <span className="mp-sep">:</span>
@@ -39,6 +40,7 @@ export function MatchPage({ state, matchId }: { state: State; matchId: string })
         {m.status === 'live' && <p className="center muted small">Wynik zmienia się na bieżąco.</p>}
         {m.status === 'scheduled' && !isUnderway(m, now) && <p className="center muted">Mecz jeszcze się nie zaczął.</p>}
       </article>
+      {m.court > 0 && <CourtQueue state={state} court={m.court} skip={m.id} />}
     </>
   )
 }

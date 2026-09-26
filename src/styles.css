@@ -889,3 +889,4 @@ a.court-link:hover { color: var(--accent); }
 .q-at b { font-family: var(--display); font-size: 1.25rem; color: var(--accent); }
 .q-teams { display: flex; flex-direction: column; gap: 1px; font-weight: 600; line-height: 1.2; }
 .q-teams .mine { background: var(--ball); color: #0e1b2c; border-radius: 6px; padding: 0 6px; align-self: flex-start; }
+.court-queue { margin-top: 14px; }

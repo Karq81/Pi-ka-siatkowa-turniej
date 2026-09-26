@@ -6,6 +6,7 @@ import { useStore } from '../store/store'
 import type { Match, State } from '../types'
 import { Competition, NextMatch, TeamBadge, TeamPage } from './Competition'
 import { MatchPage } from './Groups'
+import { CourtQueue } from './CourtQueue'
 import { Info, InfoHero } from './Info'
 import { BackBar, courtLabel, formatDay, formatTime, ScoreLine, StatusPill, useLookups, useNow } from '../ui'
 
@@ -154,42 +155,17 @@ function TeamRow({ name, sets, points, live, win = false, mine = false }: {
  */
 function CourtPage({ state, court }: { state: State; court: number }) {
   const now = useNow(15000)
-  const mine = useFavorites()
-  const { categoryName, stageName, side } = useLookups(state)
+  const { categoryName, stageName } = useLookups(state)
   const onCourt = state.matches.filter((m) => m.court === court).sort((a, b) => a.start.localeCompare(b.start))
   if (!onCourt.length) return <p className="muted">Na tym boisku nie ma meczów.</p>
   const board = courtBoard(state, court, now)
-  const queue = onCourt.filter((m) => m.status === 'scheduled' && m.id !== board.match?.id)
   const played = onCourt.filter((m) => m.status === 'finished').reverse()
   const first = onCourt[0]
-  const slot = state.tournament.slotMinutes ?? 15
   return (
     <div className="court-page">
       <h2>Boisko {courtLabel(court)} <span className="muted">· {categoryName(first.categoryId)} · {stageName(first)}</span></h2>
       <CourtCard state={state} court={court} big />
-      <section>
-        <h3 className="list-title">Kolejne mecze na tym boisku</h3>
-        <p className="court-rule">
-          ⏱️ <b>Każdy mecz rozpocznie się 2 minuty po zakończeniu poprzedniego meczu na tym boisku.</b> Godziny są
-          przybliżone: mecz z przerwą trwa ok. {slot} minut, więc kolejne godziny liczymy co {slot} minut.
-        </p>
-        {!queue.length && <p className="muted">Na tym boisku nie ma już kolejnych meczów.</p>}
-        <ol className="queue">
-          {queue.map((m, i) => (
-            <li key={m.id} className={mine.includes(m.teamA) || mine.includes(m.teamB) ? 'mine' : ''}>
-              <a href={`#mecz-${m.id}`}>
-                <span className="q-no">{i + 1}.</span>
-                <span className="q-at">ok. <b>{formatTime(m.start)}</b>{m.start.slice(0, 10) !== onCourt[0].start.slice(0, 10) || i === 0 ? <small> {formatDay(m.start)}</small> : null}</span>
-                <span className="q-teams">
-                  <span className={mine.includes(m.teamA) ? 'mine' : ''}>{mine.includes(m.teamA) && '★ '}{side(m, 'a')}</span>
-                  <span className="muted small">vs</span>
-                  <span className={mine.includes(m.teamB) ? 'mine' : ''}>{mine.includes(m.teamB) && '★ '}{side(m, 'b')}</span>
-                </span>
-              </a>
-            </li>
-          ))}
-        </ol>
-      </section>
+      <CourtQueue state={state} court={court} skip={board.match?.id} />
       {played.length > 0 && (
         <section>
           <h3 className="list-title">Rozegrane na tym boisku</h3>
