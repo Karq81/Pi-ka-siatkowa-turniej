@@ -4,7 +4,7 @@ import { useFavorites } from '../favorites'
 import { courtBoard, upcomingMatches } from '../logic/courtBoard'
 import { useStore } from '../store/store'
 import type { Match, State } from '../types'
-import { Competition, TeamPage } from './Competition'
+import { Competition, TeamBadge, TeamPage } from './Competition'
 import { MatchPage } from './Groups'
 import { Info } from './Info'
 import { BackBar, formatDay, formatTime, ScoreLine, StatusPill, useLookups, useNow } from '../ui'
@@ -157,14 +157,53 @@ function LiveCourts({ state }: { state: State }) {
   )
 }
 
-/** Matches to come that are not on a court board yet, kept apart from the boards. */
+/**
+ * Matches to come that are not on a court board yet, kept apart from the boards:
+ * grouped by start time, one card per match with the court, the group and both teams.
+ */
 export function Upcoming({ state }: { state: State }) {
   const now = useNow(15000)
+  const mine = useFavorites()
+  const { categoryName, stageName, side } = useLookups(state)
   const matches = upcomingMatches(state, now)
+  const team = (id: string) => (id ? state.teams.find((x) => x.id === id) : undefined)
+  const slots: { start: string; matches: Match[] }[] = []
+  for (const m of matches) {
+    const last = slots[slots.length - 1]
+    if (last && last.start === m.start) last.matches.push(m)
+    else slots.push({ start: m.start, matches: [m] })
+  }
   return (
     <section className="upcoming">
       <h2>Nadchodzące mecze</h2>
-      <MatchList state={state} matches={matches} />
+      {!slots.length && <p className="muted">Brak kolejnych meczów.</p>}
+      {slots.map((slot) => (
+        <div key={slot.start} className="up-slot">
+          <h3 className="up-time">
+            <span>{formatTime(slot.start)}</span>
+            <span className="muted">{formatDay(slot.start)}</span>
+          </h3>
+          <div className="up-grid">
+            {slot.matches.map((m) => (
+              <a key={m.id} href={`#mecz-${m.id}`} className={`up-card ${mine.includes(m.teamA) || mine.includes(m.teamB) ? 'mine' : ''}`}>
+                <header>
+                  <span className="up-court">Boisko {m.court}</span>
+                  <span className="up-cat">{categoryName(m.categoryId)} · {stageName(m)}</span>
+                </header>
+                <span className="up-team">
+                  <TeamBadge team={team(m.teamA)} />
+                  <b className={m.teamA ? '' : 'tbd'}>{side(m, 'a')}</b>
+                </span>
+                <span className="up-vs">vs</span>
+                <span className="up-team">
+                  <TeamBadge team={team(m.teamB)} />
+                  <b className={m.teamB ? '' : 'tbd'}>{side(m, 'b')}</b>
+                </span>
+              </a>
+            ))}
+          </div>
+        </div>
+      ))}
     </section>
   )
 }

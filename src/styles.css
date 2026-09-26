@@ -733,3 +733,29 @@ a.board { display: block; color: var(--board-ink); text-decoration: none; }
 /* Upcoming matches: kept apart from the court boards above. */
 .upcoming { margin-top: 1.6rem; padding-top: 0.4rem; border-top: 2px solid var(--line); }
 .upcoming h2 { margin-top: 0.8rem; }
+.up-slot { margin-bottom: 1.2rem; }
+.up-time {
+  display: flex; align-items: baseline; gap: 10px; margin: 0 0 8px;
+  font-family: var(--display); font-size: 1.5rem; font-weight: 700;
+}
+.up-time .muted { font-family: var(--body); font-size: 0.85rem; font-weight: 500; }
+.up-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
+.up-card {
+  display: grid; gap: 6px; padding: 10px 12px 12px; color: var(--ink); text-decoration: none;
+  background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--accent);
+  border-radius: var(--radius); box-shadow: 0 1px 2px rgb(14 27 44 / 0.06);
+}
+.up-card:hover { border-color: var(--accent); }
+.up-card.mine { border-left-color: var(--ball); background: color-mix(in srgb, var(--ball) 10%, var(--surface)); }
+.up-card header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 2px; }
+.up-court {
+  background: var(--board); color: var(--board-ink); border-radius: 6px; padding: 2px 8px;
+  font-family: var(--display); font-weight: 700; font-size: 0.95rem; letter-spacing: 0.02em; white-space: nowrap;
+}
+.up-cat { color: var(--muted); font-size: 0.8rem; text-align: right; }
+.up-team { display: flex; align-items: center; gap: 10px; font-size: 1.02rem; line-height: 1.2; }
+.up-team .tbd { color: var(--muted); font-weight: 500; font-style: italic; }
+.up-vs {
+  margin-left: 44px; color: var(--muted); font-size: 0.72rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.08em;
+}
