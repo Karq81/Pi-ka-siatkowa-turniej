@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { canAddPoint, isMatchDecided, setTarget, setWinner, tally } from '../logic/scoring'
 import { courtBoard } from '../logic/courtBoard'
+import { setNextOnCourt } from '../logic/schedule'
 import { canScore } from '../logic/pins'
 import { store, useSession, useStore } from '../store/store'
 import type { Match, State } from '../types'
@@ -61,6 +62,7 @@ export function CourtList() {
                 <a className="btn btn-ref" href={`#wynik-${c}`}>Podaj wynik</a>
               </span>
               {!mine && <span className="muted small">Wymaga klucza boiska {courtLabel(c)}</span>}
+              {session?.role === 'admin' && <NextTimeForm state={state} court={c} />}
             </li>
           )
         })}
@@ -73,6 +75,38 @@ export function CourtList() {
         </p>
       )}
     </>
+  )
+}
+
+/**
+ * Chief referee only: set by hand when the court's next match starts (normally it is
+ * 2 minutes after the last result). The court's later matches that day move with it.
+ */
+function NextTimeForm({ state, court }: { state: State; court: number }) {
+  const next = state.matches
+    .filter((m) => m.court === court && m.status === 'scheduled')
+    .sort((a, b) => a.start.localeCompare(b.start))[0]
+  const [time, setTime] = useState(next ? next.start.slice(11, 16) : '')
+  const [msg, setMsg] = useState('')
+  useEffect(() => { if (next) setTime(next.start.slice(11, 16)) }, [next?.start])
+  if (!next) return null
+  const live = state.matches.some((m) => m.court === court && m.status === 'live')
+  const save = async () => {
+    const moved = setNextOnCourt(state.matches, court, time)
+    if (!moved.length) { setMsg('Bez zmian.'); return }
+    const byId = new Map(moved.map((m) => [m.id, m]))
+    await store.replace({ ...state, matches: state.matches.map((m) => byId.get(m.id) ?? m) })
+    setMsg(`Następny mecz o ${time}. Przesunięto ${moved.length} ${moved.length === 1 ? 'mecz' : moved.length < 5 ? 'mecze' : 'meczów'} na tym boisku.`)
+  }
+  return (
+    <div className="next-time">
+      <label>Następny mecz o
+        <input id={`next-time-${court}`} type="time" value={time} disabled={live} onChange={(e) => { setTime(e.target.value); setMsg('') }} />
+      </label>
+      <button className="btn btn-sm" disabled={live || time === next.start.slice(11, 16)} onClick={save}>Ustaw</button>
+      {live && <span className="muted small">Mecz trwa: godzinę następnego ustawisz po jego zakończeniu.</span>}
+      {msg && <span className="ok small">{msg}</span>}
+    </div>
   )
 }
 

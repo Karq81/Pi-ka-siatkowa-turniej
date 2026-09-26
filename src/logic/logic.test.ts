@@ -3,7 +3,7 @@ import type { Group, Match, Rules, Team } from '../types'
 import { defaultRules, DEFAULT_SCHEDULE, drawnState, initialState } from './demo'
 import { clubOf, drawCategory, drawGroups, isDrawn, resetResults, rng } from './draw'
 import { parseTeams } from './importTeams'
-import { buildGroupSchedule, retimeSchedule, roundRobin } from './schedule'
+import { buildGroupSchedule, retimeSchedule, roundRobin, setNextOnCourt } from './schedule'
 import { applyMatchUpdate } from './knockout'
 import { canAddPoint, isMatchDecided, resultProblem, setProblem, setWinner, standings, tally } from './scoring'
 
@@ -309,5 +309,17 @@ describe('next match 2 minutes after the result', () => {
     expect(applyMatchUpdate(s, first.id, (m) => ({ ...m, status: 'finished', sets: [{ a: 15, b: 9 }] }), at('2026-09-26T11:00:00'))).toHaveLength(1)
     const done = { ...s, matches: s.matches.map((m) => (m.id === first.id ? { ...m, status: 'finished' as const, sets: [{ a: 15, b: 9 }] } : m)) }
     expect(applyMatchUpdate(done, first.id, (m) => ({ ...m, sets: [{ a: 15, b: 11 }] }), at('2026-10-23T15:50:00'))).toHaveLength(1)
+  })
+})
+
+describe('manual time of the next match on a court', () => {
+  it('sets the court\'s next match to the given time and moves the rest of that day', () => {
+    const s = initialState()
+    const [first, second] = s.matches.filter((m) => m.court === 3).sort((a, b) => a.start.localeCompare(b.start))
+    const moved = setNextOnCourt(s.matches, 3, '15:50')
+    expect(moved.find((m) => m.id === first.id)!.start).toBe('2026-10-23T15:50')
+    expect(moved.find((m) => m.id === second.id)!.start).toBe('2026-10-23T16:05')
+    expect(moved.every((m) => m.court === 3 && m.start.startsWith('2026-10-23'))).toBe(true)
+    expect(setNextOnCourt(s.matches, 3, '15:30')).toHaveLength(0)
   })
 })

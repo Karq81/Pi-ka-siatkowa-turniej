@@ -855,3 +855,9 @@ a.board { display: block; color: var(--board-ink); text-decoration: none; }
 .compact .court-prev { font-size: 0.7rem; }
 .court-rule { margin: 10px 0 0; padding: 10px 12px; border-radius: var(--radius); background: var(--surface); border: 1px dashed var(--accent); font-size: 0.9rem; }
 .next-on-court { background: color-mix(in srgb, var(--accent) 10%, var(--surface)); border: 1px solid var(--accent); border-radius: var(--radius); padding: 10px 12px; }
+
+/* Chief referee: manual time of a court's next match. */
+.next-time { display: flex; flex-wrap: wrap; align-items: end; gap: 6px 8px; padding-top: 6px; border-top: 1px dashed var(--line); }
+.next-time label { display: flex; flex-direction: column; gap: 2px; font-size: 0.8rem; font-weight: 600; }
+.next-time input { width: 9em; padding: 6px 8px; font-size: 1rem; }
+.next-time .btn-sm { padding: 7px 12px; }

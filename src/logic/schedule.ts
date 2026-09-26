@@ -172,3 +172,23 @@ export function followOnCourt(matches: Match[], finished: Match, now: number): M
     .filter((m) => m.status === 'scheduled' && m.start.slice(0, 10) === day)
     .map((m) => ({ ...m, start: toLocalIso(new Date(new Date(m.start).getTime() + shift)) }))
 }
+
+/**
+ * Manual time for a court's next match (HH:MM, same day): the next match still to be
+ * played on the court gets it, and the court's later matches that day move by the same
+ * amount. Returns the matches that moved.
+ */
+export function setNextOnCourt(matches: Match[], court: number, time: string): Match[] {
+  const onCourt = matches
+    .filter((m) => m.court === court && m.start)
+    .sort((a, b) => a.start.localeCompare(b.start) || a.id.localeCompare(b.id))
+  if (onCourt.some((m) => m.status === 'live')) return []
+  const next = onCourt.find((m) => m.status === 'scheduled')
+  if (!next || !/^\d{2}:\d{2}$/.test(time)) return []
+  const day = next.start.slice(0, 10)
+  const shift = new Date(`${day}T${time}`).getTime() - new Date(next.start).getTime()
+  if (!shift) return []
+  return onCourt
+    .filter((m) => m.status === 'scheduled' && m.start.slice(0, 10) === day && m.start >= next.start)
+    .map((m) => ({ ...m, start: toLocalIso(new Date(new Date(m.start).getTime() + shift)) }))
+}
