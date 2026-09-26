@@ -763,3 +763,40 @@ a.board { display: block; color: var(--board-ink); text-decoration: none; }
 
 /* A followed team's court (a live court keeps its red frame; its team row is highlighted). */
 .court.mine:not(.mode-live) { border-color: var(--ball); box-shadow: 0 0 0 2px var(--ball); }
+
+/* Phones: courts and upcoming matches as a compact two-column grid, like the desktop
+   view, so all ten courts fit in a few screens instead of one long list. */
+@media (max-width: 640px) {
+  .courts, .up-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .court { padding: 8px; gap: 5px; }
+  .court header { flex-wrap: wrap; gap: 4px; }
+  .court-no { font-size: 1rem; }
+  .court .pill { font-size: 0.62rem; padding: 1px 6px; gap: 4px; letter-spacing: 0.04em; }
+  .court-meta, .court-sets { font-size: 0.72rem; }
+  .court .board { padding: 2px 7px; }
+  .court .team-row { gap: 6px; padding-block: 4px; }
+  .court .team-name { font-size: 0.84rem; line-height: 1.2; }
+  .court .points { font-size: 1.35rem; min-width: 1.3em; }
+  .court .sets { font-size: 0.95rem; }
+  .court .ref-links { grid-template-columns: 1fr; gap: 4px; }
+  .court .ref-links .btn { font-size: 0.8rem; padding: 6px 8px; }
+
+  .up-card { padding: 8px; gap: 3px; }
+  .up-card header { flex-direction: column; align-items: flex-start; gap: 3px; }
+  .up-court { font-size: 0.8rem; padding: 1px 6px; }
+  .up-cat { font-size: 0.68rem; text-align: left; }
+  .up-team { gap: 6px; font-size: 0.84rem; line-height: 1.2; }
+  .up-team b { font-weight: 600; }
+  .up-card .badge { display: none; }
+  .up-vs { margin-left: 0; font-size: 0.62rem; }
+  .up-time { font-size: 1.3rem; }
+
+  .court-picker { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .picker-card { padding: 8px; gap: 5px; }
+  .picker-head { flex-wrap: wrap; gap: 4px; }
+  .picker-card .pill { font-size: 0.62rem; padding: 1px 6px; letter-spacing: 0.04em; }
+  .picker-card b { font-size: 1.05rem; }
+  .picker-card .small { font-size: 0.8rem; line-height: 1.25; }
+  .picker-card .ref-links { grid-template-columns: 1fr; gap: 4px; }
+  .picker-card .ref-links .btn { font-size: 0.8rem; padding: 6px 8px; }
+}

@@ -111,7 +111,7 @@ export function CourtCard({ state, court, big = false, referee = false }: { stat
         <span className="court-no">Boisko {court}</span>
         {live && <StatusPill status="live" />}
         {finished && <StatusPill status="finished" />}
-        {board.mode === 'next' && <span className="pill pill-next">Następne spotkanie · {formatTime(current.start)}</span>}
+        {board.mode === 'next' && <span className="pill pill-next">Następne<span className="hide-narrow"> spotkanie</span> · {formatTime(current.start)}</span>}
       </header>
       <p className="court-meta">{categoryName(current.categoryId)} · {stageName(current)} · {formatTime(current.start)}</p>
       <a className="board" href={`#mecz-${current.id}`}>
