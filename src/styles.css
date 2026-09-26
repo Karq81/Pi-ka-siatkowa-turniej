@@ -817,3 +817,9 @@ a.board { display: block; color: var(--board-ink); text-decoration: none; }
 
 /* The logo banner sits on top of every public page. */
 .page > .info-hero { margin-bottom: 20px; }
+
+/* Share the fans' link (start page, next to the QR code). */
+.share { margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--line); }
+.share-label { font-weight: 600; margin: 0 0 8px; }
+.btn-whatsapp { background: #25d366; border-color: #25d366; color: #0b2e17; font-weight: 700; }
+.btn-whatsapp:hover { background: #1ebe5b; }
