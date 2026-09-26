@@ -630,7 +630,10 @@ a.mcard:hover { border-color: var(--accent); }
 .follow.on { background: var(--ball); color: #1d1600; }
 .standings li.mine { background: color-mix(in srgb, var(--ball) 22%, transparent); }
 .standings li.mine .name::after { content: ' ★'; color: #b58900; }
-.mcard.mine { border-color: var(--ball); box-shadow: inset 4px 0 0 var(--ball); }
+.mcard.mine:not(.is-live) { border: 2px solid var(--ball); background: color-mix(in srgb, var(--ball) 12%, var(--surface)); box-shadow: inset 5px 0 0 var(--ball); }
+.mcard.mine.is-live { background: color-mix(in srgb, var(--ball) 10%, var(--surface)); }
+.mc-team.mine > span:last-child { background: var(--ball); color: #0e1b2c; font-weight: 700; border-radius: 6px; padding: 1px 6px; }
+.pill-mine { background: var(--ball); color: #0e1b2c; border-color: var(--ball); }
 /* Followed teams on the court boards: yellow card edge and a highlighted team row. */
 .team-row.mine { background: color-mix(in srgb, var(--ball) 28%, transparent); border-radius: 6px; margin-inline: -6px; padding-inline: 6px; }
 .team-row.mine .team-name { font-weight: 700; color: #ffe27a; }
@@ -800,3 +803,7 @@ a.board { display: block; color: var(--board-ink); text-decoration: none; }
 .compact .picker-card .small { font-size: 0.8rem; line-height: 1.25; }
 .compact .picker-card .ref-links { grid-template-columns: 1fr; gap: 4px; }
 .compact .picker-card .ref-links .btn { font-size: 0.8rem; padding: 6px 8px; }
+
+/* Followed teams in match lists (Wyniki, recent results). */
+.matches li.mine { box-shadow: inset 5px 0 0 var(--ball); background: color-mix(in srgb, var(--ball) 12%, var(--surface)); }
+.m-teams .mine { font-weight: 700; }

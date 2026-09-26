@@ -283,6 +283,7 @@ function Tables({ state }: { state: State }) {
 
 export function MatchList({ state, matches, onPick }: { state: State; matches: Match[]; onPick?: (m: Match) => void }) {
   const { categoryName, stageName, side } = useLookups(state)
+  const mine = useFavorites()
   if (!matches.length) return <p className="muted">Brak meczów.</p>
   return (
     <ul className="matches">
@@ -297,8 +298,8 @@ export function MatchList({ state, matches, onPick }: { state: State; matches: M
               <span className="muted">Boisko {m.court}</span>
             </span>
             <span className="m-teams">
-              <span className={winA ? 'win' : ''}>{side(m, 'a')}</span>
-              <span className={winB ? 'win' : ''}>{side(m, 'b')}</span>
+              <span className={`${winA ? 'win' : ''} ${mine.includes(m.teamA) ? 'mine' : ''}`}>{mine.includes(m.teamA) && '★ '}{side(m, 'a')}</span>
+              <span className={`${winB ? 'win' : ''} ${mine.includes(m.teamB) ? 'mine' : ''}`}>{mine.includes(m.teamB) && '★ '}{side(m, 'b')}</span>
               <span className="muted small">{categoryName(m.categoryId)} · {stageName(m)}</span>
             </span>
             <span className="m-score">
@@ -308,7 +309,7 @@ export function MatchList({ state, matches, onPick }: { state: State; matches: M
           </>
         )
         return (
-          <li key={m.id} className={m.status === 'live' ? 'is-live' : ''}>
+          <li key={m.id} className={`${m.status === 'live' ? 'is-live' : ''} ${mine.includes(m.teamA) || mine.includes(m.teamB) ? 'mine' : ''}`}>
             {onPick
               ? <button className="m-row" onClick={() => onPick(m)}>{body}</button>
               : <a className="m-row" href={`#mecz-${m.id}`}>{body}</a>}

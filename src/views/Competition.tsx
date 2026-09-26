@@ -221,6 +221,7 @@ export function MatchCard({ state, match: m, label }: { state: State; match: Mat
   const scoreA = single ? cur?.a : t.setsA
   const scoreB = single ? cur?.b : t.setsB
   const has = m.status !== 'scheduled' && m.sets.length > 0
+  const followed = mine.includes(m.teamA) || mine.includes(m.teamB)
   const body = (
     <>
       <header>
@@ -228,23 +229,23 @@ export function MatchCard({ state, match: m, label }: { state: State; match: Mat
         <span>{m.court ? `Boisko ${m.court}` : ''}</span>
         {underway && <StatusPill status="live" />}
         {m.status === 'finished' && <StatusPill status="finished" />}
+        {!underway && m.status === 'scheduled' && followed && <span className="pill pill-mine">★ Twoja drużyna</span>}
       </header>
       <div className="mc-row">
-        <span className={`mc-team ${done && t.setsA > t.setsB ? 'win' : ''}`}>
+        <span className={`mc-team ${done && t.setsA > t.setsB ? 'win' : ''} ${mine.includes(m.teamA) ? 'mine' : ''}`}>
           <TeamBadge team={team(m.teamA)} size="lg" />
           <span className={m.teamA ? '' : 'tbd'}>{side(m, 'a')}</span>
         </span>
         <span className="mc-score">
           {has ? <><b>{scoreA}</b><i>:</i><b>{scoreB}</b></> : <span className="mc-vs">–</span>}
         </span>
-        <span className={`mc-team ${done && t.setsB > t.setsA ? 'win' : ''}`}>
+        <span className={`mc-team ${done && t.setsB > t.setsA ? 'win' : ''} ${mine.includes(m.teamB) ? 'mine' : ''}`}>
           <TeamBadge team={team(m.teamB)} size="lg" />
           <span className={m.teamB ? '' : 'tbd'}>{side(m, 'b')}</span>
         </span>
       </div>
     </>
   )
-  const followed = mine.includes(m.teamA) || mine.includes(m.teamB)
   const cls = `mcard ${underway ? 'is-live' : ''} ${done ? 'is-done' : ''} ${followed ? 'mine' : ''}`
   if (!m.start) return <div className={cls}>{body}</div>
   // The chief referee also gets a correction button, kept outside the link.
