@@ -16,7 +16,7 @@ import { BackBar, formatDay, formatTime, ScoreLine, StatusPill, useLookups, useN
  */
 const TABS = [
   { route: '', label: 'Start' },
-  { route: 'grupy', label: 'Rozgrywki' },
+  { route: 'grupy', label: 'Grupy i terminarz' },
   { route: 'na-zywo', label: 'Na żywo' },
   { route: 'wyniki', label: 'Wyniki' },
 ]
@@ -24,7 +24,7 @@ const HIDDEN_ROUTES = ['tabele', 'terminarz', 'drabinka']
 
 export function Public({ route }: { route: string }) {
   const state = useStore()
-  // Group links, match pages and the bracket all sit under "Rozgrywki".
+  // Group links, match pages and the bracket all sit under "Grupy i terminarz".
   const detail = /^(grupa|mecz|druzyna)-(.+)$/.exec(route)
   const known = TABS.some((t) => t.route === route) || HIDDEN_ROUTES.includes(route)
   const tab = detail || route === 'drabinka' ? 'grupy' : known ? route : ''

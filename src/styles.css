@@ -818,10 +818,10 @@ a.board { display: block; color: var(--board-ink); text-decoration: none; }
 /* The logo banner sits on top of every public page. */
 .page > .info-hero { margin-bottom: 20px; }
 
-/* Start page: the three buttons in one row, the QR code at the far right. */
-.info-live-text .actions { flex-wrap: nowrap; gap: 6px; max-width: 100%; }
-.info-live-text .actions { width: 100%; }
-.info-live-text .actions .btn-lg { flex: 1 1 auto; justify-content: center; text-align: center; padding: 11px 8px; font-size: 0.82rem; white-space: nowrap; min-width: 0; }
-.info-live .info-qr { width: 118px; }
+/* Start page: share button next to the text, the QR code at the far right. */
 .btn-share { background: var(--ball); border-color: var(--ball); color: #1d1600; }
 .info-live .info-qr { justify-self: end; }
+
+/* Bigger section tabs in the logo banner. */
+.info-hero .tabs { gap: 6px; }
+.info-hero .tabs a { font-size: 1.12rem; padding: 10px 16px; }

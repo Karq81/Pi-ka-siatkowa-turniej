@@ -74,14 +74,9 @@ export function Info() {
           <h2>Grupy, mecze i wyniki</h2>
           <p>
             Grupy, kto z kim i o której gra, tabele i wyniki na żywo zobaczysz w telefonie, na bieżąco w trakcie
-            turnieju. Zeskanuj kod albo kliknij przycisk.
+            turnieju. Zeskanuj kod albo wyślij link rodzicom i trenerom.
           </p>
-          <div className="actions">
-            <a className="btn btn-primary btn-lg" href="#grupy">Grupy i terminarz</a>
-            <a className="btn btn-lg" href="#na-zywo">Wyniki na żywo</a>
-            <ShareLink />
-          </div>
-
+          <ShareLink />
         </div>
         <div className="info-qr" aria-label="Kod QR do wyników" dangerouslySetInnerHTML={{ __html: qr }} />
       </section>
