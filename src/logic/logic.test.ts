@@ -260,10 +260,9 @@ describe('changing the match interval', () => {
 })
 
 describe('one court per group', () => {
-  it('plays group A on court A (1) … group 5 on court 5 (9), one match at a time', () => {
+  it('plays groups A–D on courts 1–4 and groups 1–5 on courts 5–9, one match at a time', () => {
     const s = initialState()
     expect(s.tournament.courts).toBe(9)
-    expect(s.tournament.courtNames).toEqual(['A', 'B', 'C', 'D', '1', '2', '3', '4', '5'])
     s.groups.forEach((g, i) => {
       const ms = s.matches.filter((m) => m.groupId === g.id)
       expect(new Set(ms.map((m) => m.court))).toEqual(new Set([i + 1]))

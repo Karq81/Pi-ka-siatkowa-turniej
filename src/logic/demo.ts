@@ -41,14 +41,14 @@ export const CLUBS: { name: string; dwojki: number; trojki: number }[] = [
 const GROUPS_PER_CATEGORY = 4
 
 /**
- * Albatros CUP courts: one per group, named like the groups. Dwójki play on courts A–D,
- * Trójki on courts 1–5 (inside the app they are courts 1–9).
+ * Albatros CUP courts: one per group. Dwójki play on courts 1–4 (groups A–D),
+ * Trójki on courts 5–9 (groups 1–5).
  */
-export const COURT_NAMES = ['A', 'B', 'C', 'D', '1', '2', '3', '4', '5']
+export const COURT_COUNT = 9
 
 /** Albatros CUP schedule: Friday 23.10 from 15:30, Saturday from 9:30; a match every 15 minutes (the organiser can change it). */
 export const DEFAULT_SCHEDULE = {
-  courts: COURT_NAMES.length, start: '2026-10-23T15:30', slotMinutes: 15, dayEnd: '18:40', dayStart: '09:30',
+  courts: COURT_COUNT, start: '2026-10-23T15:30', slotMinutes: 15, dayEnd: '18:40', dayStart: '09:30',
 }
 
 /** Qualified teams, one per entry; clubs with two teams in a category get "1" and "2". */
@@ -132,7 +132,6 @@ export function initialState(): State {
       courts: DEFAULT_SCHEDULE.courts,
       rules: defaultRules,
       slotMinutes: DEFAULT_SCHEDULE.slotMinutes,
-      courtNames: COURT_NAMES,
     },
     categories: [
       { id: 'c1', name: 'Dwójki' },
@@ -140,7 +139,7 @@ export function initialState(): State {
     ],
     groups,
     teams,
-    // Group A on court A … group D on court D, group 1 on court 1 … group 5 on court 5.
+    // Groups A–D on courts 1–4, groups 1–5 on courts 5–9.
     matches: buildGroupsOnOwnCourts(groups, groups.map((_, i) => i + 1), DEFAULT_SCHEDULE),
   }
 }
