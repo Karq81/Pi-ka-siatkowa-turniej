@@ -8,7 +8,7 @@ import { CorrectButton } from './Correction'
 import { useSession } from '../store/store'
 import { formatRatio, standings, tally } from '../logic/scoring'
 import type { Match, State, Team } from '../types'
-import { BackBar, clockNow, formatDay, formatTime, StatusPill, useLookups, useNow } from '../ui'
+import { BackBar, formatDay, formatTime, StatusPill, useLookups, useNow } from '../ui'
 
 type Phase = 'groups' | 'ko'
 
@@ -116,7 +116,7 @@ function NextMatch({ state, categoryId }: { state: State; categoryId: string }) 
   const now = useNow()
   const live = state.matches.filter((m) => m.categoryId === categoryId && m.status === 'live').length
   const next = useMemo(() => state.matches
-    .filter((m) => m.categoryId === categoryId && m.status === 'scheduled' && new Date(m.start).getTime() > clockNow())
+    .filter((m) => m.categoryId === categoryId && m.status === 'scheduled' && new Date(m.start).getTime() > Date.now())
     .sort((a, b) => a.start.localeCompare(b.start))[0], [state.matches, categoryId])
   if (live) {
     return (
