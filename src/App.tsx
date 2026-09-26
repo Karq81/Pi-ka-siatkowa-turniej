@@ -9,7 +9,7 @@ import { SyncBanner, useRoute } from './ui'
 
 /**
  * Phones show the public pages and the organiser panel laid out like the desktop view
- * (three columns of courts), scaled to the screen: a fixed 640px-wide layout, so all
+ * (two columns of courts), scaled to the screen: a fixed 640px-wide layout, so all
  * ten courts fit on one phone screen and stay readable. Referee screens (scoring, result
  * entry, corrections) keep the normal phone layout with big buttons.
  */

@@ -766,18 +766,18 @@ a.board { display: block; color: var(--board-ink); text-decoration: none; }
 /* Phones: courts and upcoming matches as a compact two-column grid, like the desktop
    view, so all ten courts fit in a few screens instead of one long list. */
 @media (max-width: 640px) {
-  .courts { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
-  .up-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  /* Ten courts as two columns of five, all on one screen; upcoming matches below. */
+  .courts, .up-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
   .pill-long { display: none; }
   .court { padding: 8px; gap: 5px; }
   .court header { flex-wrap: wrap; gap: 4px; }
-  .court-no { font-size: 1rem; }
+  .court-no { font-size: 1.1rem; }
   .court .pill { font-size: 0.62rem; padding: 1px 6px; gap: 4px; letter-spacing: 0.04em; }
   .court-meta, .court-sets { font-size: 0.72rem; }
   .court .board { padding: 2px 7px; }
   .court .team-row { gap: 6px; padding-block: 4px; }
-  .court .team-name { font-size: 0.84rem; line-height: 1.2; }
-  .court .points { font-size: 1.35rem; min-width: 1.3em; }
+  .court .team-name { font-size: 0.95rem; line-height: 1.2; }
+  .court .points { font-size: 1.55rem; min-width: 1.3em; }
   .court .sets { font-size: 0.95rem; }
   .court .ref-links { grid-template-columns: 1fr; gap: 4px; }
   .court .ref-links .btn { font-size: 0.8rem; padding: 6px 8px; }
