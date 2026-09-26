@@ -9,11 +9,11 @@ import { SyncBanner, useRoute } from './ui'
 
 /**
  * Phones show the public pages and the organiser panel laid out like the desktop view
- * (three columns of courts), scaled to the screen: a fixed 860px-wide layout, a bit
- * larger than the browser's own "desktop site" mode. Referee screens (scoring, result
+ * (three columns of courts), scaled to the screen: a fixed 640px-wide layout, so all
+ * ten courts fit on one phone screen and stay readable. Referee screens (scoring, result
  * entry, corrections) keep the normal phone layout with big buttons.
  */
-const DESKTOP_LIKE_WIDTH = 860
+const DESKTOP_LIKE_WIDTH = 640
 const PHONE_LAYOUT = /^(boisko-\d+|wynik-\d+|korekta-.+|sedzia|kartki)$/
 
 function useViewport(route: string) {

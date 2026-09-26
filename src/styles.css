@@ -766,7 +766,9 @@ a.board { display: block; color: var(--board-ink); text-decoration: none; }
 /* Phones: courts and upcoming matches as a compact two-column grid, like the desktop
    view, so all ten courts fit in a few screens instead of one long list. */
 @media (max-width: 640px) {
-  .courts, .up-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .courts { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .up-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .pill-long { display: none; }
   .court { padding: 8px; gap: 5px; }
   .court header { flex-wrap: wrap; gap: 4px; }
   .court-no { font-size: 1rem; }

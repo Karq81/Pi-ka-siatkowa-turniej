@@ -46,7 +46,7 @@ export function CourtList() {
                 <b>Boisko {c}</b>
                 {board.mode === 'live' && <StatusPill status="live" />}
                 {board.mode === 'finished' && <StatusPill status="finished" />}
-                {board.mode === 'next' && <span className="pill pill-next">Następne<span className="hide-narrow"> spotkanie</span></span>}
+                {board.mode === 'next' && <span className="pill pill-next">Następne<span className="pill-long"> spotkanie</span></span>}
               </span>
               <span className="small">
                 {current ? (
