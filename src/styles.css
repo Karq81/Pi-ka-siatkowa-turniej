@@ -121,7 +121,8 @@ button, input, select, textarea { font: inherit; color: inherit; }
   background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
   padding: 12px; display: flex; flex-direction: column; gap: 8px;
 }
-.court header { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.court header { display: flex; justify-content: space-between; align-items: center; gap: 4px 8px; flex-wrap: wrap; }
+.court header .pill { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
 .court-no { font-family: var(--display); font-weight: 700; font-size: 1.15rem; text-transform: uppercase; letter-spacing: 0.04em; }
 .court-live { border-color: var(--live); }
 .court-idle { opacity: 0.7; }
