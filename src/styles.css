@@ -729,3 +729,7 @@ a.board { display: block; color: var(--board-ink); text-decoration: none; }
 .team-row.win .team-name { font-weight: 700; }
 .team-row.win .points { color: #7ee2a8; }
 .court.mode-finished .team-row:not(.win) .points { opacity: 0.6; }
+
+/* Upcoming matches: kept apart from the court boards above. */
+.upcoming { margin-top: 1.6rem; padding-top: 0.4rem; border-top: 2px solid var(--line); }
+.upcoming h2 { margin-top: 0.8rem; }

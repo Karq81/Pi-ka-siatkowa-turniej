@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { formatRatio, standings, tally } from '../logic/scoring'
 import { useFavorites } from '../favorites'
-import { courtBoard } from '../logic/courtBoard'
+import { courtBoard, upcomingMatches } from '../logic/courtBoard'
 import { useStore } from '../store/store'
 import type { Match, State } from '../types'
 import { Competition, TeamPage } from './Competition'
@@ -105,7 +105,6 @@ export function CourtCard({ state, court, big = false, referee = false }: { stat
   const cur = shown ? current.sets[current.sets.length - 1] : undefined
   const winA = finished && t.setsA > t.setsB
   const winB = finished && t.setsB > t.setsA
-  const next = board.next
   return (
     <article className={`court mode-${board.mode} ${big ? 'court-big' : ''} ${mine.includes(current.teamA) || mine.includes(current.teamB) ? 'mine' : ''}`}>
       <header>
@@ -122,11 +121,6 @@ export function CourtCard({ state, court, big = false, referee = false }: { stat
       {live && !current.sets.length && <p className="court-sets muted">Mecz trwa. Wynik pojawi się po meczu.</p>}
       {multi && current.sets.length > 1 && (live || finished) && (
         <p className="court-sets muted">Sety: {current.sets.map((s) => `${s.a}:${s.b}`).join(', ')}</p>
-      )}
-      {next && board.mode !== 'next' && (
-        <p className="court-next">
-          Następne spotkanie {formatTime(next.start)}: {side(next, 'a')} – {side(next, 'b')}
-        </p>
       )}
       {refLink}
     </article>
@@ -152,12 +146,26 @@ function LiveCourts({ state }: { state: State }) {
     .slice(0, 8)
   return (
     <>
+      <h2>Boiska</h2>
       <section className="courts">
         {courts.map((c) => <CourtCard key={c} state={state} court={c} />)}
       </section>
+      <Upcoming state={state} />
       <h2>Ostatnie wyniki</h2>
       <MatchList state={state} matches={recent} />
     </>
+  )
+}
+
+/** Matches to come that are not on a court board yet, kept apart from the boards. */
+export function Upcoming({ state }: { state: State }) {
+  const now = useNow(15000)
+  const matches = upcomingMatches(state, now)
+  return (
+    <section className="upcoming">
+      <h2>Nadchodzące mecze</h2>
+      <MatchList state={state} matches={matches} />
+    </section>
   )
 }
 

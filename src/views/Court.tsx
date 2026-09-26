@@ -5,6 +5,7 @@ import { canScore } from '../logic/pins'
 import { store, useSession, useStore } from '../store/store'
 import type { Match, State } from '../types'
 import { ResultForm } from './ResultForm'
+import { Upcoming } from './Public'
 import { BackBar, courtMatch, formatTime, PinGate, StatusPill, useLookups, useNow } from '../ui'
 
 /** List of courts for referees to pick from. */
@@ -55,9 +56,6 @@ export function CourtList() {
                   </>
                 ) : 'Brak meczów'}
               </span>
-              {board.mode === 'finished' && board.next && (
-                <span className="muted small">Następne spotkanie {formatTime(board.next.start)}: {side(board.next, 'a')} – {side(board.next, 'b')}</span>
-              )}
               <span className="ref-links">
                 <a className="btn btn-ref" href={`#boisko-${c}`}>Sędziuj na żywo</a>
                 <a className="btn btn-ref" href={`#wynik-${c}`}>Podaj wynik</a>
@@ -67,6 +65,7 @@ export function CourtList() {
           )
         })}
       </ul>
+      <Upcoming state={state} />
       {session && (
         <p className="muted small">
           Ten telefon jest zalogowany jako {session.role === 'admin' ? 'sędzia główny' : `sędzia boiska ${session.court}`}.{' '}

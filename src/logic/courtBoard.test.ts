@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Match, State } from '../types'
-import { courtBoard, isUnderway } from './courtBoard'
+import { courtBoard, isUnderway, upcomingMatches } from './courtBoard'
 import { defaultRules } from './demo'
 
 const m = (id: string, start: string, extra: Partial<Match> = {}): Match => ({
@@ -64,5 +64,10 @@ describe('court board', () => {
 
   it('does not treat knockout matches without teams as being played', () => {
     expect(isUnderway({ ...first, teamB: '' }, t('16:00'))).toBe(false)
+  })
+
+  it('lists upcoming matches that are not on a court board', () => {
+    const third = m('m3', '2026-10-23T16:30')
+    expect(upcomingMatches(state([first, second, third]), t('15:00')).map((x) => x.id)).toEqual(['m2', 'm3'])
   })
 })
