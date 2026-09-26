@@ -49,7 +49,7 @@ export const info = {
       day: 'Niedziela',
       date: '25.10',
       items: [
-        { time: '', text: 'Śniadanie w Albatros Medical SPA' },
+        { time: '8:00–10:00', text: 'Śniadanie w Albatros Medical SPA' },
         { time: 'ok. 13:30', text: 'Zakończenie turnieju', highlight: true },
         { time: '', text: 'Chętne drużyny: zupa przed wyjazdem w hotelu' },
       ],
