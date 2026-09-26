@@ -113,6 +113,12 @@ function CourtPanel({ state, court, manualFirst }: { state: State; court: number
         <h2>{side(finished, 'a')} {t.setsA}:{t.setsB} {side(finished, 'b')}</h2>
         <p className="muted">{finished.sets.map((s) => `${s.a}:${s.b}`).join(', ')}</p>
         <p>Wynik jest już na stronie. Pomyłkę może poprawić tylko sędzia główny.</p>
+        {current && (
+          <p className="next-on-court">
+            Następny mecz na tym boisku: <b>{formatTime(current.start)}</b> (2 minuty po zakończeniu)<br />
+            {side(current, 'a')} – {side(current, 'b')}
+          </p>
+        )}
         <button className="btn btn-primary btn-lg" onClick={() => setJustFinished(null)}>
           {current ? 'Następny mecz' : 'Wróć'}
         </button>

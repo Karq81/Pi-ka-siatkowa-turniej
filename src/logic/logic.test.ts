@@ -4,6 +4,7 @@ import { defaultRules, DEFAULT_SCHEDULE, drawnState, initialState } from './demo
 import { clubOf, drawCategory, drawGroups, isDrawn, resetResults, rng } from './draw'
 import { parseTeams } from './importTeams'
 import { buildGroupSchedule, retimeSchedule, roundRobin } from './schedule'
+import { applyMatchUpdate } from './knockout'
 import { canAddPoint, isMatchDecided, resultProblem, setProblem, setWinner, standings, tally } from './scoring'
 
 // Senior-style rules for the generic tests; the youth defaults are tested separately below.
@@ -274,5 +275,39 @@ describe('one court per group', () => {
     const last = (cat: string) => s.matches.filter((m) => m.categoryId === cat).map((m) => m.start).sort().at(-1)
     expect(last('c1')).toBe('2026-10-24T11:15')
     expect(last('c2')).toBe('2026-10-24T09:45')
+  })
+})
+
+describe('next match 2 minutes after the result', () => {
+  const at = (iso: string) => new Date(iso).getTime()
+  const court1 = (s: ReturnType<typeof initialState>) => s.matches.filter((m) => m.court === 1).sort((a, b) => a.start.localeCompare(b.start))
+
+  it('starts the court\'s next match 2 minutes after the result and moves the rest of the day', () => {
+    const s = initialState()
+    const [first, second, third] = court1(s)
+    const changed = applyMatchUpdate(s, first.id, (m) => ({ ...m, status: 'finished', sets: [{ a: 15, b: 9 }] }), at('2026-10-23T15:41:20'))
+    const byId = new Map(changed.map((m) => [m.id, m]))
+    expect(byId.get(second.id)!.start).toBe('2026-10-23T15:43')
+    expect(byId.get(third.id)!.start).toBe('2026-10-23T15:58')
+    // Other courts and the next morning stay as they were.
+    expect(changed.every((m) => m.court === 1)).toBe(true)
+    expect(changed.some((m) => m.start.startsWith('2026-10-24'))).toBe(false)
+    // Moved matches keep their updatedAt (the court board relies on it).
+    expect(byId.get(second.id)!.updatedAt).toBe(second.updatedAt)
+  })
+
+  it('also moves the next match earlier when a match ends early', () => {
+    const s = initialState()
+    const [first, second] = court1(s)
+    const changed = applyMatchUpdate(s, first.id, (m) => ({ ...m, status: 'finished', sets: [{ a: 15, b: 2 }] }), at('2026-10-23T15:36:00'))
+    expect(changed.find((m) => m.id === second.id)!.start).toBe('2026-10-23T15:38')
+  })
+
+  it('changes nothing for results typed in before the tournament day or for corrections', () => {
+    const s = initialState()
+    const [first] = court1(s)
+    expect(applyMatchUpdate(s, first.id, (m) => ({ ...m, status: 'finished', sets: [{ a: 15, b: 9 }] }), at('2026-09-26T11:00:00'))).toHaveLength(1)
+    const done = { ...s, matches: s.matches.map((m) => (m.id === first.id ? { ...m, status: 'finished' as const, sets: [{ a: 15, b: 9 }] } : m)) }
+    expect(applyMatchUpdate(done, first.id, (m) => ({ ...m, sets: [{ a: 15, b: 11 }] }), at('2026-10-23T15:50:00'))).toHaveLength(1)
   })
 })

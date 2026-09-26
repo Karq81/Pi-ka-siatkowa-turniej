@@ -20,6 +20,8 @@ export interface CourtBoard {
   match?: Match
   /** The match after the one shown. */
   next?: Match
+  /** In "next" mode: the court's last result, still worth showing under the next match. */
+  previous?: Match
 }
 
 /**
@@ -40,7 +42,7 @@ export function courtBoard(state: State, court: number, now: number): CourtBoard
     .reduce<Match | undefined>((best, m) => (!best || m.updatedAt >= best.updatedAt ? m : best), undefined)
   const clearedLater = lastDone && upcoming.some((m) => m.updatedAt > lastDone.updatedAt)
   if (lastDone && !clearedLater && (!next || now < at(next) - NEXT_MATCH_LEAD_MS)) return { mode: 'finished', match: lastDone, next }
-  if (next) return { mode: 'next', match: next, next: upcoming[1] }
+  if (next) return { mode: 'next', match: next, next: upcoming[1], previous: lastDone && !clearedLater ? lastDone : undefined }
   return { mode: 'none' }
 }
 

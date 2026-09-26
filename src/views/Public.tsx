@@ -109,6 +109,19 @@ export function CourtCard({ state, court, big = false, referee = false }: { stat
         <TeamRow name={side(current, 'b')} sets={multi ? t.setsB : undefined} points={cur?.b} live={shown} win={winB} mine={mine.includes(current.teamB)} />
       </a>
       {live && !current.sets.length && <p className="court-sets muted">Mecz trwa. Wynik pojawi się po meczu.</p>}
+      {board.mode === 'next' && current.start && (() => {
+        const mins = Math.ceil((new Date(current.start).getTime() - now) / 60000)
+        return mins > 0 && mins <= 15 ? <p className="court-soon">Zaczyna się za {mins} min</p> : null
+      })()}
+      {board.previous && (() => {
+        const p = board.previous
+        const last = p.sets[p.sets.length - 1]
+        return (
+          <p className="court-prev muted">
+            Poprzedni: {side(p, 'a')} <b>{multi ? `${tally(rules, p.sets).setsA}:${tally(rules, p.sets).setsB}` : `${last?.a ?? 0}:${last?.b ?? 0}`}</b> {side(p, 'b')}
+          </p>
+        )
+      })()}
       {multi && current.sets.length > 1 && (live || finished) && (
         <p className="court-sets muted">Sety: {current.sets.map((s) => `${s.a}:${s.b}`).join(', ')}</p>
       )}
@@ -143,6 +156,10 @@ function LiveCourts({ state }: { state: State }) {
       <section className="courts">
         {courts.map((c) => <CourtCard key={c} state={state} court={c} />)}
       </section>
+      <p className="court-rule">
+        ⏱️ Każda grupa gra na swoim boisku, mecz za meczem. <b>Następny mecz zaczyna się 2 minuty po zakończeniu
+        meczu, który trwa</b>: godzina ustawia się sama, gdy sędzia poda wynik. Godziny dalszych meczów są orientacyjne.
+      </p>
       <Upcoming state={state} />
       <h2>Ostatnie wyniki</h2>
       <MatchList state={state} matches={recent} />

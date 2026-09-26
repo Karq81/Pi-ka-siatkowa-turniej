@@ -1,5 +1,5 @@
 import type { Group, KoInfo, KoRound, KoSource, Match, State } from '../types'
-import { toLocalIso } from './schedule'
+import { followOnCourt, toLocalIso } from './schedule'
 import { isMatchDecided, standings, tally } from './scoring'
 
 export const ROUND_NAMES: Record<KoRound, string> = {
@@ -268,12 +268,22 @@ export function bracketView(state: State, categoryId: string): BracketSlot[] | n
 
 /**
  * Applies a change to one match and fills in any knockout teams that follow from it.
- * Returns every match that changed.
+ * When the change ends the match, the court's next match is set to start 2 minutes
+ * later (see followOnCourt). Returns every match that changed.
  */
-export function applyMatchUpdate(state: State, id: string, update: (m: Match) => Match): Match[] {
+export function applyMatchUpdate(state: State, id: string, update: (m: Match) => Match, now = Date.now()): Match[] {
   const target = state.matches.find((m) => m.id === id)
   if (!target) return []
-  const next = { ...update(target), updatedAt: Date.now() }
-  const after: State = { ...state, matches: state.matches.map((m) => (m.id === id ? next : m)) }
-  return [next, ...propagate(after).filter((m) => m.id !== id)]
+  const next = { ...update(target), updatedAt: now }
+  let matches = state.matches.map((m) => (m.id === id ? next : m))
+  // Moved matches keep their updatedAt: the court board uses it to spot cleared results.
+  const moved = target.status !== 'finished' && next.status === 'finished' ? followOnCourt(matches, next, now) : []
+  if (moved.length) {
+    const byId = new Map(moved.map((m) => [m.id, m]))
+    matches = matches.map((m) => byId.get(m.id) ?? m)
+  }
+  const after: State = { ...state, matches }
+  const filled = propagate(after).filter((m) => m.id !== id)
+  const filledIds = new Set(filled.map((m) => m.id))
+  return [next, ...filled, ...moved.filter((m) => !filledIds.has(m.id))]
 }

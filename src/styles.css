@@ -846,3 +846,12 @@ a.board { display: block; color: var(--board-ink); text-decoration: none; }
 }
 .meals-note b { font-size: 1.08rem; }
 .meals-note p { margin: 0; }
+
+/* Court board: next match about to start, and the court's last result. */
+.court-soon { margin: 0; font-weight: 700; color: var(--accent); font-size: 0.85rem; }
+.court-prev { margin: 0; font-size: 0.78rem; line-height: 1.25; }
+.court-prev b { color: var(--ink); }
+.compact .court-soon { font-size: 0.78rem; }
+.compact .court-prev { font-size: 0.7rem; }
+.court-rule { margin: 10px 0 0; padding: 10px 12px; border-radius: var(--radius); background: var(--surface); border: 1px dashed var(--accent); font-size: 0.9rem; }
+.next-on-court { background: color-mix(in srgb, var(--accent) 10%, var(--surface)); border: 1px solid var(--accent); border-radius: var(--radius); padding: 10px 12px; }
