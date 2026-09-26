@@ -49,26 +49,6 @@ export function Info() {
     <div className="info">
       {state.teams.length > 0 && <MyTeams state={state} />}
 
-      <section className="info-facts" aria-label="Najważniejsze">
-        <div className="fact">
-          <span className="fact-label">Termin</span>
-          <b>{info.datesShort}</b>
-          <span className="muted small">piątek–niedziela</span>
-        </div>
-        <div className="fact">
-          <span className="fact-label">Miejsce gier</span>
-          <b>{info.venue.name}</b>
-          <a href={info.venue.maps} target="_blank" rel="noreferrer" className="small">{info.venue.address} · mapa</a>
-        </div>
-        {info.categories.map((c) => (
-          <div key={c.name} className="fact">
-            <span className="fact-label">{c.name}</span>
-            <b><span className="fact-num">{teamsIn(c.name)}</span> zespołów</b>
-            <span className="muted small">{c.note}</span>
-          </div>
-        ))}
-      </section>
-
       <section className="info-live">
         <div className="info-live-text">
           <h2>Grupy, mecze i wyniki</h2>
@@ -101,6 +81,12 @@ export function Info() {
       </section>
 
       <div className="info-cols">
+        <section className="panel">
+          <h2>Miejsce gier</h2>
+          <p><b>{info.venue.name}</b></p>
+          <p><a href={info.venue.maps} target="_blank" rel="noreferrer">{info.venue.address} · mapa</a></p>
+        </section>
+
         <section className="panel">
           <h2>Zakwaterowanie</h2>
           <p><b>{info.hotel.name}</b></p>
