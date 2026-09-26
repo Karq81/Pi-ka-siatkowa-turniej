@@ -630,7 +630,13 @@ a.mcard:hover { border-color: var(--accent); }
 .follow.on { background: var(--ball); color: #1d1600; }
 .standings li.mine { background: color-mix(in srgb, var(--ball) 22%, transparent); }
 .standings li.mine .name::after { content: ' ★'; color: #b58900; }
-.mcard.mine:not(.is-live) { border: 3px solid var(--ball); background: color-mix(in srgb, var(--ball) 30%, var(--surface)); box-shadow: 0 2px 10px color-mix(in srgb, var(--ball) 45%, transparent); }
+.mcard.mine:not(.is-live) { border: 3px solid var(--ball); background: color-mix(in srgb, var(--ball) 30%, var(--surface)); box-shadow: 0 2px 12px color-mix(in srgb, var(--ball) 55%, transparent); }
+.mcard.mine { overflow: hidden; }
+/* Full-width yellow band across the top of a followed team's match card. */
+.mc-ribbon {
+  margin: -12px -14px 0; padding: 6px 14px; background: var(--ball); color: #0e1b2c;
+  font-weight: 800; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.06em;
+}
 .mcard.mine.is-live { background: color-mix(in srgb, var(--ball) 25%, var(--surface)); }
 .mc-team.mine > span:last-child { background: var(--ball); color: #0e1b2c; font-weight: 700; border-radius: 6px; padding: 1px 6px; }
 .pill-mine { background: var(--ball); color: #0e1b2c; border-color: var(--ball); }

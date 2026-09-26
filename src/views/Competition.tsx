@@ -224,12 +224,12 @@ export function MatchCard({ state, match: m, label }: { state: State; match: Mat
   const followed = mine.includes(m.teamA) || mine.includes(m.teamB)
   const body = (
     <>
+      {followed && <div className="mc-ribbon">★ Mecz Twojej drużyny</div>}
       <header>
         <span>{label ?? ''}{label && m.start ? ' · ' : ''}{m.start ? `${formatDay(m.start)} ${formatTime(m.start)}` : ''}</span>
         <span>{m.court ? `Boisko ${m.court}` : ''}</span>
         {underway && <StatusPill status="live" />}
         {m.status === 'finished' && <StatusPill status="finished" />}
-        {!underway && m.status === 'scheduled' && followed && <span className="pill pill-mine">★ Twoja drużyna</span>}
       </header>
       <div className="mc-row">
         <span className={`mc-team ${done && t.setsA > t.setsB ? 'win' : ''} ${mine.includes(m.teamA) ? 'mine' : ''}`}>
