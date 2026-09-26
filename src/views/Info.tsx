@@ -5,8 +5,25 @@ import { info } from '../content/info'
 import { useStore } from '../store/store'
 import { MyTeams } from './Competition'
 
+/** The tournament banner with the logo and the section tabs, on top of every public page. */
+export function InfoHero({ nav }: { nav: ReactNode }) {
+  return (
+    <header className="info-hero">
+      <div className="info-hero-inner">
+        <img className="info-logo" src={logo} alt={info.organizer} width={96} height={98} />
+        <div>
+          <p className="eyebrow">{info.edition}</p>
+          <h1>{info.name}</h1>
+          <p className="info-when">{info.dates} · Mielno</p>
+        </div>
+      </div>
+      {nav}
+    </header>
+  )
+}
+
 /** Start page for families and teams: key facts, schedule, costs and a QR code to live results. */
-export function Info({ nav }: { nav: ReactNode }) {
+export function Info() {
   const state = useStore()
   // Team counts follow the entered team list; the announcement's numbers are the fallback.
   const teamsIn = (name: string) => {
@@ -30,18 +47,6 @@ export function Info({ nav }: { nav: ReactNode }) {
 
   return (
     <div className="info">
-      <header className="info-hero">
-        <div className="info-hero-inner">
-          <img className="info-logo" src={logo} alt={info.organizer} width={96} height={98} />
-          <div>
-            <p className="eyebrow">{info.edition}</p>
-            <h1>{info.name}</h1>
-            <p className="info-when">{info.dates} · Mielno</p>
-          </div>
-        </div>
-        {nav}
-      </header>
-
       {state.teams.length > 0 && <MyTeams state={state} />}
 
       <section className="info-facts" aria-label="Najważniejsze">

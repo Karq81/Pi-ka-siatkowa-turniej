@@ -6,7 +6,7 @@ import { useStore } from '../store/store'
 import type { Match, State } from '../types'
 import { Competition, TeamBadge, TeamPage } from './Competition'
 import { MatchPage } from './Groups'
-import { Info } from './Info'
+import { Info, InfoHero } from './Info'
 import { BackBar, formatDay, formatTime, ScoreLine, StatusPill, useLookups, useNow } from '../ui'
 
 /**
@@ -39,19 +39,9 @@ export function Public({ route }: { route: string }) {
   )
   return (
     <div className="page">
-      {tab === '' ? (
-        <Info nav={nav} />
-      ) : (
-        <header className="hero">
-          <div>
-            <p className="eyebrow">Wyniki na żywo</p>
-            <h1>{state.tournament.name}</h1>
-            <p className="muted">{state.tournament.subtitle}</p>
-          </div>
-          {nav}
-        </header>
-      )}
+      <InfoHero nav={nav} />
       <main>
+        {tab === '' && <Info />}
         {/* Every screen except the start page gets a back button; team and match pages have their own. */}
         {tab !== '' && !detail && <BackBar fallback="" />}
         {tab === 'wyniki' && <Results state={state} />}

@@ -814,3 +814,6 @@ a.board { display: block; color: var(--board-ink); text-decoration: none; }
 /* Followed teams in match lists (Wyniki, recent results). */
 .matches li.mine { box-shadow: inset 6px 0 0 var(--ball); background: color-mix(in srgb, var(--ball) 28%, var(--surface)); }
 .m-teams .mine { font-weight: 700; }
+
+/* The logo banner sits on top of every public page. */
+.page > .info-hero { margin-bottom: 20px; }
