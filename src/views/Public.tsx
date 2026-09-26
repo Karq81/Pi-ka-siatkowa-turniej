@@ -168,8 +168,8 @@ function LiveCourts({ state }: { state: State }) {
 }
 
 /**
- * Matches to come that are not on a court board yet, kept apart from the boards:
- * grouped by start time, one card per match with the court, the group and both teams.
+ * Every court's next match (after the one on its board), in court order, each with its
+ * current time. Kept apart from the boards.
  */
 export function Upcoming({ state }: { state: State }) {
   const now = useNow(15000)
@@ -177,43 +177,31 @@ export function Upcoming({ state }: { state: State }) {
   const { categoryName, stageName, side } = useLookups(state)
   const matches = upcomingMatches(state, now)
   const team = (id: string) => (id ? state.teams.find((x) => x.id === id) : undefined)
-  const slots: { start: string; matches: Match[] }[] = []
-  for (const m of matches) {
-    const last = slots[slots.length - 1]
-    if (last && last.start === m.start) last.matches.push(m)
-    else slots.push({ start: m.start, matches: [m] })
-  }
   return (
     <section className="upcoming">
       <h2>Nadchodzące mecze</h2>
-      {!slots.length && <p className="muted">Brak kolejnych meczów.</p>}
-      {slots.map((slot) => (
-        <div key={slot.start} className="up-slot">
-          <h3 className="up-time">
-            <span>{formatTime(slot.start)}</span>
-            <span className="muted">{formatDay(slot.start)}</span>
-          </h3>
-          <div className="up-grid">
-            {slot.matches.map((m) => (
-              <a key={m.id} href={`#mecz-${m.id}`} className={`up-card ${mine.includes(m.teamA) || mine.includes(m.teamB) ? 'mine' : ''}`}>
-                <header>
-                  <span className="up-court">Boisko {courtLabel(m.court)}</span>
-                  <span className="up-cat">{categoryName(m.categoryId)} · {stageName(m)}</span>
-                </header>
-                <span className={`up-team ${mine.includes(m.teamA) ? 'mine' : ''}`}>
-                  <TeamBadge team={team(m.teamA)} />
-                  <b className={m.teamA ? '' : 'tbd'}>{mine.includes(m.teamA) && '★ '}{side(m, 'a')}</b>
-                </span>
-                <span className="up-vs">vs</span>
-                <span className={`up-team ${mine.includes(m.teamB) ? 'mine' : ''}`}>
-                  <TeamBadge team={team(m.teamB)} />
-                  <b className={m.teamB ? '' : 'tbd'}>{mine.includes(m.teamB) && '★ '}{side(m, 'b')}</b>
-                </span>
-              </a>
-            ))}
-          </div>
-        </div>
-      ))}
+      <p className="muted small">Kolejny mecz na każdym boisku. Godzina zmienia się sama: 2 minuty po zakończeniu meczu, który trwa.</p>
+      {!matches.length && <p className="muted">Brak kolejnych meczów.</p>}
+      <div className="up-grid">
+        {matches.map((m) => (
+          <a key={m.id} href={`#mecz-${m.id}`} className={`up-card ${mine.includes(m.teamA) || mine.includes(m.teamB) ? 'mine' : ''}`}>
+            <header>
+              <span className="up-court">Boisko {courtLabel(m.court)}</span>
+              <b className="up-at">{formatTime(m.start)}</b>
+            </header>
+            <span className="up-cat">{categoryName(m.categoryId)} · {stageName(m)}</span>
+            <span className={`up-team ${mine.includes(m.teamA) ? 'mine' : ''}`}>
+              <TeamBadge team={team(m.teamA)} />
+              <b className={m.teamA ? '' : 'tbd'}>{mine.includes(m.teamA) && '★ '}{side(m, 'a')}</b>
+            </span>
+            <span className="up-vs">vs</span>
+            <span className={`up-team ${mine.includes(m.teamB) ? 'mine' : ''}`}>
+              <TeamBadge team={team(m.teamB)} />
+              <b className={m.teamB ? '' : 'tbd'}>{mine.includes(m.teamB) && '★ '}{side(m, 'b')}</b>
+            </span>
+          </a>
+        ))}
+      </div>
     </section>
   )
 }

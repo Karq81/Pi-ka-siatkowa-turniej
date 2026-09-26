@@ -148,3 +148,19 @@ export function initialState(): State {
 export function drawnState(rand: () => number = Math.random): State {
   return drawTournament(initialState(), { groups: { c1: GROUPS_PER_CATEGORY, c2: GROUPS_PER_CATEGORY }, schedule: DEFAULT_SCHEDULE }, rand)
 }
+
+/**
+ * The group timetable as planned (each group on its court, from Friday 15:30 at the
+ * chosen interval), put back on the matches: used after clearing test results, when
+ * finished matches had moved the times. Pairings, courts and results stay.
+ */
+export function restoreTimetable(state: State): State {
+  const planned = buildGroupsOnOwnCourts(state.groups, state.groups.map((_, i) => i + 1), {
+    ...DEFAULT_SCHEDULE, slotMinutes: state.tournament.slotMinutes ?? DEFAULT_SCHEDULE.slotMinutes,
+  })
+  const at = new Map(planned.map((m) => [`${m.groupId}|${m.teamA}|${m.teamB}`, m.start]))
+  return {
+    ...state,
+    matches: state.matches.map(({ calledAt: _called, ...m }) => ({ ...m, start: at.get(`${m.groupId}|${m.teamA}|${m.teamB}`) ?? m.start })),
+  }
+}

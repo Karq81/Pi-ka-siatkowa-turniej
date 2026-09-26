@@ -861,3 +861,10 @@ a.board { display: block; color: var(--board-ink); text-decoration: none; }
 .next-time label { display: flex; flex-direction: column; gap: 2px; font-size: 0.8rem; font-weight: 600; }
 .next-time input { width: 9em; padding: 6px 8px; font-size: 1rem; }
 .next-time .btn-sm { padding: 7px 12px; }
+
+/* Upcoming: each court's next match with its own time. */
+.up-card header { display: flex; justify-content: space-between; align-items: center; }
+.up-at { font-family: var(--display); font-size: 1.35rem; color: var(--accent); font-variant-numeric: tabular-nums; }
+.up-card .up-cat { text-align: left; }
+.compact .up-card header { flex-direction: row; align-items: center; }
+.compact .up-at { font-size: 1.15rem; }

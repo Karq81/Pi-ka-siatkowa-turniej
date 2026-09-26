@@ -147,10 +147,11 @@ export const NEXT_MATCH_GAP_MINUTES = 2
 
 /**
  * When a match on a court ends (its result is entered), the court's next match starts
- * 2 minutes later: it gets that time, and the court's later matches that day move by the
- * same amount. Only on the day of the match (results typed in before the tournament
- * change nothing), only when every earlier match on the court is over, and never across
- * days (the next morning keeps its times). Returns the matches that moved.
+ * 2 minutes later: it gets that time of day, and the court's later matches that day move
+ * by the same amount. Only when every earlier match on the court is over, and never
+ * across days (the next morning keeps its times). Results typed in on another day (tests
+ * before the tournament) set the same time of day on the match's own day; "Wyzeruj
+ * wszystkie wyniki" restores the timetable. Returns the matches that moved.
  */
 export function followOnCourt(matches: Match[], finished: Match, now: number): Match[] {
   const onCourt = matches
@@ -161,16 +162,17 @@ export function followOnCourt(matches: Match[], finished: Match, now: number): M
   const rest = onCourt.slice(at + 1)
   const next = rest[0]
   if (!next || next.status !== 'scheduled') return []
+  const day = next.start.slice(0, 10)
+  if (finished.start.slice(0, 10) !== day) return []
   const d = new Date(now)
   d.setSeconds(0, 0)
-  const start = addMinutes(toLocalIso(d), NEXT_MATCH_GAP_MINUTES)
-  const day = next.start.slice(0, 10)
-  if (start.slice(0, 10) !== day || finished.start.slice(0, 10) !== day) return []
+  const soon = addMinutes(toLocalIso(d), NEXT_MATCH_GAP_MINUTES)
+  const start = `${day}T${soon.slice(11)}`
   const shift = new Date(start).getTime() - new Date(next.start).getTime()
   if (!shift) return []
   return rest
     .filter((m) => m.status === 'scheduled' && m.start.slice(0, 10) === day)
-    .map((m) => ({ ...m, start: toLocalIso(new Date(new Date(m.start).getTime() + shift)) }))
+    .map((m) => ({ ...m, start: toLocalIso(new Date(new Date(m.start).getTime() + shift)), ...(m.id === next.id ? { calledAt: now } : {}) }))
 }
 
 /**
@@ -178,7 +180,7 @@ export function followOnCourt(matches: Match[], finished: Match, now: number): M
  * played on the court gets it, and the court's later matches that day move by the same
  * amount. Returns the matches that moved.
  */
-export function setNextOnCourt(matches: Match[], court: number, time: string): Match[] {
+export function setNextOnCourt(matches: Match[], court: number, time: string, now = Date.now()): Match[] {
   const onCourt = matches
     .filter((m) => m.court === court && m.start)
     .sort((a, b) => a.start.localeCompare(b.start) || a.id.localeCompare(b.id))
@@ -190,5 +192,5 @@ export function setNextOnCourt(matches: Match[], court: number, time: string): M
   if (!shift) return []
   return onCourt
     .filter((m) => m.status === 'scheduled' && m.start.slice(0, 10) === day && m.start >= next.start)
-    .map((m) => ({ ...m, start: toLocalIso(new Date(new Date(m.start).getTime() + shift)) }))
+    .map((m) => ({ ...m, start: toLocalIso(new Date(new Date(m.start).getTime() + shift)), ...(m.id === next.id ? { calledAt: now } : {}) }))
 }

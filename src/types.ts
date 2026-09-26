@@ -91,6 +91,8 @@ export interface Match {
   sets: SetScore[]
   status: MatchStatus
   updatedAt: number
+  /** When the court moved on to this match (result of the one before, or a time set by hand). */
+  calledAt?: number
 }
 
 export type Role = 'admin' | 'court'

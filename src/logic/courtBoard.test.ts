@@ -66,11 +66,11 @@ describe('court board', () => {
     expect(isUnderway({ ...first, teamB: '' }, t('16:00'))).toBe(false)
   })
 
-  it('lists only the next round of matches that are not on a court board', () => {
+  it('lists every court\'s next match after the one on its board', () => {
     const other = { ...m('m2b', '2026-10-23T16:10'), court: 2 }
     const third = m('m3', '2026-10-23T16:30')
     const s = { ...state([first, second, other, third]), tournament: { ...state([]).tournament, courts: 2 } }
-    // Court 2's board shows its only match, so the list is court 1's next round.
+    // Court 1 shows m1, so its queue starts with m2; court 2 shows its only match.
     expect(upcomingMatches(s, t('15:00')).map((x) => x.id)).toEqual(['m2'])
     const started = [{ ...first, status: 'finished' as const, sets: [{ a: 15, b: 3 }] }, { ...second, status: 'live' as const }, other, third]
     expect(upcomingMatches({ ...s, matches: started }, t('16:15')).map((x) => x.id)).toEqual(['m3'])

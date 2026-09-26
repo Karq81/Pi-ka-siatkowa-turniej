@@ -41,25 +41,26 @@ export function courtBoard(state: State, court: number, now: number): CourtBoard
     .filter((m) => m.status === 'finished')
     .reduce<Match | undefined>((best, m) => (!best || m.updatedAt >= best.updatedAt ? m : best), undefined)
   const clearedLater = lastDone && upcoming.some((m) => m.updatedAt > lastDone.updatedAt)
-  if (lastDone && !clearedLater && (!next || now < at(next) - NEXT_MATCH_LEAD_MS)) return { mode: 'finished', match: lastDone, next }
+  // Once the next match has been called (after this result), the board moves on to it.
+  const called = !!next?.calledAt && !!lastDone && next.calledAt >= lastDone.updatedAt
+  if (lastDone && !clearedLater && !called && (!next || now < at(next) - NEXT_MATCH_LEAD_MS)) return { mode: 'finished', match: lastDone, next }
   if (next) return { mode: 'next', match: next, next: upcoming[1], previous: lastDone && !clearedLater ? lastDone : undefined }
   return { mode: 'none' }
 }
 
 /**
- * The next round of matches, not on any court board yet: every match of the earliest
- * start time still to come (one per court, so up to 10). Once they start, the list
- * moves on to the round after.
+ * The next match of every court after the one on its board (its queue), with the time it
+ * has now: 2 minutes after the court's current match ends, or as set by the organiser.
+ * One per court, in court order.
  */
 export function upcomingMatches(state: State, now: number): Match[] {
-  const onBoards = new Set<string>()
+  const out: Match[] = []
   for (let c = 1; c <= state.tournament.courts; c++) {
-    const id = courtBoard(state, c, now).match?.id
-    if (id) onBoards.add(id)
+    const shown = courtBoard(state, c, now).match
+    const queue = state.matches
+      .filter((m) => m.court === c && m.status === 'scheduled' && m.id !== shown?.id)
+      .sort((a, b) => a.start.localeCompare(b.start))
+    if (queue[0]) out.push(queue[0])
   }
-  const waiting = state.matches
-    .filter((m) => m.status === 'scheduled' && !onBoards.has(m.id))
-    .sort((a, b) => a.start.localeCompare(b.start) || a.court - b.court)
-  const first = waiting[0]?.start
-  return waiting.filter((m) => m.start === first)
+  return out
 }

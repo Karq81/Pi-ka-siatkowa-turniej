@@ -1,6 +1,6 @@
 import QRCode from 'qrcode'
 import { useEffect, useState } from 'react'
-import { initialState } from '../logic/demo'
+import { initialState, restoreTimetable } from '../logic/demo'
 import { resetResults } from '../logic/draw'
 import { tally } from '../logic/scoring'
 import { store, useStore, useSync } from '../store/store'
@@ -472,25 +472,26 @@ function Cards({ count, name }: { count: number; name: string }) {
  * Admin: clear all results. Groups are fixed (the organiser's list), so there is no
  * redraw here.
  */
-function ResetPanel({ state }: { state: State }) {
+export function ResetPanel({ state }: { state: State }) {
   const [confirm, setConfirm] = useState(false)
   const [msg, setMsg] = useState('')
   const played = state.matches.filter((m) => m.status !== 'scheduled').length
   const reset = async () => {
     setConfirm(false)
-    await store.replace(resetResults(state))
-    setMsg('Wyzerowano wszystkie wyniki. Grupy i terminarz zostały bez zmian.')
+    await store.replace(restoreTimetable(resetResults(state)))
+    setMsg('Wyzerowano wszystkie wyniki i przywrócono godziny z terminarza.')
   }
   return (
     <section className="panel">
       <h2>Grupy i wyniki</h2>
       <p className="muted">
         Grupy są ustalone według listy organizatora (dwójki: 4 grupy po 7, trójki: 5 grup po 6), bez losowania.
-        Tu możesz wyzerować wszystkie wyniki, np. po meczach próbnych.
+        Tu możesz wyzerować wszystkie wyniki, np. po meczach próbnych. Godziny meczów wrócą do terminarza
+        (piątek od 15:30, sobota od 9:30).
       </p>
       {confirm ? (
         <div className="notice">
-          <p>Wyzerować wszystkie wyniki ({played} meczów)? Grupy i terminarz zostaną.</p>
+          <p>Wyzerować wszystkie wyniki ({played} meczów) i przywrócić godziny z terminarza? Grupy zostaną.</p>
           <div className="actions">
             <button className="btn btn-danger" onClick={reset}>Tak, wyzeruj</button>
             <button className="btn" onClick={() => setConfirm(false)}>Anuluj</button>

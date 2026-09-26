@@ -91,6 +91,7 @@ function NextTimeForm({ state, court }: { state: State; court: number }) {
   useEffect(() => { if (next) setTime(next.start.slice(11, 16)) }, [next?.start])
   if (!next) return null
   const live = state.matches.some((m) => m.court === court && m.status === 'live')
+  const valid = /^([01]\d|2[0-3]):[0-5]\d$/.test(time)
   const save = async () => {
     const moved = setNextOnCourt(state.matches, court, time)
     if (!moved.length) { setMsg('Bez zmian.'); return }
@@ -101,9 +102,17 @@ function NextTimeForm({ state, court }: { state: State; court: number }) {
   return (
     <div className="next-time">
       <label>Następny mecz o
-        <input id={`next-time-${court}`} type="time" value={time} disabled={live} onChange={(e) => { setTime(e.target.value); setMsg('') }} />
+        <input
+          id={`next-time-${court}`} type="text" inputMode="numeric" placeholder="15:45" maxLength={5} value={time} disabled={live}
+          onChange={(e) => {
+            // 24-hour HH:MM whatever the phone's settings; "1545" becomes "15:45".
+            const d = e.target.value.replace(/\D/g, '').slice(0, 4)
+            setTime(d.length > 2 ? `${d.slice(0, 2)}:${d.slice(2)}` : d)
+            setMsg('')
+          }}
+        />
       </label>
-      <button className="btn btn-sm" disabled={live || time === next.start.slice(11, 16)} onClick={save}>Ustaw</button>
+      <button className="btn btn-sm" disabled={live || !valid || time === next.start.slice(11, 16)} onClick={save}>Ustaw</button>
       {live && <span className="muted small">Mecz trwa: godzinę następnego ustawisz po jego zakończeniu.</span>}
       {msg && <span className="ok small">{msg}</span>}
     </div>

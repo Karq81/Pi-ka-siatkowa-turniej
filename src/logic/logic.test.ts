@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Group, Match, Rules, Team } from '../types'
-import { defaultRules, DEFAULT_SCHEDULE, drawnState, initialState } from './demo'
+import { defaultRules, DEFAULT_SCHEDULE, drawnState, initialState, restoreTimetable } from './demo'
 import { clubOf, drawCategory, drawGroups, isDrawn, resetResults, rng } from './draw'
 import { parseTeams } from './importTeams'
 import { buildGroupSchedule, retimeSchedule, roundRobin, setNextOnCourt } from './schedule'
@@ -303,10 +303,14 @@ describe('next match 2 minutes after the result', () => {
     expect(changed.find((m) => m.id === second.id)!.start).toBe('2026-10-23T15:38')
   })
 
-  it('changes nothing for results typed in before the tournament day or for corrections', () => {
+  it('uses the time of day for results typed in on another day (tests), and changes nothing for corrections', () => {
     const s = initialState()
-    const [first] = court1(s)
-    expect(applyMatchUpdate(s, first.id, (m) => ({ ...m, status: 'finished', sets: [{ a: 15, b: 9 }] }), at('2026-09-26T11:00:00'))).toHaveLength(1)
+    const [first, second] = court1(s)
+    const test = applyMatchUpdate(s, first.id, (m) => ({ ...m, status: 'finished', sets: [{ a: 15, b: 9 }] }), at('2026-09-26T11:20:30'))
+    expect(test.find((m) => m.id === second.id)!.start).toBe('2026-10-23T11:22')
+    // Restoring the timetable puts it back.
+    const moved = { ...s, matches: s.matches.map((m) => test.find((x) => x.id === m.id) ?? m) }
+    expect(restoreTimetable(resetResults(moved)).matches).toEqual(s.matches)
     const done = { ...s, matches: s.matches.map((m) => (m.id === first.id ? { ...m, status: 'finished' as const, sets: [{ a: 15, b: 9 }] } : m)) }
     expect(applyMatchUpdate(done, first.id, (m) => ({ ...m, sets: [{ a: 15, b: 11 }] }), at('2026-10-23T15:50:00'))).toHaveLength(1)
   })

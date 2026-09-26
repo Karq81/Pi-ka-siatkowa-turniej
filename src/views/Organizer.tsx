@@ -3,7 +3,7 @@ import { DEFAULT_SCHEDULE } from '../logic/demo'
 import { clubOf } from '../logic/draw'
 import { retimeSchedule } from '../logic/schedule'
 import { store, useSession, useStore, useSync } from '../store/store'
-import { AdminPinForm, setupTournament } from './Admin'
+import { AdminPinForm, ResetPanel, setupTournament } from './Admin'
 import type { Category, State } from '../types'
 import { courtLabel, formatDay, formatTime, PinGate, useLookups } from '../ui'
 import { CourtList } from './Court'
@@ -41,7 +41,13 @@ export function Organizer({ route }: { route: string }) {
       {tab === 'panel-grupy' && (
         state.groups.length ? <Competition state={state} route="grupy" /> : <Empty />
       )}
-      {tab === 'panel-sedziowie' && <><CourtList /><MatchInterval state={state} /></>}
+      {tab === 'panel-sedziowie' && (
+        <>
+          <CourtList />
+          <MatchInterval state={state} />
+          <PinGate label="Zerowanie wyników (sędzia główny)"><ResetPanel state={state} /></PinGate>
+        </>
+      )}
       {tab === 'panel-wiecej' && <More />}
     </div>
   )
