@@ -643,10 +643,12 @@ a.mcard:hover { border-color: var(--accent); }
 .my-empty b { font-family: var(--display); font-size: 1.25rem; }
 .my-empty span { color: var(--muted); font-size: 0.9rem; }
 .my-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px; }
-.my-card { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 14px; background: var(--surface); border: 1px solid var(--line); box-shadow: inset 4px 0 0 var(--ball); color: var(--ink); text-decoration: none; }
+.my-card { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 12px; padding: 12px 14px; border-radius: 14px; background: var(--surface); border: 1px solid var(--line); box-shadow: inset 4px 0 0 var(--ball); color: var(--ink); text-decoration: none; }
 .my-card.is-live { border-color: var(--live); }
 .my-main { display: flex; flex-direction: column; min-width: 0; overflow-wrap: anywhere; }
-.my-next { display: flex; flex-direction: column; align-items: flex-end; text-align: right; gap: 2px; font-variant-numeric: tabular-nums; }
+.my-main b { font-size: 1.05rem; }
+/* The next match sits under the team name, so a long opponent name never squeezes it. */
+.my-next { grid-column: 1 / -1; min-width: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; padding-top: 6px; border-top: 1px dashed var(--line); font-variant-numeric: tabular-nums; }
 .my-next b { font-family: var(--display); font-size: 1.1rem; }
 .follow-picker { display: flex; flex-direction: column; gap: 12px; padding: 16px; border-radius: 14px; background: var(--surface); border: 2px solid var(--ball); }
 .follow-picker h3 { font-size: 1.4rem; }
@@ -660,10 +662,6 @@ a.mcard:hover { border-color: var(--accent); }
 .mp-name { color: inherit; text-decoration: none; }
 a.mp-name:hover { color: var(--ball); }
 .team-head { flex-wrap: wrap; }
-@media (max-width: 520px) {
-  .my-card { grid-template-columns: auto 1fr; }
-  .my-next { grid-column: 1 / -1; flex-direction: row; flex-wrap: wrap; align-items: baseline; justify-content: flex-start; gap: 4px 10px; text-align: left; padding-top: 6px; border-top: 1px dashed var(--line); }
-}
 
 /* ===== Tennis-style draw ===== */
 .draw { display: flex; flex-direction: column; gap: 14px; }
