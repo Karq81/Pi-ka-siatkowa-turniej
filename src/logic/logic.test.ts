@@ -177,7 +177,7 @@ describe('Albatros CUP team list', () => {
     const sizes = (cat: string) => s.groups.filter((g) => g.categoryId === cat).map((g) => g.teamIds.length)
     expect(sizes('c1')).toEqual([7, 7, 7, 7])
     expect(sizes('c2')).toEqual([6, 6, 6, 6, 6])
-    expect(s.groups.map((g) => g.name)).toEqual(['Grupa A', 'Grupa B', 'Grupa C', 'Grupa D', 'Grupa 1', 'Grupa 2', 'Grupa 3', 'Grupa 4', 'Grupa 5'])
+    expect(s.groups.map((g) => g.name)).toEqual(['Grupa 1', 'Grupa 2', 'Grupa 3', 'Grupa 4', 'Grupa 1', 'Grupa 2', 'Grupa 3', 'Grupa 4', 'Grupa 5'])
     // Every team in exactly one group of its category.
     const placed = s.groups.flatMap((g) => g.teamIds)
     expect(new Set(placed).size).toBe(58)
@@ -260,7 +260,7 @@ describe('changing the match interval', () => {
 })
 
 describe('one court per group', () => {
-  it('plays groups A–D on courts 1–4 and groups 1–5 on courts 5–9, one match at a time', () => {
+  it('plays dwójki groups 1–4 on courts 1–4 and trójki groups 1–5 on courts 5–9, one match at a time', () => {
     const s = initialState()
     expect(s.tournament.courts).toBe(9)
     s.groups.forEach((g, i) => {
