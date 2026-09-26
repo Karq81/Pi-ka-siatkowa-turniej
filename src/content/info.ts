@@ -32,7 +32,7 @@ export const info = {
         { time: '11:00', text: 'Przyjazd i zakwaterowanie w hotelu, po przyjeździe zupa' },
         { time: '15:00', text: 'Oficjalne rozpoczęcie turnieju', highlight: true },
         { time: '15:30', text: 'Rozpoczęcie gier', highlight: true },
-        { time: '', text: 'Obiadokolacja w Albatros Medical SPA' },
+        { time: '17:30–19:00', text: 'Obiadokolacja w Albatros Medical SPA' },
       ],
     },
     {
