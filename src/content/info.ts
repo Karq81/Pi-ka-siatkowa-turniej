@@ -39,9 +39,10 @@ export const info = {
       day: 'Sobota',
       date: '24.10',
       items: [
-        { time: '', text: 'Śniadanie w Albatros Medical SPA' },
-        { time: '', text: 'Obiad w stołówce szkolnej' },
-        { time: '', text: 'Obiadokolacja w Albatros Medical SPA' },
+        { time: '8:00–10:00', text: 'Śniadanie w Albatros Medical SPA' },
+        { time: '9:30', text: 'Rozpoczęcie gier', highlight: true },
+        { time: '12:00–14:00', text: 'Obiad na hali' },
+        { time: '17:30–19:00', text: 'Obiadokolacja w Albatros Medical SPA' },
       ],
     },
     {
@@ -56,7 +57,7 @@ export const info = {
   ],
   prices: [
     { label: 'Z noclegiem', price: '350 zł', per: 'od osoby', includes: 'zakwaterowanie, wyżywienie, wpisowe' },
-    { label: 'Bez noclegu', price: '150 zł', per: 'od osoby', includes: 'wpisowe i obiad w sobotę w stołówce szkolnej' },
+    { label: 'Bez noclegu', price: '150 zł', per: 'od osoby', includes: 'wpisowe i sobotni obiad na hali' },
   ],
   payment: {
     account: '48 1240 1428 1111 0011 2125 5322',

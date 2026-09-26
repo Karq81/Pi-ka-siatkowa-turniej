@@ -223,18 +223,18 @@ describe('Albatros CUP team list', () => {
   it('starts on Friday at 15:30 and continues on Saturday morning', () => {
     const starts = [...new Set(drawnState(rng(7)).matches.map((m) => m.start))].sort()
     expect(starts[0]).toBe('2026-10-23T15:30')
-    expect(starts.find((x) => x.startsWith('2026-10-24'))).toBe('2026-10-24T09:00')
+    expect(starts.find((x) => x.startsWith('2026-10-24'))).toBe('2026-10-24T09:30')
   })
 })
 
 describe('changing the match interval', () => {
-  const opts = { slotMinutes: 20, dayEnd: '18:40', dayStart: '09:00' }
+  const opts = { slotMinutes: 20, dayEnd: '18:40', dayStart: '09:30' }
 
-  it('plays the fixed groups every 15 minutes: Friday from 15:30, the rest on Saturday morning', () => {
+  it('plays the fixed groups every 15 minutes: Friday from 15:30, the rest on Saturday from 9:30', () => {
     const starts = [...new Set(initialState().matches.map((m) => m.start))].sort()
     expect(starts.slice(0, 3)).toEqual(['2026-10-23T15:30', '2026-10-23T15:45', '2026-10-23T16:00'])
     expect(starts.filter((x) => x.startsWith('2026-10-23')).at(-1)).toBe('2026-10-23T18:30')
-    expect(starts.find((x) => x.startsWith('2026-10-24'))).toBe('2026-10-24T09:00')
+    expect(starts.find((x) => x.startsWith('2026-10-24'))).toBe('2026-10-24T09:30')
   })
 
   it('re-times every slot from the first one, keeping courts and pairings', () => {
@@ -243,7 +243,7 @@ describe('changing the match interval', () => {
     const starts = [...new Set(out.map((m) => m.start))].sort()
     expect(starts.slice(0, 3)).toEqual(['2026-10-23T15:30', '2026-10-23T15:50', '2026-10-23T16:10'])
     expect(starts.filter((x) => x.startsWith('2026-10-23')).at(-1)).toBe('2026-10-23T18:30')
-    expect(starts.find((x) => x.startsWith('2026-10-24'))).toBe('2026-10-24T09:00')
+    expect(starts.find((x) => x.startsWith('2026-10-24'))).toBe('2026-10-24T09:30')
     expect(out.map((m) => [m.id, m.court, m.teamA, m.teamB])).toEqual(s.matches.map((m) => [m.id, m.court, m.teamA, m.teamB]))
   })
 
