@@ -371,7 +371,7 @@ label { display: flex; flex-direction: column; gap: 4px; font-size: 0.9rem; font
 .fact-label { font-family: var(--display); font-weight: 600; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent); }
 .fact-num { font-family: var(--display); font-size: 1.8rem; line-height: 1; }
 .info-live {
-  display: grid; grid-template-columns: 1fr auto; gap: 20px; align-items: center;
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px; align-items: center;
   background: var(--surface); border: 2px solid var(--accent); border-radius: 14px; padding: 20px;
 }
 .info-live-text { display: flex; flex-direction: column; gap: 12px; align-items: flex-start; }
@@ -818,8 +818,10 @@ a.board { display: block; color: var(--board-ink); text-decoration: none; }
 /* The logo banner sits on top of every public page. */
 .page > .info-hero { margin-bottom: 20px; }
 
-/* Share the fans' link (start page, next to the QR code). */
-.share { margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--line); }
-.share-label { font-weight: 600; margin: 0 0 8px; }
-.btn-whatsapp { background: #25d366; border-color: #25d366; color: #0b2e17; font-weight: 700; }
-.btn-whatsapp:hover { background: #1ebe5b; }
+/* Start page: the three buttons in one row, the QR code at the far right. */
+.info-live-text .actions { flex-wrap: nowrap; gap: 6px; max-width: 100%; }
+.info-live-text .actions { width: 100%; }
+.info-live-text .actions .btn-lg { flex: 1 1 auto; justify-content: center; text-align: center; padding: 11px 8px; font-size: 0.82rem; white-space: nowrap; min-width: 0; }
+.info-live .info-qr { width: 118px; }
+.btn-share { background: var(--ball); border-color: var(--ball); color: #1d1600; }
+.info-live .info-qr { justify-self: end; }

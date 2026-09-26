@@ -79,8 +79,8 @@ export function Info() {
           <div className="actions">
             <a className="btn btn-primary btn-lg" href="#grupy">Grupy i terminarz</a>
             <a className="btn btn-lg" href="#na-zywo">Wyniki na żywo</a>
+            <ShareLink />
           </div>
-          <ShareLink />
 
         </div>
         <div className="info-qr" aria-label="Kod QR do wyników" dangerouslySetInnerHTML={{ __html: qr }} />
@@ -157,36 +157,23 @@ export function Info() {
   )
 }
 
-/** Share the fans' link: the phone's share sheet (WhatsApp, Messenger, SMS…), WhatsApp directly, or copy. */
+/**
+ * Share the fans' link through the phone's share sheet (WhatsApp, Messenger, SMS…).
+ * Browsers without one copy the link instead.
+ */
 function ShareLink() {
   const url = `${location.origin}${location.pathname}`
   const text = `${info.name} ${info.datesShort}, Mielno – grupy, mecze i wyniki na żywo:`
   const [copied, setCopied] = useState(false)
-  const canShare = typeof navigator.share === 'function'
   const share = () => {
-    navigator.share({ title: info.name, text, url }).catch(() => {})
-  }
-  const copy = () => {
+    if (typeof navigator.share === 'function') {
+      navigator.share({ title: info.name, text, url }).catch(() => {})
+      return
+    }
     navigator.clipboard?.writeText(url).then(
       () => { setCopied(true); setTimeout(() => setCopied(false), 2000) },
       () => {},
     )
   }
-  return (
-    <div className="share">
-      <p className="share-label">Udostępnij link rodzicom i trenerom</p>
-      <div className="actions">
-        {canShare && <button className="btn btn-lg" onClick={share}>📤 Udostępnij link</button>}
-        <a
-          className="btn btn-lg btn-whatsapp"
-          href={`https://wa.me/?text=${encodeURIComponent(`${text} ${url}`)}`}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          WhatsApp
-        </a>
-        <button className="btn btn-lg" onClick={copy}>{copied ? 'Skopiowano ✓' : 'Kopiuj link'}</button>
-      </div>
-    </div>
-  )
+  return <button className="btn btn-lg btn-share" onClick={share}>{copied ? 'Skopiowano ✓' : 'Udostępnij link'}</button>
 }
