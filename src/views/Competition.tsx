@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { clubOf } from '../logic/draw'
 import { bracketView, groupFinished, tierForGroupPlace } from '../logic/knockout'
 import { useFavorites, toggleFavorite, setFavorites } from '../favorites'
@@ -112,13 +112,20 @@ export function TeamBadge({ team, size = 'md' }: { team?: Team; size?: 'sm' | 'm
 /* ---------- Countdown ---------- */
 
 
-function NextMatch({ state, categoryId }: { state: State; categoryId: string }) {
+/**
+ * Countdown to the next match: of one category (Grupy i terminarz), or of the whole
+ * tournament (`categoryId` left out, on "Na żywo", where the boards already show
+ * matches being played, so nothing is shown while any is live).
+ */
+export function NextMatch({ state, categoryId }: { state: State; categoryId?: string }) {
   const now = useNow()
-  const live = state.matches.filter((m) => m.categoryId === categoryId && m.status === 'live').length
-  const next = useMemo(() => state.matches
-    .filter((m) => m.categoryId === categoryId && m.status === 'scheduled' && new Date(m.start).getTime() > Date.now())
-    .sort((a, b) => a.start.localeCompare(b.start))[0], [state.matches, categoryId])
+  const inCategory = (m: Match) => !categoryId || m.categoryId === categoryId
+  const live = state.matches.filter((m) => inCategory(m) && m.status === 'live').length
+  const next = state.matches
+    .filter((m) => inCategory(m) && m.status === 'scheduled' && new Date(m.start).getTime() > now)
+    .sort((a, b) => a.start.localeCompare(b.start))[0]
   if (live) {
+    if (!categoryId) return null
     return (
       <a href="#na-zywo" className="next next-live">
         <StatusPill status="live" />

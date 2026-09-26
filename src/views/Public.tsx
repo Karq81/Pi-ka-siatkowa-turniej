@@ -4,7 +4,7 @@ import { useFavorites } from '../favorites'
 import { courtBoard, upcomingMatches } from '../logic/courtBoard'
 import { useStore } from '../store/store'
 import type { Match, State } from '../types'
-import { Competition, TeamBadge, TeamPage } from './Competition'
+import { Competition, NextMatch, TeamBadge, TeamPage } from './Competition'
 import { MatchPage } from './Groups'
 import { Info, InfoHero } from './Info'
 import { BackBar, formatDay, formatTime, ScoreLine, StatusPill, useLookups, useNow } from '../ui'
@@ -138,6 +138,7 @@ function LiveCourts({ state }: { state: State }) {
     .slice(0, 8)
   return (
     <>
+      <NextMatch state={state} />
       <h2>Boiska</h2>
       <section className="courts">
         {courts.map((c) => <CourtCard key={c} state={state} court={c} />)}

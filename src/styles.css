@@ -825,3 +825,6 @@ a.board { display: block; color: var(--board-ink); text-decoration: none; }
 /* Bigger section tabs in the logo banner. */
 .info-hero .tabs { gap: 6px; }
 .info-hero .tabs a { font-size: 1.12rem; padding: 10px 16px; }
+
+/* Countdown on "Na żywo", right under the back button. */
+.backbar + .next { margin-top: 10px; }
