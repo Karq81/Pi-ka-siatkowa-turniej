@@ -28,7 +28,7 @@ export function Organizer({ route }: { route: string }) {
   const tab = TABS.some((t) => t.route === route) ? route : 'panel'
   const tabs = IS_ALBATROS ? TABS : TABS.map((t) => (t.route === 'panel' ? { ...t, label: '1. Zespoły i losowanie' } : t))
   return (
-    <div className="page">
+    <div className="page page-wide">
       <header className="org-head">
         <div>
           <p className="eyebrow">Panel organizatora</p>

@@ -38,7 +38,11 @@ interface CourtSheet {
   matches: Record<string, Match>
 }
 
-export function createFirebaseStore(config: FirebaseOptions, tournamentId: string, initial: State): Store {
+/**
+ * `listen`: follow the tournament's data. Off on the service's front page, which shows no
+ * tournament, so its visitors cost no database reads.
+ */
+export function createFirebaseStore(config: FirebaseOptions, tournamentId: string, initial: State, listen = true): Store {
   const app = initializeApp(config)
   const auth = getAuth(app)
   let db: Firestore
@@ -96,7 +100,7 @@ export function createFirebaseStore(config: FirebaseOptions, tournamentId: strin
     return auth.currentUser!
   }
 
-  onSnapshot(tRef, { includeMetadataChanges: true }, (snap) => {
+  if (listen) onSnapshot(tRef, { includeMetadataChanges: true }, (snap) => {
     const data = snap.data() as Omit<State, 'matches'> | undefined
     if (data) state = { ...state, ...data, matches: state.matches }
     setSync({ empty: !snap.exists() && !snap.metadata.fromCache, connected: !snap.metadata.fromCache })
@@ -104,7 +108,7 @@ export function createFirebaseStore(config: FirebaseOptions, tournamentId: strin
 
   // Documents in `matches` that are not court sheets (the old one-document-per-match layout).
   let legacy: string[] = []
-  onSnapshot(matchesRef, { includeMetadataChanges: true }, (snap) => {
+  if (listen) onSnapshot(matchesRef, { includeMetadataChanges: true }, (snap) => {
     const sheets = snap.docs.filter((d) => d.id.startsWith(SHEET_PREFIX))
     legacy = snap.docs.filter((d) => !d.id.startsWith(SHEET_PREFIX)).map((d) => d.id)
     const matches = sheets.length

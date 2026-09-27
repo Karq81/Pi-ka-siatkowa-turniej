@@ -19,7 +19,7 @@ import { SyncBanner, useRoute } from './ui'
  * result entry, corrections) keep the normal phone layout with big buttons.
  */
 const DESKTOP_LIKE_WIDTH = 640
-const PHONE_LAYOUT = /^(boisko-\d+|wynik-\d+|korekta-.+|sedzia|kartki|o-systemie|nowy-turniej|konto)$/
+const PHONE_LAYOUT = /^(boisko-\d+|wynik-\d+|korekta-.+|sedzia|kartki|o-systemie|nowy-turniej|konto|rejestracja)$/
 
 function isPhone() {
   const touch = matchMedia('(pointer: coarse)').matches
@@ -30,7 +30,7 @@ function useViewport(route: string) {
   useEffect(() => {
     const meta = document.querySelector('meta[name="viewport"]')
     const root = document.documentElement
-    const desktopLike = !(PHONE_LAYOUT.test(route) || (IS_LANDING && route === '')) && isPhone()
+    const desktopLike = !(PHONE_LAYOUT.test(route) || IS_LANDING) && isPhone()
     meta?.setAttribute('content', desktopLike
       ? `width=${DESKTOP_LIKE_WIDTH}, viewport-fit=cover`
       : 'width=device-width, initial-scale=1, viewport-fit=cover')
@@ -56,19 +56,25 @@ function useScrollTop(route: string) {
   }, [route])
 }
 
+/** The service's own pages; on the front-page address these are the only screens. */
+const PLATFORM_ROUTES = ['o-systemie', 'nowy-turniej', 'konto', 'rejestracja']
+
 export function App() {
+  const route = useRoute()
   return (
     <>
-      <SyncBanner />
-      <Screen />
+      {/* The service pages show no tournament, so no connection notices either. */}
+      {!(IS_LANDING || PLATFORM_ROUTES.includes(route)) && <SyncBanner />}
+      <Screen route={route} />
     </>
   )
 }
 
-function Screen() {
-  const route = useRoute()
+function Screen({ route }: { route: string }) {
   useViewport(route)
   useScrollTop(route)
+  // The front page (sportlivearena.com with no tournament) has no tournament screens.
+  if (IS_LANDING && !PLATFORM_ROUTES.includes(route)) return <About />
   const court = /^boisko-(\d+)$/.exec(route)
   if (court) return <Court key={court[1]} court={Number(court[1])} />
   const result = /^wynik-(\d+)$/.exec(route)
@@ -80,8 +86,9 @@ function Screen() {
   if (route === 'admin') return <Admin />
   if (route === 'kartki') return <PrintCards />
   if (route === 'tv') return <Tv />
-  if (route === 'o-systemie' || (IS_LANDING && route === '')) return <About />
+  if (route === 'o-systemie') return <About />
   if (route === 'nowy-turniej') return <NewTournament />
   if (route === 'konto') return <AccountPage />
+  if (route === 'rejestracja') return <AccountPage register />
   return <Public route={route} />
 }

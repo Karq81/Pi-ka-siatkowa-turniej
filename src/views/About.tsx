@@ -1,58 +1,59 @@
 import type { ReactNode } from 'react'
-import logo from '../assets/logo-opty-mielno.png'
-import { BRAND, tournamentUrl } from '../config'
-import { useStore } from '../store/store'
+import { BRAND } from '../config'
+import { SPORTS } from '../logic/sports'
 import { useAccount } from '../store/accounts'
+import { PlatformNav } from './Platform'
 
 /**
- * "O systemie" — a presentation page for SportLiveArena aimed at other organisers, laid out like a
- * product landing page: hero with a phone preview, formats, the problem it solves, three steps,
- * real numbers from Albatros CUP, features, costs, opinions and a call to action.
- * Only true facts go here: no invented statistics, prices or quotes.
+ * The service's front page (sportlivearena.com, and #o-systemie elsewhere): a product
+ * landing page for organisers. Only true facts: no invented statistics, prices or quotes.
  */
 export function About() {
-  const state = useStore()
   const account = useAccount()
-  const teams = state.teams.length || 58
-  const courts = state.tournament.courts || 9
-  const matches = state.matches.length || 159
-  const live = `${tournamentUrl()}#na-zywo`
+  const start = account.status === 'signed-in' ? '#nowy-turniej' : '#rejestracja'
+  const disciplines = SPORTS.filter((s) => !s.custom)
 
   return (
     <div className="ab">
-      <nav className="ab-top">
-        <div className="ab-wrap ab-top-inner">
-          <b className="ab-brand">{BRAND}</b>
-          <a className="ab-btn ghost ab-login" href="#konto">{account.status === 'signed-in' ? 'Moje konto' : 'Zaloguj się'}</a>
-        </div>
-      </nav>
+      <PlatformNav />
       <header className="ab-hero">
-        <div className="ab-wrap ab-hero-grid">
-          <div>
-            <p className="ab-badge">Dla organizatorów turniejów sportowych</p>
+        <div className="ab-hero-bg" aria-hidden="true" />
+        <div className="pf-wrap ab-hero-grid">
+          <div className="ab-hero-text">
+            <p className="ab-badge"><span className="ab-dot" /> Wyniki na żywo · dla organizatorów turniejów</p>
             <h1>
-              Twój turniej na żywo w telefonie <span>każdego rodzica i trenera.</span>
+              Twój turniej na żywo <span>w telefonie każdego kibica.</span>
             </h1>
             <p className="ab-lead">
-              {BRAND} to strona Twojego turnieju: grupy, terminarz, tabele i wyniki, które sędziowie wpisują prosto z boiska, kortu czy stołu.
-              Kibice widzą wszystko od razu, bez instalowania aplikacji i bez zakładania kont.
+              {BRAND} to strona Twojego turnieju: grupy, terminarz, tabele i wyniki, które sędziowie wpisują prosto z
+              boiska, kortu czy stołu. Kibice widzą wszystko od razu, bez instalowania aplikacji.
             </p>
             <ul className="ab-checks">
-              <li>Działa w przeglądarce, wystarczy link lub kod QR</li>
+              <li>Działa w przeglądarce: wystarczy link lub kod QR</li>
               <li>Wynik na stronie kilka sekund po końcu meczu</li>
-              <li>Ponad 25 dyscyplin: siatkówka, piłka nożna, koszykówka, tenis, padel, squash, badminton, ping-pong…</li>
+              <li>{disciplines.length} dyscyplin z gotowymi zasadami, a do tego dowolna inna</li>
             </ul>
             <div className="ab-cta">
-              <a className="ab-btn primary" href="#nowy-turniej">Załóż turniej za darmo</a>
-              <a className="ab-btn ghost" href={live}>Zobacz turniej na żywo</a>
+              <a className="ab-btn primary" href={start}>Załóż turniej za darmo</a>
+              <a className="ab-btn light" href="#jak-to-dziala">Jak to działa?</a>
             </div>
           </div>
-          <PhonePreview />
+          <HeroArt />
         </div>
       </header>
 
+      <section className="ab-sports" aria-label="Dyscypliny">
+        <div className="pf-wrap">
+          <p className="ab-sports-title">Gotowe wzorce turniejów</p>
+          <ul className="ab-chips">
+            {disciplines.map((s) => <li key={s.id}>{s.label}</li>)}
+            <li className="more">+ dowolna inna dyscyplina</li>
+          </ul>
+        </div>
+      </section>
+
       <section className="ab-sec">
-        <div className="ab-wrap">
+        <div className="pf-wrap">
           <h2>Dla każdego formatu</h2>
           <p className="ab-sub">Od jednodniowego turnieju po weekendowy festiwal na kilkunastu boiskach.</p>
           <div className="ab-grid3">
@@ -70,9 +71,9 @@ export function About() {
       </section>
 
       <section className="ab-sec alt">
-        <div className="ab-wrap">
+        <div className="pf-wrap">
           <h2>Wyniki na kartce, tabela w Excelu, pytania na WhatsAppie?</h2>
-          <p className="ab-sub">Tak wygląda większość turniejów młodzieżowych. I to kosztuje.</p>
+          <p className="ab-sub">Tak wygląda większość turniejów amatorskich i młodzieżowych. I to kosztuje.</p>
           <div className="ab-grid3">
             <Card icon="⏳" title="Organizator bez przerwy">
               Zamiast pilnować turnieju, przepisujesz wyniki i odpowiadasz, kto gra następny.
@@ -87,12 +88,12 @@ export function About() {
         </div>
       </section>
 
-      <section className="ab-sec">
-        <div className="ab-wrap">
+      <section className="ab-sec" id="jak-to-dziala">
+        <div className="pf-wrap">
           <h2>Od listy drużyn do turnieju na żywo</h2>
           <div className="ab-steps">
-            <Step n={1} title="Wpisz drużyny i grupy">
-              Kategorie, grupy i boiska ustawiasz w panelu organizatora. Terminarz układa się sam.
+            <Step n={1} title="Załóż konto i turniej">
+              Wybierasz dyscyplinę, liczbę boisk i kategorie. Wpisujesz drużyny, losujesz grupy, terminarz układa się sam.
             </Step>
             <Step n={2} title="Sędziowie wpisują wyniki">
               Każde boisko ma swój link i klucz. Sędzia wpisuje wynik w telefonie, pomyłkę poprawia jednym kliknięciem.
@@ -104,21 +105,8 @@ export function About() {
         </div>
       </section>
 
-      <section className="ab-stats">
-        <div className="ab-wrap">
-          <h2>Pierwszy sprawdzian: Albatros CUP 2026</h2>
-          <p className="ab-sub">Turniej mini siatkówki dziewcząt, Mielno, 23–25 października 2026.</p>
-          <div className="ab-grid4">
-            <Stat value={teams} label="drużyn" />
-            <Stat value={courts} label="boisk jednocześnie" />
-            <Stat value={matches} label="meczów w grupach" />
-            <Stat value="2" label="kategorie: dwójki i trójki" />
-          </div>
-        </div>
-      </section>
-
-      <section className="ab-sec">
-        <div className="ab-wrap">
+      <section className="ab-sec alt">
+        <div className="pf-wrap">
           <h2>Co dostajesz</h2>
           <div className="ab-grid3">
             <Card icon="📺" title="Na żywo">
@@ -136,73 +124,92 @@ export function About() {
             <Card icon="🔳" title="Kod QR i udostępnianie">
               Jeden kod na plakacie w hali i link do wysłania rodzicom na grupę.
             </Card>
-            <Card icon="🍽️" title="Informacje dla drużyn">
-              Program, posiłki, zakwaterowanie i opłaty w jednym miejscu, obok wyników.
+            <Card icon="👤" title="Konto organizatora">
+              Wszystkie Twoje turnieje w jednym miejscu, wejście do panelu jednym kliknięciem.
             </Card>
           </div>
         </div>
       </section>
 
-      <section className="ab-sec alt">
-        <div className="ab-wrap">
+      <section className="ab-sec">
+        <div className="pf-wrap">
           <h2>Ile to kosztuje?</h2>
           <p className="ab-sub">
-            Strona działa na darmowych planach Vercel i Google Firebase. Turniej wielkości Albatros CUP mieści się w
-            dziennych limitach, a przy większym ruchu płaci się tylko za faktyczne zużycie, zwykle kilka złotych za
-            weekend.
+            Na start za darmo. Strona działa na infrastrukturze Vercel i Google Firebase, a zwykły weekendowy turniej
+            mieści się w darmowych limitach.
           </p>
         </div>
       </section>
 
-      <section className="ab-sec" id="opinie">
-        <div className="ab-wrap">
-          <h2>Opinie organizatorów i kibiców</h2>
-          <p className="ab-sub">Pierwsze opinie zbierzemy po Albatros CUP 2026. Tu pojawią się ich słowa.</p>
-        </div>
-      </section>
-
       <section className="ab-final">
-        <div className="ab-wrap ab-final-inner">
-          <img src={logo} alt="UKS Opty Mielno" width={72} height={74} />
-          <div>
-            <h2>Stworzone w Mielnie, dla klubów sportowych</h2>
-            <p>
-              {BRAND} powstał na potrzeby turnieju Albatros CUP organizowanego przez UKS Opty Mielno. Chcesz
-              takiej strony dla swojego turnieju? Załóż go w kilka minut, za darmo.
-            </p>
-            <div className="ab-cta">
-              <a className="ab-btn primary" href="#nowy-turniej">Załóż turniej</a>
-              <a className="ab-btn ghost" href={live}>Zobacz turniej na żywo</a>
+        <div className="pf-wrap">
+          <div className="ab-final-inner">
+            <div>
+              <h2>Gotowy na swój turniej?</h2>
+              <p>Załóż konto, wybierz dyscyplinę i po kilku minutach wyślij kibicom link.</p>
             </div>
+            <a className="ab-btn primary" href={start}>Załóż turniej za darmo</a>
           </div>
         </div>
       </section>
+
+      <footer className="ab-foot">
+        <div className="pf-wrap">© {new Date().getFullYear()} {BRAND}</div>
+      </footer>
     </div>
   )
 }
 
-/** A still picture of the live board in a phone frame; it shows what fans see, not real data. */
-function PhonePreview() {
+/**
+ * Hero picture: a floodlit pitch, a phone with the live board, and floating results
+ * from different sports. Example data only.
+ */
+function HeroArt() {
   return (
-    <div className="ab-phone" aria-label="Przykład ekranu dla kibiców">
-      <div className="ab-phone-screen">
-        <p className="ab-ph-title">Albatros CUP · Na żywo</p>
-        <div className="ab-ph-card">
-          <p className="ab-ph-top"><span className="ab-live">● NA ŻYWO</span> Boisko 3 · Grupa 3</p>
-          <div className="ab-ph-row"><span>Drużyna A</span><b>12</b></div>
-          <div className="ab-ph-row"><span>Drużyna B</span><b>9</b></div>
-        </div>
-        <div className="ab-ph-card">
-          <p className="ab-ph-top">Boisko 5 · następny mecz</p>
-          <p className="ab-ph-soon">Zaczyna się za 4 min</p>
-        </div>
-        <div className="ab-ph-table">
-          <p className="ab-ph-top">Tabela · Grupa 3</p>
-          {['Drużyna A', 'Drużyna B', 'Drużyna C'].map((t, i) => (
-            <div className="ab-ph-row" key={t}><span>{i + 1}. {t}</span><b>{6 - 2 * i} pkt</b></div>
-          ))}
+    <div className="ab-art" aria-label="Przykład ekranu dla kibiców">
+      <svg className="ab-pitch" viewBox="0 0 400 260" aria-hidden="true">
+        <defs>
+          <linearGradient id="pitch-g" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stopColor="#2f8f5b" />
+            <stop offset="1" stopColor="#1f6b43" />
+          </linearGradient>
+        </defs>
+        <rect x="10" y="10" width="380" height="240" rx="14" fill="url(#pitch-g)" />
+        {Array.from({ length: 6 }, (_, i) => (
+          <rect key={i} x={10 + i * 63.3} y="10" width="31.7" height="240" fill="#fff" opacity="0.05" />
+        ))}
+        <g fill="none" stroke="#fff" strokeWidth="2.5" opacity="0.85">
+          <rect x="26" y="26" width="348" height="208" rx="4" />
+          <line x1="200" y1="26" x2="200" y2="234" />
+          <circle cx="200" cy="130" r="34" />
+          <rect x="26" y="82" width="52" height="96" />
+          <rect x="322" y="82" width="52" height="96" />
+        </g>
+        <circle cx="200" cy="130" r="4" fill="#fff" />
+      </svg>
+      <div className="ab-phone">
+        <div className="ab-phone-screen">
+          <p className="ab-ph-title">Turniej · Na żywo</p>
+          <div className="ab-ph-card">
+            <p className="ab-ph-top"><span className="ab-live">● NA ŻYWO</span> Boisko 2 · Grupa A</p>
+            <div className="ab-ph-row"><span>Orły</span><b>2</b></div>
+            <div className="ab-ph-row"><span>Sokoły</span><b>1</b></div>
+          </div>
+          <div className="ab-ph-card">
+            <p className="ab-ph-top">Kort 1 · następny mecz</p>
+            <p className="ab-ph-soon">Zaczyna się za 4 min</p>
+          </div>
+          <div className="ab-ph-table">
+            <p className="ab-ph-top">Tabela · Grupa A</p>
+            {['Orły', 'Sokoły', 'Jastrzębie'].map((t, i) => (
+              <div className="ab-ph-row" key={t}><span>{i + 1}. {t}</span><b>{6 - 3 * i} pkt</b></div>
+            ))}
+          </div>
         </div>
       </div>
+      <div className="ab-float f1"><span>🎾 Padel</span><b>6:4 3:6 10:8</b></div>
+      <div className="ab-float f2"><span>🏐 Siatkówka</span><b>2:1</b></div>
+      <div className="ab-float f3"><span>🏀 Koszykówka</span><b>78:74</b></div>
     </div>
   )
 }
@@ -223,15 +230,6 @@ function Step({ n, title, children }: { n: number; title: string; children: Reac
       <span className="ab-step-n">{n}</span>
       <h3>{title}</h3>
       <p>{children}</p>
-    </div>
-  )
-}
-
-function Stat({ value, label }: { value: number | string; label: string }) {
-  return (
-    <div className="ab-stat">
-      <b>{value}</b>
-      <span>{label}</span>
     </div>
   )
 }

@@ -4,6 +4,7 @@ import { MAX_COURTS, saveDraft, slugify } from '../logic/newTournament'
 import { describeSets, SPORTS, sportById, sportRules } from '../logic/sports'
 import { store } from '../store/store'
 import { useAccount } from '../store/accounts'
+import { PlatformNav } from './Platform'
 
 const GROUPS = [...new Set(SPORTS.map((s) => s.group))]
 
@@ -68,7 +69,9 @@ export function NewTournament() {
   }
 
   return (
-    <div className="page new-t">
+    <div className="pf-page">
+      <PlatformNav />
+      <main className="pf-wrap pf-main new-t">
       <header className="org-head">
         <div>
           <p className="eyebrow">Nowy turniej</p>
@@ -160,6 +163,7 @@ export function NewTournament() {
           W następnym kroku ustawisz PIN sędziego głównego, a potem wpiszesz zespoły i rozlosujesz grupy.
         </p>
       </form>
+      </main>
     </div>
   )
 }
