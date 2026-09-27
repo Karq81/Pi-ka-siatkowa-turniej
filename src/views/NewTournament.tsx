@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { TOURNAMENT_SLUG } from '../config'
+import { ALBATROS_ALIAS, TOURNAMENT_SLUG } from '../config'
 import { MAX_COURTS, saveDraft, slugify } from '../logic/newTournament'
 import { describeSets, SPORTS, sportById, sportRules } from '../logic/sports'
 import { store } from '../store/store'
@@ -48,7 +48,7 @@ export function NewTournament() {
     setBusy(true)
     setError('')
     try {
-      if (address === 'main' || await store.tournamentExists(address)) {
+      if (address === 'main' || address === ALBATROS_ALIAS || await store.tournamentExists(address)) {
         setError('Ten adres jest już zajęty. Zmień nazwę albo adres turnieju.')
         return
       }

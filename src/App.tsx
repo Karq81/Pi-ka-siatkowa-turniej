@@ -1,4 +1,5 @@
 import { About } from './views/About'
+import { IS_LANDING } from './config'
 import { NewTournament } from './views/NewTournament'
 import { Admin, PrintCards } from './views/Admin'
 import { Court, CourtPicker } from './views/Court'
@@ -28,7 +29,7 @@ function useViewport(route: string) {
   useEffect(() => {
     const meta = document.querySelector('meta[name="viewport"]')
     const root = document.documentElement
-    const desktopLike = !PHONE_LAYOUT.test(route) && isPhone()
+    const desktopLike = !(PHONE_LAYOUT.test(route) || (IS_LANDING && route === '')) && isPhone()
     meta?.setAttribute('content', desktopLike
       ? `width=${DESKTOP_LIKE_WIDTH}, viewport-fit=cover`
       : 'width=device-width, initial-scale=1, viewport-fit=cover')
@@ -78,7 +79,7 @@ function Screen() {
   if (route === 'admin') return <Admin />
   if (route === 'kartki') return <PrintCards />
   if (route === 'tv') return <Tv />
-  if (route === 'o-systemie') return <About />
+  if (route === 'o-systemie' || (IS_LANDING && route === '')) return <About />
   if (route === 'nowy-turniej') return <NewTournament />
   return <Public route={route} />
 }

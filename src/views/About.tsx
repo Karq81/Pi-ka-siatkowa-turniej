@@ -1,10 +1,10 @@
 import type { ReactNode } from 'react'
 import logo from '../assets/logo-opty-mielno.png'
-import { tournamentUrl } from '../config'
+import { BRAND, tournamentUrl } from '../config'
 import { useStore } from '../store/store'
 
 /**
- * "O systemie" — a presentation page for SiatkaLive aimed at other organisers, laid out like a
+ * "O systemie" — a presentation page for SportLiveArena aimed at other organisers, laid out like a
  * product landing page: hero with a phone preview, formats, the problem it solves, three steps,
  * real numbers from Albatros CUP, features, costs, opinions and a call to action.
  * Only true facts go here: no invented statistics, prices or quotes.
@@ -21,17 +21,18 @@ export function About() {
       <header className="ab-hero">
         <div className="ab-wrap ab-hero-grid">
           <div>
-            <p className="ab-badge">Dla organizatorów turniejów siatkówki</p>
+            <p className="ab-badge">Dla organizatorów turniejów sportowych</p>
             <h1>
               Twój turniej na żywo w telefonie <span>każdego rodzica i trenera.</span>
             </h1>
             <p className="ab-lead">
-              SiatkaLive to strona z grupami, terminarzem, tabelami i wynikami, które sędziowie wpisują prosto z boiska.
+              {BRAND} to strona Twojego turnieju: grupy, terminarz, tabele i wyniki, które sędziowie wpisują prosto z boiska, kortu czy stołu.
               Kibice widzą wszystko od razu, bez instalowania aplikacji i bez zakładania kont.
             </p>
             <ul className="ab-checks">
               <li>Działa w przeglądarce, wystarczy link lub kod QR</li>
-              <li>Wynik na stronie kilka sekund po ostatniej piłce</li>
+              <li>Wynik na stronie kilka sekund po końcu meczu</li>
+              <li>Ponad 25 dyscyplin: siatkówka, piłka nożna, koszykówka, tenis, padel, squash, badminton, ping-pong…</li>
             </ul>
             <div className="ab-cta">
               <a className="ab-btn primary" href="#nowy-turniej">Załóż turniej za darmo</a>
@@ -47,14 +48,14 @@ export function About() {
           <h2>Dla każdego formatu</h2>
           <p className="ab-sub">Od jednodniowego turnieju po weekendowy festiwal na kilkunastu boiskach.</p>
           <div className="ab-grid3">
-            <Card icon="🏐" title="Mini siatkówka">
-              Dwójki, trójki i czwórki, sety do 15 lub 25 punktów, dowolna liczba boisk.
+            <Card icon="🏅" title="Każda dyscyplina">
+              Sety, gemy z tie-breakiem, bramki albo punkty. Gotowe zasady i punktacja tabeli dla każdego sportu.
             </Card>
             <Card icon="⚡" title="Turniej weekendowy">
               Faza grupowa, drugi etap i finały. Terminarz sam przesuwa się, gdy mecze trwają dłużej.
             </Card>
             <Card icon="🏆" title="Kilka kategorii naraz">
-              Osobne grupy, tabele i boiska dla każdej kategorii, a kibic filtruje tylko swoje drużyny.
+              Osobne grupy i tabele dla każdej kategorii wiekowej, a kibic śledzi tylko swoje drużyny.
             </Card>
           </div>
         </div>
@@ -156,9 +157,9 @@ export function About() {
         <div className="ab-wrap ab-final-inner">
           <img src={logo} alt="UKS Opty Mielno" width={72} height={74} />
           <div>
-            <h2>Stworzone w Mielnie, dla klubów siatkarskich</h2>
+            <h2>Stworzone w Mielnie, dla klubów sportowych</h2>
             <p>
-              SiatkaLive powstał na potrzeby turnieju Albatros CUP organizowanego przez UKS Opty Mielno. Chcesz
+              {BRAND} powstał na potrzeby turnieju Albatros CUP organizowanego przez UKS Opty Mielno. Chcesz
               takiej strony dla swojego turnieju? Załóż go w kilka minut, za darmo.
             </p>
             <div className="ab-cta">

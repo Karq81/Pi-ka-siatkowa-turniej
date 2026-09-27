@@ -42,14 +42,32 @@ function tournamentFromUrl(): string | null {
 /** Allowed tournament addresses: lowercase letters, digits and hyphens. */
 export const TOURNAMENT_SLUG = /^[a-z0-9](?:[a-z0-9-]{1,38}[a-z0-9])$/
 
-const urlTournament = tournamentFromUrl()
+/** The service's name, shown on its front page. */
+export const BRAND = 'SportLiveArena'
+
+/**
+ * The service's own domains (sportlivearena.com, .pl, .online). There the front page
+ * presents the service, and Albatros CUP opens as ?t=albatros. On the old address
+ * (pi-ka-siatkowa-turniej.vercel.app) the front page stays Albatros CUP.
+ */
+export const IS_PLATFORM_HOST = typeof location !== 'undefined' && /(^|\.)sportlivearena\.(com|pl|online)$/.test(location.hostname)
+
+/** Address of Albatros CUP on the service's domains; no new tournament may take it. */
+export const ALBATROS_ALIAS = 'albatros'
+
+const urlParam = tournamentFromUrl()
+const urlTournament = urlParam === ALBATROS_ALIAS ? null : urlParam
 
 export const TOURNAMENT_ID: string = urlTournament ?? (env.VITE_TOURNAMENT_ID || 'main')
 
 /** The site's own tournament (Albatros CUP), with its invitation, fixed groups and second stage. */
 export const IS_ALBATROS = urlTournament === null
 
+/** The service's front page: its own domain with no tournament chosen. */
+export const IS_LANDING = IS_PLATFORM_HOST && urlParam === null
+
 /** Base of this tournament's links, e.g. https://…/?t=halowka-mielno (no hash). */
 export function tournamentUrl(): string {
-  return `${location.origin}${location.pathname}${urlTournament ? `?t=${urlTournament}` : ''}`
+  const t = urlTournament ?? (IS_PLATFORM_HOST ? ALBATROS_ALIAS : null)
+  return `${location.origin}${location.pathname}${t ? `?t=${t}` : ''}`
 }

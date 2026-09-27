@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { BRAND, IS_PLATFORM_HOST } from '../config'
 import { formatRatio, isScore, scoreUnit, standings, tally } from '../logic/scoring'
 import { useFavorites } from '../favorites'
 import { courtBoard, upcomingMatches } from '../logic/courtBoard'
@@ -57,7 +58,7 @@ export function Public({ route }: { route: string }) {
       </main>
       {/* Public pages are view-only: the organiser panel lives at #panel and is not linked from here. */}
       <footer className="footer muted small">
-        Wyniki odświeżają się same, nie trzeba przeładowywać strony. · <a href="#o-systemie">O systemie SiatkaLive</a>
+        Wyniki odświeżają się same, nie trzeba przeładowywać strony. · <a href={IS_PLATFORM_HOST ? '/' : '#o-systemie'}>O systemie {BRAND}</a>
       </footer>
     </div>
   )
