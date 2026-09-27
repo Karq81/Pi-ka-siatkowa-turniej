@@ -3,12 +3,13 @@ import { scheduleOf } from '../logic/newTournament'
 import { clubOf } from '../logic/draw'
 import { retimeSchedule } from '../logic/schedule'
 import { store, useSession, useStore, useSync } from '../store/store'
-import { AdminPinForm, ResetPanel, setupTournament } from './Admin'
+import { AdminPinForm, PinSettings, ResetPanel, setupTournament } from './Admin'
 import type { Category, State } from '../types'
 import { courtLabel, formatDay, formatTime, PinGate, useLookups } from '../ui'
 import { CourtList } from './Court'
 import { Setup } from './Setup'
-import { IS_ALBATROS } from '../config'
+import { IS_ALBATROS, IS_PLATFORM_HOST } from '../config'
+import { useAccount } from '../store/accounts'
 import { Competition } from './Competition'
 
 const TABS = [
@@ -26,12 +27,17 @@ const TABS = [
 export function Organizer({ route }: { route: string }) {
   const state = useStore()
   const tab = TABS.some((t) => t.route === route) ? route : 'panel'
-  const tabs = IS_ALBATROS ? TABS : TABS.map((t) => (t.route === 'panel' ? { ...t, label: '1. Zespoły i losowanie' } : t))
+  const account = useAccount()
+  const tabs = IS_ALBATROS ? TABS : TABS.map((t) => (t.route === 'panel' ? { ...t, label: '1. Zespoły i losowanie' }
+    : t.route === 'panel-wiecej' ? { ...t, label: 'Ustawienia i PIN' } : t))
   return (
     <div className="page page-wide">
       <header className="org-head">
         <div>
-          <p className="eyebrow">Panel organizatora</p>
+          <p className="eyebrow">
+            Panel organizatora
+            {account.status === 'signed-in' && <> · <a className="plain-link" href={IS_PLATFORM_HOST ? '/#moje-turnieje' : '#moje-turnieje'}>← Moje turnieje</a></>}
+          </p>
           <h1>{state.tournament.name}</h1>
         </div>
         <nav className="tabs" aria-label="Panel organizatora">
@@ -52,6 +58,8 @@ export function Organizer({ route }: { route: string }) {
         </>
       )}
       {tab === 'panel-wiecej' && <More />}
+      {/* Albatros CUP keeps its PIN 1234 (the organisers agreed on it); other tournaments can change theirs. */}
+      {tab === 'panel-wiecej' && !IS_ALBATROS && <PinGate label="Zmiana PIN-u (sędzia główny)"><PinSettings /></PinGate>}
     </div>
   )
 }

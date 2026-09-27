@@ -84,7 +84,7 @@ export function NewTournament() {
         </p>
       )}
       {account.status === 'signed-in' && (
-        <p className="muted">Turniej zapisze się na koncie <b>{account.account.name || account.account.login}</b>. <a href="#konto">Moje konto</a></p>
+        <p className="muted">Turniej zapisze się na koncie <b>{account.account.name || account.account.login}</b>. <a href="#moje-turnieje">Moje turnieje</a></p>
       )}
       <form className="panel new-t-form" onSubmit={submit}>
         <label>Dyscyplina

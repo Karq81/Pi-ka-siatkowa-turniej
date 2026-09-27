@@ -33,6 +33,7 @@ export function PlatformNav() {
         <div className="pf-nav-actions">
           {account.status === 'signed-in' ? (
             <>
+              <a className="pf-btn ghost" href="#moje-turnieje">Moje turnieje</a>
               <a className="pf-btn ghost" href="#konto">Moje konto</a>
               <button className="pf-btn ghost" onClick={() => void signOutAccount()}>Wyloguj</button>
             </>

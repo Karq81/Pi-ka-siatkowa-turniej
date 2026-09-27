@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { ALBATROS_ALIAS, IS_PLATFORM_HOST } from '../config'
 import {
-  accountError, changePassword, createAccount, LOGIN_PATTERN, signInAccount, useAccount, type Account,
+  accountError, changePassword, createAccount, LOGIN_PATTERN, saveProfile, signInAccount, useAccount, type Account,
+  type AccountProfile,
 } from '../store/accounts'
 import { PlatformNav, Wordmark } from './Platform'
 
@@ -12,10 +13,12 @@ function tournamentLink(id: string, hash = ''): string {
 }
 
 /**
- * "Moje konto" (#konto) and "Załóż konto" (#rejestracja): signing in or up next to a short
- * pitch; once signed in, the account's tournaments.
+ * The organiser's pages. Signed out: signing in (#konto, #moje-turnieje) or up (#rejestracja)
+ * next to a short pitch. Signed in: "Moje turnieje" (#moje-turnieje) or the account's
+ * details and password (#konto).
  */
-export function AccountPage({ register = false }: { register?: boolean }) {
+export function AccountPage({ view }: { view: 'konto' | 'rejestracja' | 'moje-turnieje' }) {
+  const register = view === 'rejestracja'
   const account = useAccount()
   return (
     <div className="pf-page">
@@ -37,7 +40,9 @@ export function AccountPage({ register = false }: { register?: boolean }) {
             <SignIn key={register ? 'new' : 'in'} initial={register ? 'new' : 'in'} />
           </div>
         )}
-        {account.status === 'signed-in' && <MyTournaments account={account.account} />}
+        {account.status === 'signed-in' && (view === 'konto'
+          ? <Profile key={`${account.account.uid}-${account.account.loaded ? 1 : 0}`} account={account.account} />
+          : <MyTournaments account={account.account} />)}
       </main>
     </div>
   )
@@ -63,6 +68,7 @@ function SignIn({ initial }: { initial: 'in' | 'new' }) {
     try {
       if (creating) await createAccount(login, password, name.trim())
       else await signInAccount(login, password)
+      location.hash = 'moje-turnieje'
     } catch (err) {
       setError(accountError(err))
     } finally {
@@ -109,9 +115,9 @@ function MyTournaments({ account }: { account: Account }) {
     <>
       <header className="acc-head">
         <div>
-          <p className="eyebrow">Moje konto</p>
+          <p className="eyebrow">Moje turnieje</p>
           <h1>{account.name || account.login}</h1>
-          <span className="muted">Login: {account.login}</span>
+          <span className="muted">Login: {account.login} · <a href="#konto">Dane konta i hasło</a></span>
         </div>
         <a className="btn btn-primary btn-lg" href="#nowy-turniej">+ Załóż nowy turniej</a>
       </header>
@@ -133,7 +139,73 @@ function MyTournaments({ account }: { account: Account }) {
           ))}
         </div>
       </section>
-      <ChangePassword />
+    </>
+  )
+}
+
+const PROFILE_FIELDS: { key: Exclude<keyof AccountProfile, 'name' | 'about'>; label: string; type?: string; placeholder?: string }[] = [
+  { key: 'contactName', label: 'Osoba kontaktowa', placeholder: 'np. Krzysztof Rywak' },
+  { key: 'phone', label: 'Telefon', type: 'tel', placeholder: 'np. 600 100 200' },
+  { key: 'email', label: 'E-mail kontaktowy', type: 'email', placeholder: 'np. klub@example.pl' },
+  { key: 'city', label: 'Miejscowość', placeholder: 'np. Mielno' },
+  { key: 'website', label: 'Strona internetowa', type: 'url', placeholder: 'np. https://klub.pl' },
+]
+
+/** "Moje konto": the account's details (all but the name optional) and its password. */
+function Profile({ account }: { account: Account }) {
+  const [form, setForm] = useState<AccountProfile>({
+    name: account.name ?? '', contactName: account.contactName ?? '', phone: account.phone ?? '',
+    email: account.email ?? '', city: account.city ?? '', website: account.website ?? '', about: account.about ?? '',
+  })
+  const [msg, setMsg] = useState('')
+  const [busy, setBusy] = useState(false)
+  const set = (key: keyof AccountProfile, value: string) => { setForm((f) => ({ ...f, [key]: value })); setMsg('') }
+  const save = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setBusy(true)
+    try {
+      await saveProfile({ ...form, name: form.name.trim() })
+      setMsg('Zapisano.')
+    } catch {
+      setMsg('Nie udało się zapisać. Sprawdź internet.')
+    } finally {
+      setBusy(false)
+    }
+  }
+  return (
+    <>
+      <header className="acc-head">
+        <div>
+          <p className="eyebrow">Moje konto</p>
+          <h1>{account.name || account.login}</h1>
+          <span className="muted">Login: <b>{account.login}</b> · <a href="#moje-turnieje">Moje turnieje ({account.tournaments.length})</a></span>
+        </div>
+      </header>
+      <div className="acc-cols">
+        <form className="panel acc-form" onSubmit={save}>
+          <h2>Dane konta</h2>
+          <p className="muted small">Widoczne tylko dla Ciebie. Wypełnij, co chcesz, poza nazwą wszystko jest nieobowiązkowe.</p>
+          <label>Nazwa klubu lub organizatora
+            <input value={form.name} onChange={(e) => set('name', e.target.value)} required />
+          </label>
+          <div className="acc-form-grid">
+            {PROFILE_FIELDS.map((f) => (
+              <label key={f.key}>{f.label}
+                <input type={f.type ?? 'text'} value={form[f.key] ?? ''} placeholder={f.placeholder}
+                  onChange={(e) => set(f.key, e.target.value)} />
+              </label>
+            ))}
+          </div>
+          <label>O klubie / notatki
+            <textarea rows={3} value={form.about ?? ''} onChange={(e) => set('about', e.target.value)} />
+          </label>
+          <div className="actions">
+            <button className="btn btn-primary" type="submit" disabled={busy || !form.name.trim()}>{busy ? 'Zapisuję…' : 'Zapisz dane'}</button>
+            {msg && <span className={msg === 'Zapisano.' ? 'ok' : 'error'}>{msg}</span>}
+          </div>
+        </form>
+        <ChangePassword />
+      </div>
     </>
   )
 }
@@ -151,7 +223,9 @@ function ChangePassword() {
   if (!open) {
     return (
       <section className="panel account-pass">
-        <button className="btn" onClick={() => { setOpen(true); setMsg(null) }}>Zmień hasło</button>
+        <h2>Hasło do konta</h2>
+        <p className="muted small">Hasło, którym logujesz się na konto SportLiveArena. To nie jest PIN turnieju: PIN zmienisz w panelu organizatora turnieju.</p>
+        <button className="btn" onClick={() => { setOpen(true); setMsg(null) }}>Zmień hasło do konta</button>
         {msg?.ok && <p className="ok">{msg.text}</p>}
       </section>
     )
@@ -174,7 +248,7 @@ function ChangePassword() {
   }
   return (
     <form className="panel account-form account-pass" onSubmit={submit}>
-      <h2>Zmień hasło</h2>
+      <h2>Zmień hasło do konta</h2>
       <label>Obecne hasło
         <input type="password" value={current} onChange={(e) => setCurrent(e.target.value)} autoComplete="current-password" />
       </label>

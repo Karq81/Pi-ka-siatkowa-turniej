@@ -1,7 +1,7 @@
 import QRCode from 'qrcode'
 import { useEffect, useState } from 'react'
 import { IS_ALBATROS, TOURNAMENT_ID, tournamentUrl } from '../config'
-import { addTournamentToAccount } from '../store/accounts'
+import { addTournamentToAccount, updateTournamentPin } from '../store/accounts'
 import { initialState, restoreTimetable } from '../logic/demo'
 import { replanTimetable } from '../logic/newTournament'
 import { resetResults } from '../logic/draw'
@@ -323,11 +323,18 @@ export function AdminPinForm({ onSave, saveLabel }: { onSave: (pin: string) => P
 
 const ALLOW_PIN_CHANGE = false
 
-function PinSettings() {
+/**
+ * Changing the chief referee's PIN. Court keys stay. The organiser's account keeps the new
+ * PIN, so opening the tournament from "Moje turnieje" still logs in.
+ */
+export function PinSettings() {
   return (
     <section className="panel">
-      <h2>PIN sędziego głównego</h2>
-      <p className="muted">Otwiera ten panel i wszystkie boiska. Klucze boisk są w zakładce „Klucze boisk”.</p>
+      <h2>PIN sędziego głównego (panel organizatora)</h2>
+      <p className="muted">
+        Otwiera ten panel i wszystkie boiska. Po zmianie stary PIN przestaje działać na wszystkich telefonach. Klucze
+        sędziów boisk się nie zmieniają. To nie jest hasło do konta.
+      </p>
       <AdminPinForm
         saveLabel="Zmień PIN"
         onSave={async (adminPin) => {
@@ -335,6 +342,7 @@ function PinSettings() {
           if (!pins) throw new Error('no pins')
           const courts = courtKeys(store.get().tournament.courts, { adminPin, courts: pins.courts })
           await store.setPins({ adminPin, courts })
+          await updateTournamentPin(TOURNAMENT_ID, adminPin).catch(() => {})
         }}
       />
     </section>

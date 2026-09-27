@@ -22,10 +22,23 @@ export interface AccountTournament {
   pin: string
 }
 
-export interface Account {
-  uid: string
-  login: string
+/** Details the organiser may fill in on "Moje konto"; all optional. */
+export interface AccountProfile {
+  /** Club or organiser name, shown at the top of the account. */
   name: string
+  contactName?: string
+  phone?: string
+  email?: string
+  city?: string
+  website?: string
+  about?: string
+}
+
+export interface Account extends AccountProfile {
+  uid: string
+  /** False until the account's details have been read from the database. */
+  loaded?: boolean
+  login: string
   tournaments: AccountTournament[]
 }
 
@@ -70,7 +83,7 @@ if (firebaseHandles) {
     set({ status: 'signed-in', account: base })
     stopDoc = onSnapshot(doc(db, 'accounts', user.uid), (snap) => {
       const data = snap.data() as Partial<Account> | undefined
-      const account = { ...base, ...data, uid: user.uid, tournaments: data?.tournaments ?? [] }
+      const account = { ...base, ...data, uid: user.uid, tournaments: data?.tournaments ?? [], loaded: true }
       set({ status: 'signed-in', account })
       // Opening one of the account's tournaments logs in as its chief referee.
       const own = account.tournaments.find((t) => t.id === TOURNAMENT_ID)
@@ -140,6 +153,24 @@ export async function signOutAccount() {
   store.logout()
   await signOut(auth)
   await signInAnonymously(auth)
+}
+
+/** Saves the account's details (name, contact…). */
+export async function saveProfile(profile: AccountProfile) {
+  const account = currentAccount()
+  if (!account || !firebaseHandles) return
+  const { auth, db } = firebaseHandles
+  await setDoc(doc(db, 'accounts', account.uid), profile, { merge: true })
+  if (auth.currentUser && profile.name !== account.name) await updateProfile(auth.currentUser, { displayName: profile.name })
+}
+
+/** After a PIN change: the account keeps the tournament's new PIN, so opening it still logs in. */
+export async function updateTournamentPin(id: string, pin: string) {
+  const account = currentAccount()
+  if (!account || !firebaseHandles) return
+  if (!account.tournaments.some((t) => t.id === id)) return
+  const tournaments = account.tournaments.map((t) => (t.id === id ? { ...t, pin } : t))
+  await updateDoc(doc(firebaseHandles.db, 'accounts', account.uid), { tournaments })
 }
 
 /** Remembers a tournament (and its PIN) on the signed-in account. */
