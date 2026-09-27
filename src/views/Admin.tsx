@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { IS_ALBATROS, TOURNAMENT_ID, tournamentUrl } from '../config'
 import { addTournamentToAccount, updateTournamentPin } from '../store/accounts'
 import { initialState, restoreTimetable } from '../logic/demo'
-import { replanTimetable } from '../logic/newTournament'
+import { blankState, readDraft, replanTimetable } from '../logic/newTournament'
 import { resetResults } from '../logic/draw'
 import { tally } from '../logic/scoring'
 import { store, useStore, useSync } from '../store/store'
@@ -362,7 +362,9 @@ export async function setupTournament(adminPin: string) {
     if (!(await store.login(adminPin))) throw e
   }
   // Albatros CUP: its fixed groups and timetable; a new tournament: its settings, no teams yet.
-  await store.replace(IS_ALBATROS ? initialState() : store.get())
+  // (Built from the draft again: the empty database has meanwhile replaced the draft's matches.)
+  const draft = IS_ALBATROS ? null : readDraft(TOURNAMENT_ID)
+  await store.replace(IS_ALBATROS ? initialState() : draft ? blankState(draft) : store.get())
   // A signed-in organiser keeps the tournament (and its PIN) on their account.
   await addTournamentToAccount({ id: TOURNAMENT_ID, name: store.get().tournament.name, pin: adminPin }).catch(() => {})
 }

@@ -179,6 +179,11 @@ export function createFirebaseStore(config: FirebaseOptions, tournamentId: strin
       // Also fills in knockout teams that follow from this result, in one atomic write.
       const changed = applyMatchUpdate(state, id, update)
       if (!changed.length) return
+      // Shown at once, so the next quick tap (+1, +1…) builds on this one instead of on the
+      // state before it; the database snapshot then confirms the same values.
+      const byId = new Map(changed.map((m) => [m.id, m]))
+      state = { ...state, matches: state.matches.map((m) => byId.get(m.id) ?? m) }
+      notify()
       // Each changed match replaces its own entry in its court's sheet; other matches on
       // the sheet (maybe written by another phone at the same time) are left alone.
       const b = writeBatch(db)
