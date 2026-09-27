@@ -117,8 +117,10 @@ export function About() {
         <div className="pf-wrap">
           <h2>Co dostajesz</h2>
           <div className="ab-grid3">
-            <Card icon="📺" title="Na żywo">
-              Wszystkie boiska na jednym ekranie: trwający mecz, wynik i odliczanie do kolejnego.
+            <Card icon="📺" title="Wyniki na żywo">
+              Wszystkie boiska na jednym ekranie. Przy każdym widać, kto teraz gra i w jakim stanie jest mecz (trwa,
+              zakończony, następny). Wynik zmienia się punkt po punkcie, a przed kolejnym meczem jest godzina startu
+              i odliczanie.
             </Card>
             <Card icon="⭐" title="Moje drużyny">
               Kibic zaznacza swoje drużyny, a ich mecze są wyróżnione w terminarzu i na boiskach.
