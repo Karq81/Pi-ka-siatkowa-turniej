@@ -38,9 +38,13 @@ export function About() {
               <a className="ab-btn primary" href={start}>Załóż turniej za darmo</a>
               <a className="ab-btn light" href="#jak-to-dziala">Jak to działa?</a>
             </div>
-            {visits !== null && (
-              <p className="ab-visits"><span className="ab-dot" /> Odwiedzin strony: <b>{visits.toLocaleString('pl-PL')}</b></p>
-            )}
+            <div className="ab-visits" aria-live="polite">
+              <span className="ab-visits-icon" aria-hidden="true">👀</span>
+              <span>
+                <b>{visits === null ? '…' : visits.toLocaleString('pl-PL')}</b>
+                <small>odwiedzin strony</small>
+              </span>
+            </div>
           </div>
           <HeroArt />
         </div>

@@ -1054,8 +1054,11 @@ a.court-link:hover { color: var(--accent); }
 .acc-form input, .acc-form textarea { font: inherit; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); }
 .acc-form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
 @media (max-width: 900px) { .acc-cols { grid-template-columns: minmax(0, 1fr); } }
-.ab-visits { margin: 22px 0 0; display: inline-flex; align-items: center; gap: 8px; color: #c3cfe2; font-size: 0.95rem; }
-.ab-visits b { color: #fff; font-family: var(--display); font-size: 1.2rem; }
+.ab-visits { margin: 26px 0 0; display: inline-flex; align-items: center; gap: 14px; padding: 12px 22px 12px 14px; border-radius: 18px; background: #ffffff14; border: 1px solid #ffffff33; color: #fff; }
+.ab-visits-icon { font-size: 2rem; line-height: 1; }
+.ab-visits span { display: grid; line-height: 1.05; }
+.ab-visits b { font-family: var(--display); font-size: 2.4rem; color: var(--ball); }
+.ab-visits small { font-size: 0.85rem; color: #c3cfe2; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; }
 
 /* ── Usage and credits (Moje turnieje, #kredyty) ── */
 .usage { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-bottom: 24px; }
