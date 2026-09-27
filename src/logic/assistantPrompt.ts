@@ -1,3 +1,4 @@
+import { langNameEn } from '../i18n'
 import { SPORTS } from './sports'
 
 /**
@@ -18,7 +19,7 @@ Zasady:
 - Kategorie wiekowe lub płci (np. "Dziewczęta U12", "Dwójki") to osobne kategorie. Gdy nie ma podziału, użyj jednej kategorii "Turniej".
 - Brakujące dane: date, time, dayEnd jako pusty tekst; courts i slotMinutes rozsądne dla dyscypliny. Wszystko, co przyjąłeś sam, wymień w notes.
 - Nie zgaduj dat: jeśli podano dzień tygodnia bez daty, zostaw date pustą i napisz o tym w notes. Dzisiaj jest ${new Date().toISOString().slice(0, 10)}.
-- notes pisz krótko, po polsku.
+- notes pisz krótko, w języku: ${langNameEn()} (język organizatora). Nazwy kategorii, gdy wymyślasz je sam (np. "Turniej"), też w tym języku; nazw drużyn z notatek nie tłumacz.
 
 Katalog dyscyplin i formatów (id: opis):
 ${list}`

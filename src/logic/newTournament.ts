@@ -1,3 +1,4 @@
+import { locale, t } from '../i18n'
 import type { Group, State, Team, Tournament } from '../types'
 import { GROUP_LETTERS } from './draw'
 import { sportById, sportRules } from './sports'
@@ -64,7 +65,7 @@ export function blankState(draft: TournamentDraft): State {
   const day = new Date(draft.start)
   const subtitle = Number.isNaN(day.getTime())
     ? ''
-    : day.toLocaleDateString('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' })
+    : day.toLocaleDateString(locale(), { day: 'numeric', month: 'long', year: 'numeric' })
   return {
     tournament: {
       name: draft.name,
@@ -93,7 +94,7 @@ function presetTeams(draft: TournamentDraft): Pick<State, 'categories' | 'groups
     const idOf = (name: string) => own.find((t) => t.name.toLowerCase() === name.trim().toLowerCase())?.id
     preset.groups.filter((g) => g.length > 1).forEach((names, gi) => {
       const ids = names.map(idOf).filter((id): id is string => !!id)
-      if (ids.length > 1) groups.push({ id: `${c.id}g${gi + 1}`, categoryId: c.id, name: `Grupa ${GROUP_LETTERS[gi] ?? gi + 1}`, teamIds: ids })
+      if (ids.length > 1) groups.push({ id: `${c.id}g${gi + 1}`, categoryId: c.id, name: t('Grupa {letter}', { letter: GROUP_LETTERS[gi] ?? gi + 1 }), teamIds: ids })
     })
   }
   if (!draft.start || !groups.length) return { categories, teams, groups: [], matches: [] }
@@ -105,8 +106,8 @@ function presetTeams(draft: TournamentDraft): Pick<State, 'categories' | 'groups
 
 /** Shown until the organiser's settings arrive (e.g. the tournament opened on another device). */
 export const EMPTY_DRAFT: TournamentDraft = {
-  name: 'Nowy turniej', start: '', courts: 4, slotMinutes: 20, dayEnd: '18:00',
-  categories: ['Kategoria 1'],
+  name: t('Nowy turniej'), start: '', courts: 4, slotMinutes: 20, dayEnd: '18:00',
+  categories: [t('Kategoria {n}', { n: 1 })],
 }
 
 /** How a tournament's matches are laid out in time. */

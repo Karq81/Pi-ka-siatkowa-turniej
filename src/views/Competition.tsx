@@ -1,3 +1,4 @@
+import { t, tp } from '../i18n'
 import { useEffect, useState } from 'react'
 import { STAGE2 } from '../content/stage2'
 import { IS_ALBATROS } from '../config'
@@ -36,7 +37,7 @@ export function Competition({ state, route }: { state: State; route: string }) {
   }, [start?.id])
 
   if (!state.groups.length) {
-    return <p className="notice-inline">Grupy pojawią się tutaj wkrótce.</p>
+    return <p className="notice-inline">{t('Grupy pojawią się tutaj wkrótce.')}</p>
   }
 
   return (
@@ -47,7 +48,7 @@ export function Competition({ state, route }: { state: State; route: string }) {
           return (
             <button key={c.id} role="tab" aria-selected={cat === c.id} className={cat === c.id ? 'on' : ''}
               onClick={() => { setCat(c.id); setGroupId(state.groups.find((g) => g.categoryId === c.id)?.id ?? '') }}>
-              <b>{c.name}</b><span>{n} zespołów</span>
+              <b>{c.name}</b><span>{tp(n, '{n} zespół|{n} zespoły|{n} zespołów')}</span>
             </button>
           )
         })}
@@ -58,8 +59,8 @@ export function Competition({ state, route }: { state: State; route: string }) {
       <NextMatch state={state} categoryId={cat} />
 
       <div className="phase" role="tablist" aria-label="Faza">
-        <button role="tab" aria-selected={phase === 'groups'} className={phase === 'groups' ? 'on' : ''} onClick={() => setPhase('groups')}>Faza grupowa</button>
-        <button role="tab" aria-selected={phase === 'ko'} className={phase === 'ko' ? 'on' : ''} onClick={() => setPhase('ko')}>{STAGE2[cat] ? 'Drugi etap' : 'Faza pucharowa'}</button>
+        <button role="tab" aria-selected={phase === 'groups'} className={phase === 'groups' ? 'on' : ''} onClick={() => setPhase('groups')}>{t('Faza grupowa')}</button>
+        <button role="tab" aria-selected={phase === 'ko'} className={phase === 'ko' ? 'on' : ''} onClick={() => setPhase('ko')}>{STAGE2[cat] ? t('Drugi etap') : t('Faza pucharowa')}</button>
       </div>
 
       {phase === 'groups' && group && (
@@ -70,7 +71,7 @@ export function Competition({ state, route }: { state: State; route: string }) {
               return (
                 <button key={g.id} role="tab" aria-selected={g.id === group.id} className={g.id === group.id ? 'on' : ''} onClick={() => setGroupId(g.id)}>
                   {g.name.replace(/^Grupa\s*/, '')}
-                  {live && <i className="dot-live" aria-label="mecz na żywo" />}
+                  {live && <i className="dot-live" aria-label={t('mecz na żywo')} />}
                 </button>
               )
             })}
@@ -131,21 +132,21 @@ export function NextMatch({ state, categoryId }: { state: State; categoryId?: st
     return (
       <a href="#na-zywo" className="next next-live">
         <StatusPill status="live" />
-        <span><b>{live}</b> {live === 1 ? 'mecz trwa' : 'mecze trwają'} teraz. Zobacz boiska →</span>
+        <span>{tp(live, '{n} mecz trwa teraz.|{n} mecze trwają teraz.|{n} meczów trwa teraz.')} {t('Zobacz boiska')} →</span>
       </a>
     )
   }
   if (!next) return null
   const left = Math.max(0, new Date(next.start).getTime() - now)
   const parts = [
-    [Math.floor(left / 86400000), 'dni'],
-    [Math.floor(left / 3600000) % 24, 'godz'],
-    [Math.floor(left / 60000) % 60, 'min'],
-    [Math.floor(left / 1000) % 60, 'sek'],
+    [Math.floor(left / 86400000), t('dni')],
+    [Math.floor(left / 3600000) % 24, t('godz')],
+    [Math.floor(left / 60000) % 60, t('min')],
+    [Math.floor(left / 1000) % 60, t('sek')],
   ] as const
   return (
-    <section className="next" aria-label="Najbliższy mecz">
-      <p>Najbliższy mecz: <b>{formatDay(next.start)}, {formatTime(next.start)}</b></p>
+    <section className="next" aria-label={t('Najbliższy mecz')}>
+      <p>{t('Najbliższy mecz:')} <b>{formatDay(next.start)}, {formatTime(next.start)}</b></p>
       <div className="countdown">
         {parts.map(([v, label], i) => (
           <span key={label} className="cd">
@@ -173,8 +174,8 @@ function GroupView({ state, groupId }: { state: State; groupId: string }) {
     .filter((m) => m.teamA === id || m.teamB === id)
     .slice(-3)
     .map((m) => {
-      const t = tally(rules, m.sets)
-      const [own, other] = m.teamA === id ? [t.setsA, t.setsB] : [t.setsB, t.setsA]
+      const tl = tally(rules, m.sets)
+      const [own, other] = m.teamA === id ? [tl.setsA, tl.setsB] : [tl.setsB, tl.setsA]
       return own > other ? 'w' : own < other ? 'l' : 'd'
     })
 
@@ -183,31 +184,31 @@ function GroupView({ state, groupId }: { state: State; groupId: string }) {
       <section className="standings">
         <header>
           <h3>{group.name}</h3>
-          <span className="muted small">{done.length}/{matches.length} meczów</span>
+          <span className="muted small">{t('Rozegrane: {done}/{all}', { done: done.length, all: matches.length })}</span>
         </header>
         <ol>
           {rows.map((r, i) => {
-            const t = team(r.teamId)
+            const tm = team(r.teamId)
             const tr = trend(r.teamId)
             return (
               <li key={r.teamId} className={`${i < 2 ? 'top' : ''} ${mine.includes(r.teamId) ? 'mine' : ''}`}>
                 <span className="pos">{i + 1}</span>
-                <TeamBadge team={t} />
-                <a className="name plain-link" href={`#druzyna-${r.teamId}`}>{t?.name}</a>
-                <span className="trend" aria-label={tr.length ? `Ostatnie mecze: ${tr.map((x) => (x === 'w' ? 'wygrana' : x === 'd' ? 'remis' : 'przegrana')).join(', ')}` : undefined}>
+                <TeamBadge team={tm} />
+                <a className="name plain-link" href={`#druzyna-${r.teamId}`}>{tm?.name}</a>
+                <span className="trend" aria-label={tr.length ? `${t('Ostatnie mecze:')} ${tr.map((x) => (x === 'w' ? t('wygrana') : x === 'd' ? t('remis') : t('przegrana'))).join(', ')}` : undefined}>
                   {tr.map((x, j) => <i key={j} className={x} />)}
                 </span>
                 <span className="stat" title="Mecze">{r.played}</span>
-                <span className="stat small-pts" title={isScore(rules) ? scoreUnit(rules) : `Małe punkty (stosunek ${formatRatio(r.pointsWon, r.pointsLost)})`}>{r.pointsWon}:{r.pointsLost}</span>
+                <span className="stat small-pts" title={isScore(rules) ? scoreUnit(rules) : t('Małe punkty (stosunek {ratio})', { ratio: formatRatio(r.pointsWon, r.pointsLost) })}>{r.pointsWon}:{r.pointsLost}</span>
                 <b className="pts" title="Punkty">{r.tablePoints}</b>
               </li>
             )
           })}
         </ol>
-        <p className="legend muted small">M: mecze · {scoreUnit(rules)} · <b>Pkt</b>{STAGE2[group.categoryId] ? ` · ${STAGE2[group.categoryId].legend}` : IS_ALBATROS ? ' · 2 pierwsze miejsca grają o miejsca 1–8' : ''}</p>
+        <p className="legend muted small">{t('M: mecze')} · {scoreUnit(rules)} · <b>{t('Pkt')}</b>{STAGE2[group.categoryId] ? ` · ${STAGE2[group.categoryId].legend}` : IS_ALBATROS ? ' · 2 pierwsze miejsca grają o miejsca 1–8' : ''}</p>
       </section>
 
-      <h3 className="list-title">Mecze grupy</h3>
+      <h3 className="list-title">{t('Mecze grupy')}</h3>
       <div className="cards">
         {matches.map((m) => <MatchCard key={m.id} state={state} match={m} />)}
       </div>
@@ -223,33 +224,33 @@ export function MatchCard({ state, match: m, label }: { state: State; match: Mat
   const underway = isUnderway(m, now)
   const { side } = useLookups(state)
   const rules = state.tournament.rules
-  const t = tally(rules, m.sets)
+  const tl = tally(rules, m.sets)
   const cur = m.sets[m.sets.length - 1]
   const single = rules.sets === 1
   const team = (id: string) => (id ? state.teams.find((x) => x.id === id) : undefined)
   const done = m.status === 'finished'
-  const scoreA = single ? cur?.a : t.setsA
-  const scoreB = single ? cur?.b : t.setsB
+  const scoreA = single ? cur?.a : tl.setsA
+  const scoreB = single ? cur?.b : tl.setsB
   const has = m.status !== 'scheduled' && m.sets.length > 0
   const followed = mine.includes(m.teamA) || mine.includes(m.teamB)
   const body = (
     <>
-      {followed && <div className="mc-ribbon">★ Mecz Twojej drużyny</div>}
+      {followed && <div className="mc-ribbon">{t('★ Mecz Twojej drużyny')}</div>}
       <header>
         <span>{label ?? ''}{label && m.start ? ' · ' : ''}{m.start ? `${formatDay(m.start)} ${formatTime(m.start)}` : ''}</span>
-        <span>{m.court ? `Boisko ${courtLabel(m.court)}` : ''}</span>
+        <span>{m.court ? t('Boisko {n}', { n: courtLabel(m.court) }) : ''}</span>
         {underway && <StatusPill status="live" />}
         {m.status === 'finished' && <StatusPill status="finished" />}
       </header>
       <div className="mc-row">
-        <span className={`mc-team ${done && t.setsA > t.setsB ? 'win' : ''} ${mine.includes(m.teamA) ? 'mine' : ''}`}>
+        <span className={`mc-team ${done && tl.setsA > tl.setsB ? 'win' : ''} ${mine.includes(m.teamA) ? 'mine' : ''}`}>
           <TeamBadge team={team(m.teamA)} size="lg" />
           <span className={m.teamA ? '' : 'tbd'}>{side(m, 'a')}</span>
         </span>
         <span className="mc-score">
           {has ? <><b>{scoreA}</b><i>:</i><b>{scoreB}</b></> : <span className="mc-vs">–</span>}
         </span>
-        <span className={`mc-team ${done && t.setsB > t.setsA ? 'win' : ''} ${mine.includes(m.teamB) ? 'mine' : ''}`}>
+        <span className={`mc-team ${done && tl.setsB > tl.setsA ? 'win' : ''} ${mine.includes(m.teamB) ? 'mine' : ''}`}>
           <TeamBadge team={team(m.teamB)} size="lg" />
           <span className={m.teamB ? '' : 'tbd'}>{side(m, 'b')}</span>
         </span>
@@ -279,15 +280,14 @@ function Stage2View({ categoryId }: { categoryId: string }) {
   return (
     <section className="stage2">
       <p className="muted">
-        Po fazie grupowej drużyny grają w nowych grupach, każdy z każdym, jak w pierwszym etapie. Jeden set do 15
-        lub 21 (zależnie od czasu). Składy grup pojawią się tu po zakończeniu fazy grupowej.
+        {t('Po fazie grupowej drużyny grają w nowych grupach, każdy z każdym, jak w pierwszym etapie. Jeden set do 15 lub 21 (zależnie od czasu). Składy grup pojawią się tu po zakończeniu fazy grupowej.')}
       </p>
       <div className="stage2-list">
         {stage.groups.map((g) => (
           <article key={g.name} className="stage2-group">
             <header>
               <b>{g.name}</b>
-              <span className="pill">miejsca {g.places}</span>
+              <span className="pill">{t('miejsca {places}', { places: g.places })}</span>
             </header>
             <p>{g.who}</p>
           </article>
@@ -303,7 +303,7 @@ function KnockoutView({ state, categoryId }: { state: State; categoryId: string 
   const [tier, setTier] = useState(1)
   const current = tiers.includes(tier) ? tier : tiers[0]
   if (!slots) {
-    return <p className="notice-inline">Faza pucharowa jest przygotowana dla 1, 2 lub 4 grup w kategorii.</p>
+    return <p className="notice-inline">{t('Faza pucharowa jest przygotowana dla 1, 2 lub 4 grup w kategorii.')}</p>
   }
   const projected = slots.some((s) => s.projected)
   const inTier = slots.filter((s) => s.match.ko!.tierFrom === current)
@@ -312,24 +312,23 @@ function KnockoutView({ state, categoryId }: { state: State; categoryId: string 
     <>
       {projected && (
         <p className="notice-inline">
-          Tak będzie wyglądać faza pucharowa. Drużyny wpiszą się w drabinkę, gdy ich grupa rozegra wszystkie mecze;
-          do tego czasu widać, które miejsce z której grupy gdzie trafi.
+          {t('Tak będzie wyglądać faza pucharowa. Drużyny wpiszą się w drabinkę, gdy ich grupa rozegra wszystkie mecze; do tego czasu widać, które miejsce z której grupy gdzie trafi.')}
         </p>
       )}
-      <div className="seg seg-tiers" role="tablist" aria-label="Miejsca">
-        {tiers.map((t) => {
-          const last = slots.find((s) => s.match.ko!.tierFrom === t)!.match.ko!.tierTo
+      <div className="seg seg-tiers" role="tablist" aria-label={t('Miejsca')}>
+        {tiers.map((tr) => {
+          const last = slots.find((s) => s.match.ko!.tierFrom === tr)!.match.ko!.tierTo
           return (
-            <button key={t} role="tab" aria-selected={t === current} className={t === current ? 'on' : ''} onClick={() => setTier(t)}>
-              {t === 1 ? 'O medale · ' : ''}{t}–{last}
+            <button key={tr} role="tab" aria-selected={tr === current} className={tr === current ? 'on' : ''} onClick={() => setTier(tr)}>
+              {tr === 1 ? `${t('O medale')} · ` : ''}{tr}–{last}
             </button>
           )
         })}
       </div>
       <p className="muted small tier-note">
         {current === 1
-          ? 'Dwie pierwsze drużyny z każdej grupy grają o miejsca 1–8: na krzyż, 1A–2B, 1C–2D, 1B–2A, 1D–2C.'
-          : `Drużyny z dalszych miejsc w grupach grają o miejsca ${current}–${to}. Każda drużyna rozegra mecze o konkretne miejsce.`}
+          ? t('Dwie pierwsze drużyny z każdej grupy grają o miejsca 1–8: na krzyż, 1A–2B, 1C–2D, 1B–2A, 1D–2C.')
+          : t('Drużyny z dalszych miejsc w grupach grają o miejsca {from}–{to}. Każda drużyna rozegra mecze o konkretne miejsce.', { from: current, to: to ?? '' })}
       </p>
       <BracketTree state={state} slots={inTier} />
     </>
@@ -343,13 +342,13 @@ export function TeamPicker({ state, categoryId }: { state: State; categoryId?: s
   const cats = state.categories.filter((c) => !categoryId || c.id === categoryId)
   return (
     <label className="team-picker">
-      <span>Znajdź swoją drużynę</span>
+      <span>{t('Znajdź swoją drużynę')}</span>
       <select
         id={`team-picker-${categoryId ?? 'all'}`}
         value=""
         onChange={(e) => { if (e.target.value) location.hash = `druzyna-${e.target.value}` }}
       >
-        <option value="">Wybierz drużynę…</option>
+        <option value="">{t('Wybierz drużynę…')}</option>
         {cats.map((c) => (
           <optgroup key={c.id} label={c.name}>
             {state.teams.filter((t) => t.categoryId === c.id).sort((a, b) => a.name.localeCompare(b.name, 'pl')).map((t) => (
@@ -366,7 +365,7 @@ export function TeamPicker({ state, categoryId }: { state: State; categoryId?: s
 export function TeamPage({ state, teamId }: { state: State; teamId: string }) {
   const now = useNow(30000)
   const team = state.teams.find((t) => t.id === teamId)
-  if (!team) return <p className="muted">Nie znaleziono drużyny. <a href="#grupy">Wróć do rozgrywek</a>.</p>
+  if (!team) return <p className="muted">{t('Nie znaleziono drużyny.')} <a href="#grupy">{t('Wróć do rozgrywek')}</a>.</p>
   const rules = state.tournament.rules
   const category = state.categories.find((c) => c.id === team.categoryId)
   const group = state.groups.find((g) => g.teamIds.includes(team.id))
@@ -384,8 +383,8 @@ export function TeamPage({ state, teamId }: { state: State; teamId: string }) {
   const groupOver = group ? groupFinished(state, group.id) : false
   const opponent = (m: Match) => state.teams.find((t) => t.id === (m.teamA === team.id ? m.teamB : m.teamA))
   const won = matches.filter((m) => m.status === 'finished').filter((m) => {
-    const t = tally(rules, m.sets)
-    return m.teamA === team.id ? t.setsA > t.setsB : t.setsB > t.setsA
+    const tl = tally(rules, m.sets)
+    return m.teamA === team.id ? tl.setsA > tl.setsB : tl.setsB > tl.setsA
   }).length
   const played = matches.filter((m) => m.status === 'finished').length
 
@@ -401,31 +400,31 @@ export function TeamPage({ state, teamId }: { state: State; teamId: string }) {
         <FollowToggle teamId={team.id} />
       </header>
       <div className="team-stats">
-        <div><b>{pos >= 0 ? `${pos + 1}.` : '–'}</b><span>miejsce w grupie</span></div>
-        <div><b>{row?.tablePoints ?? 0}</b><span>punkty</span></div>
-        <div><b>{won}/{played}</b><span>wygrane mecze</span></div>
-        <div><b>{matches.length}</b><span>mecze w terminarzu</span></div>
+        <div><b>{pos >= 0 ? `${pos + 1}.` : '–'}</b><span>{t('miejsce w grupie')}</span></div>
+        <div><b>{row?.tablePoints ?? 0}</b><span>{t('punkty')}</span></div>
+        <div><b>{won}/{played}</b><span>{t('wygrane mecze')}</span></div>
+        <div><b>{matches.length}</b><span>{t('mecze w terminarzu')}</span></div>
       </div>
 
       {next && (
         <section className={`team-next ${next.status === 'live' ? 'is-live' : ''}`}>
-          <p className="eyebrow">{next.status === 'live' ? 'Gra teraz' : 'Następny mecz'}</p>
-          <p className="tn-when">{formatDay(next.start)}, <b>{formatTime(next.start)}</b> · Boisko <b>{courtLabel(next.court)}</b></p>
+          <p className="eyebrow">{next.status === 'live' ? t('Gra teraz') : t('Następny mecz')}</p>
+          <p className="tn-when">{formatDay(next.start)}, <b>{formatTime(next.start)}</b> {t('· Boisko')} <b>{courtLabel(next.court)}</b></p>
           <p className="tn-vs">
-            z <TeamBadge team={opponent(next)} size="sm" /> <b>{opponent(next)?.name ?? 'rywal do ustalenia'}</b>
+            {t('z')} <TeamBadge team={opponent(next)} size="sm" /> <b>{opponent(next)?.name ?? t('rywal do ustalenia')}</b>
           </p>
         </section>
       )}
 
       {koTier && (
         <p className="notice-inline">
-          W fazie pucharowej {groupOver ? 'gra' : 'zagra'} o miejsca <b>{koTier[0]}–{koTier[1]}</b>
-          {groupOver ? '.' : ' (jeśli utrzyma obecne miejsce w grupie).'}
+          {groupOver ? t('W fazie pucharowej gra o miejsca') : t('W fazie pucharowej zagra o miejsca')} <b>{koTier[0]}–{koTier[1]}</b>
+          {groupOver ? '.' : ` ${t('(jeśli utrzyma obecne miejsce w grupie).')}`}
         </p>
       )}
 
-      <h3 className="list-title">Wszystkie mecze</h3>
-      {!matches.length && <p className="muted">Terminarz pojawi się wkrótce.</p>}
+      <h3 className="list-title">{t('Wszystkie mecze')}</h3>
+      {!matches.length && <p className="muted">{t('Terminarz pojawi się wkrótce.')}</p>}
       {days.map((d) => (
         <section key={d} className="team-day">
           <h4 className="day-title">{formatDay(d)}</h4>
@@ -469,10 +468,10 @@ export function FollowPicker({ state, onClose }: { state: State; onClose: () => 
     .filter((t) => t.categoryId === cat && (!query || t.name.toLowerCase().includes(query)))
     .sort((a, b) => a.name.localeCompare(b.name, 'pl'))
   return (
-    <section className="follow-picker" aria-label="Wybierz drużyny do obserwowania">
+    <section className="follow-picker" aria-label={t('Wybierz drużyny do obserwowania')}>
       <header>
-        <h3>Wybierz drużyny do obserwowania</h3>
-        <p className="muted small">Wybierz kategorię, zaznacz jedną albo kilka drużyn (np. wszystkie Twojego klubu) i potwierdź.</p>
+        <h3>{t('Wybierz drużyny do obserwowania')}</h3>
+        <p className="muted small">{t('Wybierz kategorię, zaznacz jedną albo kilka drużyn (np. wszystkie Twojego klubu) i potwierdź.')}</p>
       </header>
       <div className="chips fp-cats" role="tablist" aria-label="Kategoria">
         {state.categories.map((c) => {
@@ -490,22 +489,22 @@ export function FollowPicker({ state, onClose }: { state: State; onClose: () => 
           )
         })}
       </div>
-      <input id="follow-search" type="search" placeholder="Szukaj, np. Opty" value={q} onChange={(e) => setQ(e.target.value)} />
+      <input id="follow-search" type="search" placeholder={t('Szukaj, np. Opty')} value={q} onChange={(e) => setQ(e.target.value)} />
       <div className="fp-list" role="tabpanel">
-        {!teams.length && <p className="muted small">Brak drużyn o tej nazwie w tej kategorii.</p>}
-        {teams.map((t) => (
-          <label key={t.id} className={`fp-item ${picked.includes(t.id) ? 'on' : ''}`}>
-            <input type="checkbox" checked={picked.includes(t.id)} onChange={() => toggle(t.id)} />
-            <TeamBadge team={t} size="sm" />
-            <span>{t.name}</span>
+        {!teams.length && <p className="muted small">{t('Brak drużyn o tej nazwie w tej kategorii.')}</p>}
+        {teams.map((tm) => (
+          <label key={tm.id} className={`fp-item ${picked.includes(tm.id) ? 'on' : ''}`}>
+            <input type="checkbox" checked={picked.includes(tm.id)} onChange={() => toggle(tm.id)} />
+            <TeamBadge team={tm} size="sm" />
+            <span>{tm.name}</span>
           </label>
         ))}
       </div>
       <div className="fp-actions">
         <button className="btn btn-primary btn-lg" onClick={() => { setFavorites(picked); onClose() }}>
-          {picked.length ? `Potwierdź: obserwuj ${picked.length} ${picked.length === 1 ? 'drużynę' : picked.length < 5 ? 'drużyny' : 'drużyn'}` : 'Potwierdź: nie obserwuj żadnej'}
+          {picked.length ? tp(picked.length, 'Potwierdź: obserwuj {n} drużynę|Potwierdź: obserwuj {n} drużyny|Potwierdź: obserwuj {n} drużyn') : t('Potwierdź: nie obserwuj żadnej')}
         </button>
-        <button className="btn" onClick={onClose}>Anuluj</button>
+        <button className="btn" onClick={onClose}>{t('Anuluj')}</button>
       </div>
     </section>
   )
@@ -521,36 +520,36 @@ export function MyTeams({ state }: { state: State }) {
   return (
     <section className="my-teams">
       <header>
-        <h2>Moje drużyny</h2>
-        <button className="btn" onClick={() => setPicking(true)}>{teams.length ? 'Zmień' : 'Wybierz'}</button>
+        <h2>{t('Moje drużyny')}</h2>
+        <button className="btn" onClick={() => setPicking(true)}>{teams.length ? t('Zmień') : t('Wybierz')}</button>
       </header>
       {!teams.length && (
         <button className="my-empty" onClick={() => setPicking(true)}>
-          <b>☆ Wybierz drużyny, które chcesz obserwować</b>
-          <span>Jedną albo kilka. Będą wyróżnione w tabelach i meczach, a tu zobaczysz ich najbliższe mecze.</span>
+          <b>{t('☆ Wybierz drużyny, które chcesz obserwować')}</b>
+          <span>{t('Jedną albo kilka. Będą wyróżnione w tabelach i meczach, a tu zobaczysz ich najbliższe mecze.')}</span>
         </button>
       )}
       <div className="my-list">
-        {teams.map((t) => {
-          const ms = state.matches.filter((m) => m.teamA === t.id || m.teamB === t.id).sort((a, b) => a.start.localeCompare(b.start))
+        {teams.map((tm) => {
+          const ms = state.matches.filter((m) => m.teamA === tm.id || m.teamB === tm.id).sort((a, b) => a.start.localeCompare(b.start))
           const next = ms.find((m) => m.status === 'live') ?? ms.find((m) => m.status === 'scheduled' && new Date(m.start).getTime() >= now - 15 * 60000)
-          const opp = next ? state.teams.find((x) => x.id === (next.teamA === t.id ? next.teamB : next.teamA)) : undefined
-          const group = state.groups.find((g) => g.teamIds.includes(t.id))
+          const opp = next ? state.teams.find((x) => x.id === (next.teamA === tm.id ? next.teamB : next.teamA)) : undefined
+          const group = state.groups.find((g) => g.teamIds.includes(tm.id))
           return (
-            <a key={t.id} href={`#druzyna-${t.id}`} className={`my-card ${next?.status === 'live' ? 'is-live' : ''}`}>
-              <TeamBadge team={t} size="md" />
+            <a key={tm.id} href={`#druzyna-${tm.id}`} className={`my-card ${next?.status === 'live' ? 'is-live' : ''}`}>
+              <TeamBadge team={tm} size="md" />
               <span className="my-main">
-                <b>{t.name}</b>
-                <span className="muted small">{state.categories.find((c) => c.id === t.categoryId)?.name}{group ? ` · ${group.name}` : ''}</span>
+                <b>{tm.name}</b>
+                <span className="muted small">{state.categories.find((c) => c.id === tm.categoryId)?.name}{group ? ` · ${group.name}` : ''}</span>
               </span>
               <span className="my-next">
                 {next ? (
                   <>
                     {next.status === 'live' ? <StatusPill status="live" /> : <b>{formatDay(next.start)} {formatTime(next.start)}</b>}
-                    <span className="small">Boisko {courtLabel(next.court)}{opp ? ` · z ${opp.name}` : ''}</span>
+                    <span className="small">{t('Boisko {n}', { n: courtLabel(next.court) })}{opp ? ` · ${t('z')} ${opp.name}` : ''}</span>
                   </>
                 ) : (
-                  <span className="muted small">{ms.length ? 'Brak kolejnych meczów' : 'Mecze wkrótce'}</span>
+                  <span className="muted small">{ms.length ? t('Brak kolejnych meczów') : t('Mecze wkrótce')}</span>
                 )}
               </span>
             </a>

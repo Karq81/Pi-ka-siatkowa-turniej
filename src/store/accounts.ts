@@ -6,6 +6,7 @@ import {
   arrayUnion, collection, doc, documentId, getDoc, getDocs, increment, limit, onSnapshot, orderBy, query, setDoc, updateDoc, where,
   type Unsubscribe,
 } from 'firebase/firestore'
+import { t, tk } from '../i18n'
 import { dayKey } from '../logic/usage'
 import { useSyncExternalStore } from 'react'
 import { TOURNAMENT_ID } from '../config'
@@ -109,22 +110,23 @@ export function currentAccount(): Account | null {
   return state.status === 'signed-in' ? state.account : null
 }
 
+/** Texts (translated when shown) of sign-in errors. */
 const MESSAGES: Record<string, string> = {
-  'auth/invalid-credential': 'Zły login albo hasło.',
-  'auth/wrong-password': 'Zły login albo hasło.',
-  'auth/requires-recent-login': 'Zaloguj się ponownie i spróbuj jeszcze raz.',
-  'auth/user-not-found': 'Nie ma takiego konta.',
-  'auth/invalid-email': 'Nieprawidłowy login.',
-  'auth/email-already-in-use': 'Ten login jest już zajęty.',
-  'auth/weak-password': 'Hasło musi mieć co najmniej 6 znaków.',
-  'auth/too-many-requests': 'Za dużo prób. Spróbuj za kilka minut.',
-  'auth/network-request-failed': 'Brak połączenia z internetem.',
-  'auth/operation-not-allowed': 'Zakładanie kont jest jeszcze wyłączone. Administrator musi je włączyć w Firebase.',
+  'auth/invalid-credential': tk('Zły login albo hasło.'),
+  'auth/wrong-password': tk('Zły login albo hasło.'),
+  'auth/requires-recent-login': tk('Zaloguj się ponownie i spróbuj jeszcze raz.'),
+  'auth/user-not-found': tk('Nie ma takiego konta.'),
+  'auth/invalid-email': tk('Nieprawidłowy login.'),
+  'auth/email-already-in-use': tk('Ten login jest już zajęty.'),
+  'auth/weak-password': tk('Hasło musi mieć co najmniej 6 znaków.'),
+  'auth/too-many-requests': tk('Za dużo prób. Spróbuj za kilka minut.'),
+  'auth/network-request-failed': tk('Brak połączenia z internetem.'),
+  'auth/operation-not-allowed': tk('Zakładanie kont jest jeszcze wyłączone. Administrator musi je włączyć w Firebase.'),
 }
 
 export function accountError(e: unknown): string {
   const code = (e as { code?: string }).code ?? ''
-  return MESSAGES[code] ?? 'Nie udało się. Spróbuj jeszcze raz.'
+  return MESSAGES[code] ? t(MESSAGES[code]) : t('Nie udało się. Spróbuj jeszcze raz.')
 }
 
 export async function signInAccount(login: string, password: string) {

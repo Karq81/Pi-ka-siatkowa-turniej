@@ -1,3 +1,4 @@
+import { t, tk, tp } from '../i18n'
 import { useState } from 'react'
 import { scheduleOf } from '../logic/newTournament'
 import { clubOf } from '../logic/draw'
@@ -13,10 +14,10 @@ import { useAccount } from '../store/accounts'
 import { Competition } from './Competition'
 
 const TABS = [
-  { route: 'panel', label: '1. Zespoły i grupy' },
-  { route: 'panel-grupy', label: '2. Grupy' },
-  { route: 'panel-sedziowie', label: '3. Na żywo' },
-  { route: 'panel-wiecej', label: 'Więcej' },
+  { route: 'panel', label: tk('1. Zespoły i grupy') },
+  { route: 'panel-grupy', label: tk('2. Grupy') },
+  { route: 'panel-sedziowie', label: tk('3. Na żywo') },
+  { route: 'panel-wiecej', label: tk('Więcej') },
 ]
 
 /**
@@ -26,23 +27,23 @@ const TABS = [
  */
 export function Organizer({ route }: { route: string }) {
   const state = useStore()
-  const tab = TABS.some((t) => t.route === route) ? route : 'panel'
+  const tab = TABS.some((x) => x.route === route) ? route : 'panel'
   const account = useAccount()
-  const tabs = IS_ALBATROS ? TABS : TABS.map((t) => (t.route === 'panel' ? { ...t, label: '1. Zespoły i losowanie' }
-    : t.route === 'panel-wiecej' ? { ...t, label: 'Ustawienia i PIN' } : t))
+  const tabs = IS_ALBATROS ? TABS : TABS.map((x) => (x.route === 'panel' ? { ...x, label: tk('1. Zespoły i losowanie') }
+    : x.route === 'panel-wiecej' ? { ...x, label: tk('Ustawienia i PIN') } : x))
   return (
     <div className="page page-wide">
       <header className="org-head">
         <div>
           <p className="eyebrow">
-            Panel organizatora
-            {account.status === 'signed-in' && <> · <a className="plain-link" href={IS_PLATFORM_HOST ? '/#moje-turnieje' : '#moje-turnieje'}>← Moje turnieje</a></>}
+            {t('Panel organizatora')}
+            {account.status === 'signed-in' && <> · <a className="plain-link" href={IS_PLATFORM_HOST ? '/#moje-turnieje' : '#moje-turnieje'}>← {t('Moje turnieje')}</a></>}
           </p>
           <h1>{state.tournament.name}</h1>
         </div>
-        <nav className="tabs" aria-label="Panel organizatora">
-          {tabs.map((t) => (
-            <a key={t.route} href={`#${t.route}`} className={tab === t.route ? 'active' : ''}>{t.label}</a>
+        <nav className="tabs" aria-label={t('Panel organizatora')}>
+          {tabs.map((x) => (
+            <a key={x.route} href={`#${x.route}`} className={tab === x.route ? 'active' : ''}>{t(x.label)}</a>
           ))}
         </nav>
       </header>
@@ -54,12 +55,12 @@ export function Organizer({ route }: { route: string }) {
         <>
           <CourtList />
           <MatchInterval state={state} />
-          <PinGate label="Zerowanie wyników (sędzia główny)"><ResetPanel state={state} /></PinGate>
+          <PinGate label={t('Zerowanie wyników (sędzia główny)')}><ResetPanel state={state} /></PinGate>
         </>
       )}
       {tab === 'panel-wiecej' && <More />}
       {/* Albatros CUP keeps its PIN 1234 (the organisers agreed on it); other tournaments can change theirs. */}
-      {tab === 'panel-wiecej' && !IS_ALBATROS && <PinGate label="Zmiana PIN-u (sędzia główny)"><PinSettings /></PinGate>}
+      {tab === 'panel-wiecej' && !IS_ALBATROS && <PinGate label={t('Zmiana PIN-u (sędzia główny)')}><PinSettings /></PinGate>}
     </div>
   )
 }
@@ -67,7 +68,7 @@ export function Organizer({ route }: { route: string }) {
 function Empty() {
   return (
     <p className="notice-inline">
-      Grupy nie są jeszcze zapisane w bazie. Ustaw PIN w zakładce <a href="#panel">1. Zespoły i grupy</a>.
+      {t('Grupy nie są jeszcze zapisane w bazie. Ustaw PIN w zakładce')} <a href="#panel">{t('1. Zespoły i grupy')}</a>.
     </p>
   )
 }
@@ -79,18 +80,16 @@ function TeamsAndDraw({ state }: { state: State }) {
     <>
       <div className="org-intro">
         <p className="muted">
-          Zespoły i grupy według listy organizatora. Grupy są ustalone na stałe (bez losowania):
-          dwójki w 4 grupach po 7 zespołów, trójki w 5 grupach po 6 zespołów.
+          {t('Zespoły i grupy według listy organizatora. Grupy są ustalone na stałe (bez losowania): dwójki w 4 grupach po 7 zespołów, trójki w 5 grupach po 6 zespołów.')}
         </p>
       </div>
       {sync.empty && (
         <section className="panel">
-          <h2>Pierwsze uruchomienie</h2>
+          <h2>{t('Pierwsze uruchomienie')}</h2>
           <p>
-            Ustaw swój <b>PIN sędziego głównego</b> (co najmniej 4 cyfry). Zapisze on w bazie zespoły, grupy i
-            terminarz. Będzie potrzebny do wpisywania i poprawiania wyników.
+            {t('Ustaw swój PIN sędziego głównego (co najmniej 4 cyfry). Zapisze on w bazie zespoły, grupy i terminarz. Będzie potrzebny do wpisywania i poprawiania wyników.')}
           </p>
-          <AdminPinForm saveLabel="Ustaw PIN i zapisz turniej" onSave={setupTournament} />
+          <AdminPinForm saveLabel={t('Ustaw PIN i zapisz turniej')} onSave={setupTournament} />
         </section>
       )}
       {!sync.empty && <MatchInterval state={state} />}
@@ -98,14 +97,14 @@ function TeamsAndDraw({ state }: { state: State }) {
         {state.categories.map((c) => <CategoryTeams key={c.id} state={state} category={c} />)}
       </div>
       <section className="panel">
-        <h2>Grupy</h2>
+        <h2>{t('Grupy')}</h2>
         <div className="org-draws">
           {state.categories.map((c) => <CategoryGroups key={c.id} state={state} category={c} />)}
         </div>
         {state.groups.length > 0 && (
           <div className="actions">
-            <a className="btn btn-primary" href="#panel-grupy">Zobacz grupy i terminarz</a>
-            <a className="btn" href="#panel-sedziowie">Na żywo</a>
+            <a className="btn btn-primary" href="#panel-grupy">{t('Zobacz grupy i terminarz')}</a>
+            <a className="btn" href="#panel-sedziowie">{t('Na żywo')}</a>
           </div>
         )}
       </section>
@@ -127,24 +126,26 @@ function MatchInterval({ state }: { state: State }) {
     const matches = retimeSchedule(state.matches, { slotMinutes: minutes, dayEnd: plan.dayEnd, dayStart: plan.dayStart })
     await store.replace({ ...state, tournament: { ...state.tournament, slotMinutes: minutes }, matches })
     const last = matches.map((m) => m.start).sort().at(-1)
-    setMsg(`Zapisano: mecz co ${minutes} min. Ostatni mecz: ${last ? `${formatDay(last)} ${formatTime(last)}` : '–'}.`)
+    setMsg(t('Zapisano: mecz co {n} min. Ostatni mecz: {last}.', { n: minutes, last: last ? `${formatDay(last)} ${formatTime(last)}` : '–' }))
   }
   return (
     <section className="panel">
-      <h2>Co ile minut mecze</h2>
+      <h2>{t('Co ile minut mecze')}</h2>
       <p className="muted">
-        Teraz: <b>mecz co {current} minut</b> na każdym boisku (mecz + przerwa). Zmiana przelicza godziny wszystkich
-        meczów, które się jeszcze nie zaczęły{next ? `, od najbliższej rundy (${formatDay(next)} ${formatTime(next)}), która zostaje o swojej godzinie` : ''}.
-        Rozegrane mecze się nie zmieniają. Po {plan.dayEnd} gry przechodzą na następny dzień od {plan.dayStart}.
+        {t('Teraz:')} <b>{t('mecz co {n} minut', { n: current })}</b> {t('na każdym boisku (mecz + przerwa).')}{' '}
+        {next
+          ? t('Zmiana przelicza godziny wszystkich meczów, które się jeszcze nie zaczęły, od najbliższej rundy ({when}), która zostaje o swojej godzinie.', { when: `${formatDay(next)} ${formatTime(next)}` })
+          : t('Zmiana przelicza godziny wszystkich meczów, które się jeszcze nie zaczęły.')}{' '}
+        {t('Rozegrane mecze się nie zmieniają. Po {end} gry przechodzą na następny dzień od {start}.', { end: plan.dayEnd, start: plan.dayStart })}
       </p>
-      <PinGate label="Zmiana godzin meczów (sędzia główny)">
+      <PinGate label={t('Zmiana godzin meczów (sędzia główny)')}>
         <div className="form-row">
-          <label>Minut od meczu do meczu
+          <label>{t('Minut od meczu do meczu')}
             <input id="slot-minutes" type="number" min={5} max={90} step={5} value={minutes}
               onChange={(e) => setMinutes(Math.max(5, Math.min(90, Number(e.target.value) || current)))} />
           </label>
         </div>
-        <button className="btn btn-primary" disabled={minutes === current} onClick={save}>Zapisz i przelicz godziny</button>
+        <button className="btn btn-primary" disabled={minutes === current} onClick={save}>{t('Zapisz i przelicz godziny')}</button>
         {msg && <p className="ok">{msg}</p>}
       </PinGate>
     </section>
@@ -159,16 +160,16 @@ function CategoryTeams({ state, category }: { state: State; category: Category }
     <section className="org-cat">
       <header>
         <h2>{category.name}</h2>
-        <span className={`pill ${groups.length ? 'pill-done' : ''}`}>{groups.length ? `${groups.length} grup` : 'Bez grup'}</span>
+        <span className={`pill ${groups.length ? 'pill-done' : ''}`}>{groups.length ? tp(groups.length, '{n} grupa|{n} grupy|{n} grup') : t('Bez grup')}</span>
       </header>
-      <p className="muted small">{teams.length} zespołów z {clubs.length} klubów</p>
+      <p className="muted small">{t('Zespoły: {teams}, kluby: {clubs}', { teams: teams.length, clubs: clubs.length })}</p>
       <ul className="org-clubs">
         {clubs.map((club) => {
           const own = teams.filter((t) => clubOf(t) === club)
           return (
             <li key={club}>
               <span>{club}</span>
-              <b title="Liczba zespołów">{own.length > 1 ? `${own.length} zespoły` : '1 zespół'}</b>
+              <b title={t('Liczba zespołów')}>{tp(own.length, '{n} zespół|{n} zespoły|{n} zespołów')}</b>
             </li>
           )
         })}
@@ -194,17 +195,17 @@ export function CategoryGroups({ state, category }: { state: State; category: Ca
           ))}
         </div>
       ) : (
-        <p className="muted">Brak grup w bazie.</p>
+        <p className="muted">{t('Brak grup w bazie.')}</p>
       )}
     </div>
   )
 }
 
 const TILES = [
-  { href: '#admin', title: 'Sędzia główny', text: 'Wpisywanie i poprawianie wyników, klucze boisk, terminarz, drabinka, ustawienia punktacji.' },
-  { href: '#kartki', title: 'Kartki z kodami QR', text: 'Do wydruku i przyklejenia przy boiskach: kod QR do panelu boiska i klucz.' },
-  { href: '#tv', title: 'Tryb TV', text: 'Na telewizor lub rzutnik na hali: boiska, tabele i drabinki zmieniają się same.' },
-  { href: '#', title: 'Strona dla kibiców', text: 'To, co widzą rodzice i trenerzy: informacje, wyniki, grupy. Bez możliwości wpisywania.' },
+  { href: '#admin', title: tk('Sędzia główny'), text: tk('Wpisywanie i poprawianie wyników, klucze boisk, terminarz, drabinka, ustawienia punktacji.') },
+  { href: '#kartki', title: tk('Kartki z kodami QR'), text: tk('Do wydruku i przyklejenia przy boiskach: kod QR do panelu boiska i klucz.') },
+  { href: '#tv', title: tk('Tryb TV'), text: tk('Na telewizor lub rzutnik na hali: boiska, tabele i drabinki zmieniają się same.') },
+  { href: '#', title: tk('Strona dla kibiców'), text: tk('To, co widzą rodzice i trenerzy: informacje, wyniki, grupy. Bez możliwości wpisywania.') },
 ]
 
 function More() {
@@ -212,19 +213,21 @@ function More() {
   return (
     <>
       <ul className="organizer">
-        {TILES.map((t) => (
-          <li key={t.href}>
-            <a href={t.href}>
-              <b>{t.title}</b>
-              <span className="muted small">{t.text}</span>
+        {TILES.map((x) => (
+          <li key={x.href}>
+            <a href={x.href}>
+              <b>{t(x.title)}</b>
+              <span className="muted small">{t(x.text)}</span>
             </a>
           </li>
         ))}
       </ul>
       {session && (
         <p className="muted small">
-          Ten telefon jest zalogowany jako {session.role === 'admin' ? 'sędzia główny' : `sędzia boiska ${courtLabel(session.court ?? 0)}`}.{' '}
-          <button className="linklike" onClick={() => store.logout()}>Wyloguj</button>
+          {session.role === 'admin'
+            ? t('Ten telefon jest zalogowany jako sędzia główny.')
+            : t('Ten telefon jest zalogowany jako sędzia boiska {court}.', { court: courtLabel(session.court ?? 0) })}{' '}
+          <button className="linklike" onClick={() => store.logout()}>{t('Wyloguj')}</button>
         </p>
       )}
     </>

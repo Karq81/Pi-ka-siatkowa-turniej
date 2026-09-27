@@ -1,5 +1,7 @@
 import { BRAND, IS_PLATFORM_HOST } from '../config'
+import { t } from '../i18n'
 import { signOutAccount, useAccount } from '../store/accounts'
+import { LangPicker } from './LangPicker'
 
 /** The service's logo: an arena with a live dot, and "Sport Live Arena" with "Live" in red. */
 export function Wordmark({ size = 'md' }: { size?: 'md' | 'lg' }) {
@@ -41,21 +43,22 @@ export function PlatformNav() {
       <div className="pf-wrap pf-nav-inner">
         <Wordmark />
         <div className="pf-nav-actions">
+          <LangPicker />
           {account.status === 'signed-in' ? (
             <>
               <span className="pf-user" title={`Login: ${account.account.login}`}>
                 <span className="pf-avatar" aria-hidden="true">{(account.account.name || account.account.login).slice(0, 1).toUpperCase()}</span>
-                <span className="pf-user-text"><small>Zalogowany</small><b>{account.account.name || account.account.login}</b></span>
+                <span className="pf-user-text"><small>{t('Zalogowany')}</small><b>{account.account.name || account.account.login}</b></span>
               </span>
-              <a className="pf-btn ghost" href="#moje-turnieje">Moje turnieje</a>
-              <a className="pf-btn ghost" href="#kredyty">Kredyty</a>
-              <a className="pf-btn ghost" href="#konto">Moje konto</a>
-              <button className="pf-btn ghost" onClick={() => void signOutAccount()}>Wyloguj</button>
+              <a className="pf-btn ghost" href="#moje-turnieje">{t('Moje turnieje')}</a>
+              <a className="pf-btn ghost" href="#kredyty">{t('Kredyty')}</a>
+              <a className="pf-btn ghost" href="#konto">{t('Moje konto')}</a>
+              <button className="pf-btn ghost" onClick={() => void signOutAccount()}>{t('Wyloguj')}</button>
             </>
           ) : account.status === 'signed-out' ? (
             <>
-              <a className="pf-btn ghost" href="#konto">Zaloguj się</a>
-              <a className="pf-btn primary" href="#rejestracja">Załóż konto</a>
+              <a className="pf-btn ghost" href="#konto">{t('Zaloguj się')}</a>
+              <a className="pf-btn primary" href="#rejestracja">{t('Załóż konto')}</a>
             </>
           ) : null}
         </div>

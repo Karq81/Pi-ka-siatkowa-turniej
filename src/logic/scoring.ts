@@ -1,3 +1,4 @@
+import { t } from '../i18n'
 import type { Group, Match, Rules, SetScore, Team } from '../types'
 
 /** One score per match (goals or points) instead of sets. */
@@ -7,7 +8,7 @@ export function isScore(rules: Rules): boolean {
 
 /** What the small numbers in the table count: "małe punkty", or the score's unit ("bramki"). */
 export function scoreUnit(rules: Rules): string {
-  return isScore(rules) ? rules.unit ?? 'bramki' : rules.unit === 'gemy' ? 'gemy' : 'małe punkty'
+  return t(isScore(rules) ? rules.unit ?? 'bramki' : rules.unit === 'gemy' ? 'gemy' : 'małe punkty')
 }
 
 /** Target points for set number `index` (0-based). */
@@ -63,19 +64,20 @@ export function canAddPoint(rules: Rules, index: number, s: SetScore): boolean {
 /** Problem with a full result typed from a score sheet, or null when it is a valid finished match. */
 export function resultProblem(rules: Rules, sets: SetScore[]): string | null {
   if (isScore(rules)) {
-    if (!sets.length) return 'Wpisz wynik meczu.'
-    if (!rules.draws && sets[0].a === sets[0].b) return 'Remis nie jest możliwy: wpisz wynik po dogrywce lub rzutach karnych.'
+    if (!sets.length) return t('Wpisz wynik meczu.')
+    if (!rules.draws && sets[0].a === sets[0].b) return t('Remis nie jest możliwy: wpisz wynik po dogrywce lub rzutach karnych.')
     return null
   }
-  if (!sets.length) return 'Wpisz wynik co najmniej jednego seta.'
+  if (!sets.length) return t('Wpisz wynik co najmniej jednego seta.')
   for (let i = 0; i < sets.length; i++) {
     const p = setProblem(rules, i, sets[i])
-    const label = `Set ${i + 1} (${sets[i].a}:${sets[i].b})`
-    if (p === 'impossible') return `${label}: taki wynik jest niemożliwy, set kończy się wcześniej (do ${setTarget(rules, i)}, przewaga ${rules.winBy}).`
-    if (p === 'unfinished') return `${label}: set nie jest zakończony (do ${setTarget(rules, i)}, przewaga ${rules.winBy}).`
-    if (i < sets.length - 1 && isMatchDecided(rules, sets.slice(0, i + 1))) return `Mecz rozstrzygnął się po secie ${i + 1}, kolejne sety są zbędne.`
+    const label = t('Set {n} ({score})', { n: i + 1, score: `${sets[i].a}:${sets[i].b}` })
+    const rule = { target: setTarget(rules, i), lead: rules.winBy }
+    if (p === 'impossible') return t('{label}: taki wynik jest niemożliwy, set kończy się wcześniej (do {target}, przewaga {lead}).', { label, ...rule })
+    if (p === 'unfinished') return t('{label}: set nie jest zakończony (do {target}, przewaga {lead}).', { label, ...rule })
+    if (i < sets.length - 1 && isMatchDecided(rules, sets.slice(0, i + 1))) return t('Mecz rozstrzygnął się po secie {n}, kolejne sety są zbędne.', { n: i + 1 })
   }
-  if (!isMatchDecided(rules, sets)) return 'Mecz nie jest jeszcze rozstrzygnięty, brakuje seta.'
+  if (!isMatchDecided(rules, sets)) return t('Mecz nie jest jeszcze rozstrzygnięty, brakuje seta.')
   return null
 }
 

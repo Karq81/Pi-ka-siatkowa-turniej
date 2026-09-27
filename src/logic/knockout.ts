@@ -1,11 +1,12 @@
+import { t } from '../i18n'
 import type { Group, KoInfo, KoRound, KoSource, Match, State } from '../types'
 import { followOnCourt, toLocalIso } from './schedule'
 import { isMatchDecided, standings, tally } from './scoring'
 
 export const ROUND_NAMES: Record<KoRound, string> = {
-  QF: 'Ćwierćfinały',
-  SF: 'Półfinały',
-  P: 'Mecze o miejsca',
+  QF: t('Ćwierćfinały'),
+  SF: t('Półfinały'),
+  P: t('Mecze o miejsca'),
 }
 
 interface PlanItem {
@@ -22,7 +23,7 @@ export function koId(categoryId: string, key: string) {
 }
 
 export function placeLabel(place: number): string {
-  return place === 1 ? 'Finał' : `O ${place}. miejsce`
+  return place === 1 ? t('Finał') : t('O {n}. miejsce', { n: place })
 }
 
 type Pair = [KoSource, KoSource]
@@ -43,8 +44,8 @@ function tierPlan(categoryId: string, from: number, pairs: Pair[]): PlanItem[] {
   if (pairs.length === 1) return [final(from, ...pairs[0])]
 
   if (pairs.length === 2) {
-    const s1 = top ? 'Półfinał 1' : `Miejsca ${from}–${to}, mecz 1`
-    const s2 = top ? 'Półfinał 2' : `Miejsca ${from}–${to}, mecz 2`
+    const s1 = top ? t('Półfinał {n}', { n: 1 }) : t('Miejsca {from}–{to}, mecz {n}', { from, to, n: 1 })
+    const s2 = top ? t('Półfinał {n}', { n: 2 }) : t('Miejsca {from}–{to}, mecz {n}', { from, to, n: 2 })
     return [
       item('S1', 'SF', s1, pairs[0]),
       item('S2', 'SF', s2, pairs[1]),
@@ -54,9 +55,9 @@ function tierPlan(categoryId: string, from: number, pairs: Pair[]): PlanItem[] {
   }
 
   // 8 teams
-  const q = (n: number) => (top ? `Ćwierćfinał ${n}` : `Miejsca ${from}–${to}, mecz ${n}`)
-  const sw = (n: number) => (top ? `Półfinał ${n}` : `Miejsca ${from}–${from + 3}, półfinał ${n}`)
-  const sl = (n: number) => `Miejsca ${from + 4}–${to}, półfinał ${n}`
+  const q = (n: number) => (top ? t('Ćwierćfinał {n}', { n }) : t('Miejsca {from}–{to}, mecz {n}', { from, to, n }))
+  const sw = (n: number) => (top ? t('Półfinał {n}', { n }) : t('Miejsca {from}–{to}, półfinał {n}', { from, to: from + 3, n }))
+  const sl = (n: number) => t('Miejsca {from}–{to}, półfinał {n}', { from: from + 4, to, n })
   return [
     ...pairs.map((p, i) => item(`Q${i + 1}`, 'QF', q(i + 1), p)),
     item('W1', 'SF', sw(1), [w(id(k('Q1')), q(1)), w(id(k('Q2')), q(2))]),
@@ -154,9 +155,9 @@ export function resolveSource(state: State, src: KoSource): string {
 export function sourceLabel(state: State, src: KoSource): string {
   if (src.kind === 'group') {
     const name = state.groups.find((x) => x.id === src.groupId)?.name ?? ''
-    return `${src.pos}. miejsce · ${name}`
+    return t('{n}. miejsce · {group}', { n: src.pos, group: name })
   }
-  return `${src.take === 'winner' ? 'Zwycięzca' : 'Przegrany'}: ${src.label}`
+  return src.take === 'winner' ? t('Zwycięzca: {match}', { match: src.label }) : t('Przegrany: {match}', { match: src.label })
 }
 
 function groupsOf(state: State, categoryId: string) {

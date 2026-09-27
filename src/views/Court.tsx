@@ -1,3 +1,4 @@
+import { t, tp } from '../i18n'
 import { useEffect, useState } from 'react'
 import { canAddPoint, isMatchDecided, isScore, scoreUnit, setCap, setTarget, setWinner, tally } from '../logic/scoring'
 import { courtBoard } from '../logic/courtBoard'
@@ -15,7 +16,7 @@ export function CourtPicker() {
     <div className="page">
       <BackBar fallback="panel-sedziowie" />
       <header className="bar">
-        <h1>Tryb sędziego</h1>
+        <h1>{t('Tryb sędziego')}</h1>
       </header>
       <CourtList />
     </div>
@@ -32,8 +33,7 @@ export function CourtList() {
   return (
     <>
       <p className="muted">
-        Wybierz boisko i wpisz klucz, który dostałeś od sędziego głównego. Przy każdym boisku wisi też kartka
-        z kodem QR, który prowadzi prosto do tego boiska.
+        {t('Wybierz boisko i wpisz klucz, który dostałeś od sędziego głównego. Przy każdym boisku wisi też kartka z kodem QR, który prowadzi prosto do tego boiska.')}
       </p>
       <ul className="court-picker">
         {courts.map((c) => {
@@ -44,10 +44,10 @@ export function CourtList() {
           return (
             <li key={c} className={`picker-card ${board.mode === 'live' ? 'is-live' : ''}`}>
               <span className="picker-head">
-                <b>Boisko {courtLabel(c)}</b>
+                <b>{t('Boisko {n}', { n: courtLabel(c) })}</b>
                 {board.mode === 'live' && <StatusPill status="live" />}
                 {board.mode === 'finished' && <StatusPill status="finished" />}
-                {board.mode === 'next' && <span className="pill pill-next">Następne<span className="pill-long"> spotkanie</span></span>}
+                {board.mode === 'next' && <span className="pill pill-next">{t('Następne')}<span className="pill-long"> {t('spotkanie')}</span></span>}
               </span>
               <span className="small">
                 {current ? (
@@ -55,13 +55,13 @@ export function CourtList() {
                     <b>{formatTime(current.start)}</b> {side(current, 'a')} – {side(current, 'b')}
                     {board.mode === 'finished' && res && <b> · {res.a}:{res.b}</b>}
                   </>
-                ) : 'Brak meczów'}
+                ) : t('Brak meczów')}
               </span>
               <span className="ref-links">
-                <a className="btn btn-ref" href={`#boisko-${c}`}>Sędziuj na żywo</a>
-                <a className="btn btn-ref" href={`#wynik-${c}`}>Podaj wynik</a>
+                <a className="btn btn-ref" href={`#boisko-${c}`}>{t('Sędziuj na żywo')}</a>
+                <a className="btn btn-ref" href={`#wynik-${c}`}>{t('Podaj wynik')}</a>
               </span>
-              {!mine && <span className="muted small">Wymaga klucza boiska {courtLabel(c)}</span>}
+              {!mine && <span className="muted small">{t('Wymaga klucza boiska {n}', { n: courtLabel(c) })}</span>}
               {session?.role === 'admin' && <NextTimeForm state={state} court={c} />}
             </li>
           )
@@ -70,8 +70,10 @@ export function CourtList() {
       <Upcoming state={state} />
       {session && (
         <p className="muted small">
-          Ten telefon jest zalogowany jako {session.role === 'admin' ? 'sędzia główny' : `sędzia boiska ${courtLabel(session.court ?? 0)}`}.{' '}
-          <button className="linklike" onClick={() => store.logout()}>Wyloguj</button>
+          {session.role === 'admin'
+            ? t('Ten telefon jest zalogowany jako sędzia główny.')
+            : t('Ten telefon jest zalogowany jako sędzia boiska {court}.', { court: courtLabel(session.court ?? 0) })}{' '}
+          <button className="linklike" onClick={() => store.logout()}>{t('Wyloguj')}</button>
         </p>
       )}
     </>
@@ -94,14 +96,14 @@ function NextTimeForm({ state, court }: { state: State; court: number }) {
   const valid = /^([01]\d|2[0-3]):[0-5]\d$/.test(time)
   const save = async () => {
     const moved = setNextOnCourt(state.matches, court, time)
-    if (!moved.length) { setMsg('Bez zmian.'); return }
+    if (!moved.length) { setMsg(t('Bez zmian.')); return }
     const byId = new Map(moved.map((m) => [m.id, m]))
     await store.replace({ ...state, matches: state.matches.map((m) => byId.get(m.id) ?? m) })
-    setMsg(`Następny mecz o ${time}. Przesunięto ${moved.length} ${moved.length === 1 ? 'mecz' : moved.length < 5 ? 'mecze' : 'meczów'} na tym boisku.`)
+    setMsg(`${t('Następny mecz o {time}.', { time })} ${tp(moved.length, 'Przesunięto {n} mecz na tym boisku.|Przesunięto {n} mecze na tym boisku.|Przesunięto {n} meczów na tym boisku.')}`)
   }
   return (
     <div className="next-time">
-      <label>Następny mecz o
+      <label>{t('Następny mecz o')}
         <input
           id={`next-time-${court}`} type="text" inputMode="numeric" placeholder="15:45" maxLength={5} value={time} disabled={live}
           onChange={(e) => {
@@ -112,8 +114,8 @@ function NextTimeForm({ state, court }: { state: State; court: number }) {
           }}
         />
       </label>
-      <button className="btn btn-sm" disabled={live || !valid || time === next.start.slice(11, 16)} onClick={save}>Ustaw</button>
-      {live && <span className="muted small">Mecz trwa: godzinę następnego ustawisz po jego zakończeniu.</span>}
+      <button className="btn btn-sm" disabled={live || !valid || time === next.start.slice(11, 16)} onClick={save}>{t('Ustaw')}</button>
+      {live && <span className="muted small">{t('Mecz trwa: godzinę następnego ustawisz po jego zakończeniu.')}</span>}
       {msg && <span className="ok small">{msg}</span>}
     </div>
   )
@@ -127,9 +129,9 @@ export function Court({ court, manual = false }: { court: number; manual?: boole
     <div className="page page-court">
       <BackBar fallback="panel-sedziowie" />
       <header className="bar">
-        <h1>Boisko {courtLabel(court)}</h1>
+        <h1>{t('Boisko {n}', { n: courtLabel(court) })}</h1>
       </header>
-      <PinGate court={court} label={`Boisko ${courtLabel(court)}`}>
+      <PinGate court={court} label={t('Boisko {n}', { n: courtLabel(court) })}>
         <CourtPanel state={state} court={court} manualFirst={manual} />
       </PinGate>
     </div>
@@ -149,50 +151,50 @@ function CourtPanel({ state, court, manualFirst }: { state: State; court: number
   const finished = justFinished ? state.matches.find((m) => m.id === justFinished) : undefined
 
   if (finished) {
-    const t = tally(state.tournament.rules, finished.sets)
+    const tl = tally(state.tournament.rules, finished.sets)
     return (
       <section className="ref-card">
-        <p className="eyebrow">Mecz zakończony</p>
-        <h2>{side(finished, 'a')} {t.setsA}:{t.setsB} {side(finished, 'b')}</h2>
+        <p className="eyebrow">{t('Mecz zakończony')}</p>
+        <h2>{side(finished, 'a')} {tl.setsA}:{tl.setsB} {side(finished, 'b')}</h2>
         <p className="muted">{finished.sets.map((s) => `${s.a}:${s.b}`).join(', ')}</p>
-        <p>Wynik jest już na stronie. Pomyłkę może poprawić tylko sędzia główny.</p>
+        <p>{t('Wynik jest już na stronie. Pomyłkę może poprawić tylko sędzia główny.')}</p>
         {current && (
           <p className="next-on-court">
-            Następny mecz na tym boisku: <b>{formatTime(current.start)}</b> (2 minuty po zakończeniu)<br />
+            {t('Następny mecz na tym boisku:')} <b>{formatTime(current.start)}</b> {t('(2 minuty po zakończeniu)')}<br />
             {side(current, 'a')} – {side(current, 'b')}
           </p>
         )}
         <button className="btn btn-primary btn-lg" onClick={() => setJustFinished(null)}>
-          {current ? 'Następny mecz' : 'Wróć'}
+          {current ? t('Następny mecz') : t('Wróć')}
         </button>
       </section>
     )
   }
 
-  if (!current) return <p className="muted">Na tym boisku nie ma już zaplanowanych meczów.</p>
+  if (!current) return <p className="muted">{t('Na tym boisku nie ma już zaplanowanych meczów.')}</p>
 
   const meta = `${categoryName(current.categoryId)} · ${stageName(current)} · ${formatTime(current.start)}`
   const known = !!current.teamA && !!current.teamB
   const manualLink = known && (
-    <button className="btn btn-lg" onClick={() => setManual(current.id)}>Podaj wynik z kartki</button>
+    <button className="btn btn-lg" onClick={() => setManual(current.id)}>{t('Podaj wynik z kartki')}</button>
   )
 
   if (manual === current.id) {
     return (
       <section className="ref-card">
-        <p className="eyebrow">Podaj wynik</p>
+        <p className="eyebrow">{t('Podaj wynik')}</p>
         <p className="muted">{meta}</p>
         <ResultForm
           state={state}
           match={current}
-          submitLabel="Zakończ mecz i wyślij wynik"
+          submitLabel={t('Zakończ mecz i wyślij wynik')}
           onSubmit={(sets) => {
             store.updateMatch(current.id, (m) => ({ ...m, status: 'finished', sets }))
             setManual(null)
             setJustFinished(current.id)
           }}
         >
-          <button type="button" className="btn" onClick={() => setManual(null)}>Anuluj</button>
+          <button type="button" className="btn" onClick={() => setManual(null)}>{t('Anuluj')}</button>
         </ResultForm>
       </section>
     )
@@ -201,11 +203,11 @@ function CourtPanel({ state, court, manualFirst }: { state: State; court: number
   if (current.status === 'scheduled') {
     return (
       <section className="ref-card">
-        <p className="eyebrow">Następny mecz</p>
+        <p className="eyebrow">{t('Następny mecz')}</p>
         <p className="muted">{meta}</p>
         <h2 className="vs">
           <span>{side(current, 'a')}</span>
-          <span className="muted">vs</span>
+          <span className="muted">{t('vs')}</span>
           <span>{side(current, 'b')}</span>
         </h2>
         <button
@@ -213,10 +215,10 @@ function CourtPanel({ state, court, manualFirst }: { state: State; court: number
           disabled={!current.teamA || !current.teamB}
           onClick={() => store.updateMatch(current.id, (m) => ({ ...m, status: 'live', sets: [{ a: 0, b: 0 }] }))}
         >
-          {known ? `Rozpocznij mecz i licz ${isScore(state.tournament.rules) ? scoreUnit(state.tournament.rules) : 'punkty'}` : 'Czekamy na wyniki poprzednich meczów'}
+          {known ? t('Rozpocznij mecz i licz: {unit}', { unit: isScore(state.tournament.rules) ? scoreUnit(state.tournament.rules) : t('punkty') }) : t('Czekamy na wyniki poprzednich meczów')}
         </button>
         {manualLink}
-        {next && <p className="muted small">Potem: {formatTime(next.start)} {side(next, 'a')} – {side(next, 'b')}</p>}
+        {next && <p className="muted small">{t('Potem:')} {formatTime(next.start)} {side(next, 'a')} – {side(next, 'b')}</p>}
       </section>
     )
   }
@@ -225,16 +227,16 @@ function CourtPanel({ state, court, manualFirst }: { state: State; court: number
     // Marked as started by the chief referee without point-by-point scoring.
     return (
       <section className="ref-card">
-        <p className="eyebrow">Mecz trwa</p>
+        <p className="eyebrow">{t('Mecz trwa')}</p>
         <p className="muted">{meta}</p>
         <h2 className="vs">
           <span>{side(current, 'a')}</span>
-          <span className="muted">vs</span>
+          <span className="muted">{t('vs')}</span>
           <span>{side(current, 'b')}</span>
         </h2>
-        <p>Sędzia główny oznaczył ten mecz jako trwający, bez liczenia wyniku na żywo.</p>
+        <p>{t('Sędzia główny oznaczył ten mecz jako trwający, bez liczenia wyniku na żywo.')}</p>
         <button className="btn btn-primary btn-lg" onClick={() => store.updateMatch(current.id, (m) => ({ ...m, sets: [{ a: 0, b: 0 }] }))}>
-          Licz wynik na żywo
+          {t('Licz wynik na żywo')}
         </button>
         {manualLink}
       </section>
@@ -244,7 +246,7 @@ function CourtPanel({ state, court, manualFirst }: { state: State; court: number
   return (
     <>
       <LiveScoring state={state} match={current} meta={meta} onFinish={() => setJustFinished(current.id)} />
-      <button className="btn btn-lg" onClick={() => setManual(current.id)}>Nie liczę na żywo, podaj wynik z kartki</button>
+      <button className="btn btn-lg" onClick={() => setManual(current.id)}>{t('Nie liczę na żywo, podaj wynik z kartki')}</button>
     </>
   )
 }
@@ -256,7 +258,7 @@ function LiveScoring({ state, match, meta, onFinish }: { state: State; match: Ma
   const set = match.sets[idx]
   const winner = setWinner(rules, idx, set)
   const decided = isMatchDecided(rules, match.sets)
-  const t = tally(rules, match.sets)
+  const tl = tally(rules, match.sets)
   const score = isScore(rules)
 
   // Checked again inside the update, so a quick double tap cannot go past the end of a set.
@@ -282,41 +284,45 @@ function LiveScoring({ state, match, meta, onFinish }: { state: State; match: Ma
       <p className="muted center">{meta}</p>
       <p className="set-label">
         {score
-          ? `Wynik na żywo (${scoreUnit(rules)})`
+          ? t('Wynik na żywo ({unit})', { unit: scoreUnit(rules) })
           : rules.sets > 1
-            ? `Set ${idx + 1} · do ${setTarget(rules, idx)} · sety ${t.setsA}:${t.setsB}`
-            : `Do ${setTarget(rules, idx)}${rules.unit === 'gemy' ? ' gemów' : ' pkt'} · przewaga ${rules.winBy}${setCap(rules, idx) ? ` · maks. ${setCap(rules, idx)}` : ''}`}
+            ? t('Set {n} · do {target} · sety {sets}', { n: idx + 1, target: setTarget(rules, idx), sets: `${tl.setsA}:${tl.setsB}` })
+            : [
+                rules.unit === 'gemy' ? t('Do {n} gemów', { n: setTarget(rules, idx) }) : t('Do {n} pkt', { n: setTarget(rules, idx) }),
+                t('przewaga {n}', { n: rules.winBy }),
+                ...(setCap(rules, idx) ? [t('maks. {n}', { n: setCap(rules, idx)! })] : []),
+              ].join(' · ')}
       </p>
       <div className="pads">
         {(['a', 'b'] as const).map((s) => (
           <div key={s} className={`pad ${!score && winner === s ? 'pad-won' : ''}`}>
             <span className="pad-team">{side(match, s)}</span>
             <span className="pad-score">{set[s]}</span>
-            <button className="btn-plus" onClick={() => change(s, 1)} disabled={!canAddPoint(rules, idx, set)} aria-label={`Punkt dla ${side(match, s)}`}>
+            <button className="btn-plus" onClick={() => change(s, 1)} disabled={!canAddPoint(rules, idx, set)} aria-label={t('Punkt dla: {team}', { team: side(match, s) })}>
               +1
             </button>
             <button className="btn-minus" onClick={() => change(s, -1)} disabled={set[s] === 0}>
-              −1 cofnij
+              −1 {t('cofnij')}
             </button>
           </div>
         ))}
       </div>
       {idx > 0 && (
-        <p className="muted center">Poprzednie sety: {match.sets.slice(0, -1).map((s) => `${s.a}:${s.b}`).join(', ')}</p>
+        <p className="muted center">{t('Poprzednie sety:')} {match.sets.slice(0, -1).map((s) => `${s.a}:${s.b}`).join(', ')}</p>
       )}
       {!score && winner && !decided && (
         <div className="notice">
-          <p>Set {idx + 1} dla: <b>{side(match, winner)}</b> ({set.a}:{set.b})</p>
-          <button className="btn btn-primary btn-lg" onClick={nextSet}>Zatwierdź seta, zacznij set {idx + 2}</button>
+          <p>{t('Set {n} dla:', { n: idx + 1 })} <b>{side(match, winner)}</b> ({set.a}:{set.b})</p>
+          <button className="btn btn-primary btn-lg" onClick={nextSet}>{t('Zatwierdź seta, zacznij set {n}', { n: idx + 2 })}</button>
         </div>
       )}
       {score && !decided && set.a === set.b && (set.a > 0) && (
-        <p className="muted center">Remis: bez remisów w tym turnieju, grajcie dogrywkę lub karne.</p>
+        <p className="muted center">{t('Remis: bez remisów w tym turnieju, grajcie dogrywkę lub karne.')}</p>
       )}
       {decided && (
         <div className="notice">
-          <p>{score ? <>Koniec meczu? Wynik <b>{set.a}:{set.b}</b></> : <>Mecz rozstrzygnięty: <b>{t.setsA}:{t.setsB}</b></>}</p>
-          <button className="btn btn-primary btn-lg" onClick={finish}>Zakończ mecz i wyślij wynik</button>
+          <p>{score ? <>{t('Koniec meczu? Wynik')} <b>{set.a}:{set.b}</b></> : <>{t('Mecz rozstrzygnięty:')} <b>{tl.setsA}:{tl.setsB}</b></>}</p>
+          <button className="btn btn-primary btn-lg" onClick={finish}>{t('Zakończ mecz i wyślij wynik')}</button>
         </div>
       )}
     </section>

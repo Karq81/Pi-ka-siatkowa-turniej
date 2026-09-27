@@ -1,26 +1,33 @@
+import { t } from '../i18n'
 import { useEffect, useRef, useState } from 'react'
 
 /**
  * Front page demo: a short, looping walk through the service (account → assistant → notes →
  * ready tournament → fans watching). Example data only; nothing is sent anywhere.
  */
-const NOTES = `Turniej piłki nożnej orlików, sobota 10:00, 2 boiska, mecze po 15 minut.
-Grupa A: Orły, Sokoły, Lwy
-Grupa B: Tygrysy, Rysie, Wilki`
+const TEAMS = {
+  a: [t('Orły'), t('Sokoły'), t('Lwy')],
+  b: [t('Tygrysy'), t('Rysie'), t('Wilki')],
+}
+const NOTES = [
+  t('Turniej piłki nożnej orlików, sobota 10:00, 2 boiska, mecze po 15 minut.'),
+  `${t('Grupa {letter}', { letter: 'A' })}: ${TEAMS.a.join(', ')}`,
+  `${t('Grupa {letter}', { letter: 'B' })}: ${TEAMS.b.join(', ')}`,
+].join('\n')
 
 const SCENES = [
-  { title: 'Zakładasz konto', say: 'Nazwa, login i hasło. Minuta i gotowe.', ms: 4500 },
-  { title: 'Otwierasz asystenta AI', say: 'Jeden przycisk: „Użyj asystenta AI”.', ms: 2600 },
-  { title: 'Piszesz po swojemu', say: 'Tak, jak na kartce albo w wiadomości do kolegi. Bez tabelek.', ms: 9000 },
-  { title: 'Turniej jest gotowy', say: 'Asystent ułożył grupy i terminarz. Sprawdzasz, poprawiasz, co chcesz, i klikasz „Dalej”.', ms: 6000 },
-  { title: 'Kibice widzą wyniki', say: 'Wysyłasz link albo wieszasz kod QR. Wyniki zmieniają się na żywo.', ms: 6000 },
+  { title: t('Zakładasz konto'), say: t('Nazwa, login i hasło. Minuta i gotowe.'), ms: 4500 },
+  { title: t('Otwierasz asystenta AI'), say: t('Jeden przycisk: „Użyj asystenta AI”.'), ms: 2600 },
+  { title: t('Piszesz po swojemu'), say: t('Tak, jak na kartce albo w wiadomości do kolegi. Bez tabelek.'), ms: 9000 },
+  { title: t('Turniej jest gotowy'), say: t('Asystent ułożył grupy i terminarz. Sprawdzasz, poprawiasz, co chcesz, i klikasz „Dalej”.'), ms: 6000 },
+  { title: t('Kibice widzą wyniki'), say: t('Wysyłasz link albo wieszasz kod QR. Wyniki zmieniają się na żywo.'), ms: 6000 },
 ]
 
 const TICK = 50
 
-/** The part of `text` typed by time `t`, starting at `from`, one character every `every` ms. */
-function typed(text: string, t: number, from: number, every: number): string {
-  return text.slice(0, Math.max(0, Math.floor((t - from) / every)))
+/** The part of `text` typed by `time`, starting at `from`, one character every `every` ms. */
+function typed(text: string, time: number, from: number, every: number): string {
+  return text.slice(0, Math.max(0, Math.floor((time - from) / every)))
 }
 
 export function Demo() {
@@ -46,7 +53,7 @@ export function Demo() {
     return () => clearInterval(id)
   }, [playing, visible])
 
-  const { scene, t } = pos
+  const { scene, t: time } = pos
   const go = (i: number) => { setPos({ scene: i, t: 0 }); setPlaying(true) }
 
   return (
@@ -61,7 +68,7 @@ export function Demo() {
                 {i === scene && <small>{s.say}</small>}
               </span>
             </button>
-            {i === scene && <span className="dm-bar" style={{ width: `${(t / s.ms) * 100}%` }} />}
+            {i === scene && <span className="dm-bar" style={{ width: `${(time / s.ms) * 100}%` }} />}
           </li>
         ))}
       </ol>
@@ -72,19 +79,19 @@ export function Demo() {
           <span className="dm-url">sportlivearena.com/{scene === 4 ? '?t=orliki' : scene === 0 ? '#rejestracja' : '#nowy-turniej'}</span>
         </div>
         <div className="dm-body" key={scene}>
-          {scene === 0 && <SignUp t={t} />}
-          {scene === 1 && <OpenAssistant t={t} />}
-          {scene === 2 && <Write t={t} />}
-          {scene === 3 && <Ready t={t} />}
-          {scene === 4 && <Live t={t} />}
+          {scene === 0 && <SignUp time={time} />}
+          {scene === 1 && <OpenAssistant time={time} />}
+          {scene === 2 && <Write time={time} />}
+          {scene === 3 && <Ready time={time} />}
+          {scene === 4 && <Live time={time} />}
         </div>
       </div>
 
       <div className="dm-controls">
         <button type="button" className="dm-ctl" onClick={() => setPlaying((p) => !p)}>
-          {playing ? '⏸ Pauza' : '▶ Odtwórz'}
+          {playing ? `⏸ ${t('Pauza')}` : `▶ ${t('Odtwórz')}`}
         </button>
-        <button type="button" className="dm-ctl" onClick={() => go(0)}>↺ Od początku</button>
+        <button type="button" className="dm-ctl" onClick={() => go(0)}>↺ {t('Od początku')}</button>
       </div>
     </div>
   )
@@ -99,74 +106,75 @@ function Field({ label, value, active }: { label: string; value: string; active?
   )
 }
 
-function SignUp({ t }: { t: number }) {
-  const name = typed('UKS Orliki', t, 300, 70)
-  const login = typed('orliki', t, 1300, 90)
-  const pass = '•'.repeat(Math.min(8, Math.max(0, Math.floor((t - 2200) / 90))))
+function SignUp({ time }: { time: number }) {
+  const name = typed('UKS Orliki', time, 300, 70)
+  const login = typed('orliki', time, 1300, 90)
+  const pass = '•'.repeat(Math.min(8, Math.max(0, Math.floor((time - 2200) / 90))))
   return (
     <div className="dm-card dm-narrow">
-      <h4>Załóż konto</h4>
-      <Field label="Nazwa klubu albo Twoje imię" value={name} active={t < 1300} />
-      <Field label="Login" value={login} active={t >= 1300 && t < 2200} />
-      <Field label="Hasło" value={pass} active={t >= 2200 && t < 3200} />
-      <span className={t > 3400 ? 'dm-btn press' : 'dm-btn'}>Załóż konto</span>
+      <h4>{t('Załóż konto')}</h4>
+      <Field label={t('Nazwa klubu albo Twoje imię')} value={name} active={time < 1300} />
+      <Field label={t('Login')} value={login} active={time >= 1300 && time < 2200} />
+      <Field label={t('Hasło')} value={pass} active={time >= 2200 && time < 3200} />
+      <span className={time > 3400 ? 'dm-btn press' : 'dm-btn'}>{t('Załóż konto')}</span>
     </div>
   )
 }
 
-function OpenAssistant({ t }: { t: number }) {
+function OpenAssistant({ time }: { time: number }) {
   return (
     <div className="dm-card dm-center">
-      <p className="dm-muted">Załóż turniej</p>
-      <h4>Asystent AI założy turniej za Ciebie</h4>
-      <span className={t > 1500 ? 'dm-ai press' : 'dm-ai'}>✨ Użyj asystenta AI</span>
-      <p className="dm-muted small">Wolisz sam? Formularz jest niżej.</p>
+      <p className="dm-muted">{t('Załóż turniej')}</p>
+      <h4>{t('Asystent AI założy turniej za Ciebie')}</h4>
+      <span className={time > 1500 ? 'dm-ai press' : 'dm-ai'}>✨ {t('Użyj asystenta AI')}</span>
+      <p className="dm-muted small">{t('Wolisz sam? Formularz jest niżej.')}</p>
     </div>
   )
 }
 
-function Write({ t }: { t: number }) {
-  const text = typed(NOTES, t, 300, 45)
+function Write({ time }: { time: number }) {
+  const text = typed(NOTES, time, 300, 45)
   const done = text.length === NOTES.length
   return (
     <div className="dm-card">
-      <h4>✨ Asystent AI</h4>
-      <p className="dm-muted small">Opisz turniej albo wklej notatki</p>
+      <h4>✨ {t('Asystent AI')}</h4>
+      <p className="dm-muted small">{t('Opisz turniej albo wklej notatki')}</p>
       <div className="dm-textarea">{text}{!done && <i className="dm-caret" />}</div>
-      <span className={done && t > 8000 ? 'dm-btn press' : 'dm-btn'}>Przygotuj turniej</span>
+      <span className={done && time > 8000 ? 'dm-btn press' : 'dm-btn'}>{t('Przygotuj turniej')}</span>
     </div>
   )
 }
 
-function Ready({ t }: { t: number }) {
-  if (t < 1600) {
-    return <div className="dm-card dm-center"><p className="dm-thinking">✨ Asystent układa turniej…</p></div>
+function Ready({ time }: { time: number }) {
+  if (time < 1600) {
+    return <div className="dm-card dm-center"><p className="dm-thinking">✨ {t('Asystent układa turniej…')}</p></div>
   }
   return (
     <div className="dm-card dm-pop">
-      <p className="dm-tags"><span>⚽ Piłka nożna</span><span>sobota 10:00</span><span>2 boiska</span></p>
+      <p className="dm-tags"><span>⚽ {t('Piłka nożna')}</span><span>{t('sobota')} 10:00</span><span>{t('{n} boiska', { n: 2 })}</span></p>
       <div className="dm-groups">
-        <div><b>Grupa A</b><span>Orły</span><span>Sokoły</span><span>Lwy</span></div>
-        <div><b>Grupa B</b><span>Tygrysy</span><span>Rysie</span><span>Wilki</span></div>
+        {(['a', 'b'] as const).map((g) => (
+          <div key={g}><b>{t('Grupa {letter}', { letter: g.toUpperCase() })}</b>{TEAMS[g].map((x) => <span key={x}>{x}</span>)}</div>
+        ))}
       </div>
       <ul className="dm-plan">
-        <li><b>10:00</b> Boisko 1 · Orły – Sokoły</li>
-        <li><b>10:00</b> Boisko 2 · Tygrysy – Rysie</li>
-        <li><b>10:15</b> Boisko 1 · Lwy – Orły</li>
+        <li><b>10:00</b> {t('Boisko {n}', { n: 1 })} · {TEAMS.a[0]} – {TEAMS.a[1]}</li>
+        <li><b>10:00</b> {t('Boisko {n}', { n: 2 })} · {TEAMS.b[0]} – {TEAMS.b[1]}</li>
+        <li><b>10:15</b> {t('Boisko {n}', { n: 1 })} · {TEAMS.a[2]} – {TEAMS.a[0]}</li>
       </ul>
-      <p className="dm-note">✏️ Wszystko możesz jeszcze zmienić</p>
+      <p className="dm-note">✏️ {t('Wszystko możesz jeszcze zmienić')}</p>
     </div>
   )
 }
 
-function Live({ t }: { t: number }) {
-  const home = t > 2600 ? 2 : 1
+function Live({ time }: { time: number }) {
+  const home = time > 2600 ? 2 : 1
   return (
     <div className="dm-live">
       <div className="dm-card">
-        <p className="dm-muted small"><span className="dm-red">● NA ŻYWO</span> Boisko 1 · Grupa A</p>
-        <p className="dm-score"><span>Orły</span><b className={t > 2600 && t < 3600 ? 'flash' : ''}>{home}</b></p>
-        <p className="dm-score"><span>Sokoły</span><b>1</b></p>
+        <p className="dm-muted small"><span className="dm-red">● {t('NA ŻYWO')}</span> {t('Boisko {n}', { n: 1 })} · {t('Grupa {letter}', { letter: 'A' })}</p>
+        <p className="dm-score"><span>{TEAMS.a[0]}</span><b className={time > 2600 && time < 3600 ? 'flash' : ''}>{home}</b></p>
+        <p className="dm-score"><span>{TEAMS.a[1]}</span><b>1</b></p>
       </div>
       <div className="dm-card dm-qr">
         <svg viewBox="0 0 7 7" width="64" height="64" shapeRendering="crispEdges">
@@ -176,7 +184,7 @@ function Live({ t }: { t: number }) {
               : null
           )))}
         </svg>
-        <span>Link dla kibiców<br /><b>sportlivearena.com/?t=orliki</b></span>
+        <span>{t('Link dla kibiców')}<br /><b>sportlivearena.com/?t=orliki</b></span>
       </div>
     </div>
   )

@@ -1,3 +1,4 @@
+import { locale, t, tk } from '../i18n'
 import { useEffect, useState } from 'react'
 import { ALBATROS_ALIAS, IS_PLATFORM_HOST } from '../config'
 import {
@@ -11,8 +12,8 @@ import {
 
 /** Address of one of the account's tournaments (Albatros CUP is "main" in the database). */
 function tournamentLink(id: string, hash = ''): string {
-  const t = id === 'main' ? (IS_PLATFORM_HOST ? ALBATROS_ALIAS : '') : id
-  return `${location.pathname}${t ? `?t=${t}` : ''}${hash}`
+  const slug = id === 'main' ? (IS_PLATFORM_HOST ? ALBATROS_ALIAS : '') : id
+  return `${location.pathname}${slug ? `?t=${slug}` : ''}${hash}`
 }
 
 /**
@@ -27,17 +28,17 @@ export function AccountPage({ view }: { view: 'konto' | 'rejestracja' | 'moje-tu
     <div className="pf-page">
       <PlatformNav />
       <main className="pf-wrap pf-main">
-        {account.status === 'unavailable' && <p className="notice-inline">Konta działają tylko na stronie z bazą danych.</p>}
-        {account.status === 'loading' && <p className="muted">Wczytuję…</p>}
+        {account.status === 'unavailable' && <p className="notice-inline">{t('Konta działają tylko na stronie z bazą danych.')}</p>}
+        {account.status === 'loading' && <p className="muted">{t('Wczytuję…')}</p>}
         {account.status === 'signed-out' && (
           <div className="auth-grid">
             <aside className="auth-pitch">
               <Wordmark size="lg" />
-              <h1>Twoje turnieje w jednym miejscu</h1>
+              <h1>{t('Twoje turnieje w jednym miejscu')}</h1>
               <ul className="ab-checks">
-                <li>Zakładasz turniej w kilka minut</li>
-                <li>Panel organizatora jednym kliknięciem, bez PIN-u</li>
-                <li>Wyniki na żywo dla kibiców, w każdej dyscyplinie</li>
+                <li>{t('Zakładasz turniej w kilka minut')}</li>
+                <li>{t('Panel organizatora jednym kliknięciem, bez PIN-u')}</li>
+                <li>{t('Wyniki na żywo dla kibiców, w każdej dyscyplinie')}</li>
               </ul>
             </aside>
             <SignIn key={register ? 'new' : 'in'} initial={register ? 'new' : 'in'} />
@@ -82,33 +83,33 @@ function SignIn({ initial }: { initial: 'in' | 'new' }) {
 
   return (
     <form className="panel account-form" onSubmit={submit}>
-      <h2>{creating ? 'Załóż konto' : 'Zaloguj się'}</h2>
+      <h2>{creating ? t('Załóż konto') : t('Zaloguj się')}</h2>
       <div className="seg" role="tablist">
-        <button type="button" role="tab" aria-selected={!creating} className={!creating ? 'on' : ''} onClick={() => { setMode('in'); location.hash = 'konto' }}>Mam konto</button>
-        <button type="button" role="tab" aria-selected={creating} className={creating ? 'on' : ''} onClick={() => { setMode('new'); location.hash = 'rejestracja' }}>Nowe konto</button>
+        <button type="button" role="tab" aria-selected={!creating} className={!creating ? 'on' : ''} onClick={() => { setMode('in'); location.hash = 'konto' }}>{t('Mam konto')}</button>
+        <button type="button" role="tab" aria-selected={creating} className={creating ? 'on' : ''} onClick={() => { setMode('new'); location.hash = 'rejestracja' }}>{t('Nowe konto')}</button>
       </div>
-      <label>Login
-        <input value={login} onChange={(e) => setLogin(e.target.value)} autoComplete="username" autoCapitalize="none" placeholder="np. optymielno" />
-        {creating && <span className="muted small">Małe litery, cyfry, kropka lub myślnik (3–30 znaków). Może być też adres e-mail.</span>}
+      <label>{t('Login')}
+        <input value={login} onChange={(e) => setLogin(e.target.value)} autoComplete="username" autoCapitalize="none" placeholder={t('np. optymielno')} />
+        {creating && <span className="muted small">{t('Małe litery, cyfry, kropka lub myślnik (3–30 znaków). Może być też adres e-mail.')}</span>}
       </label>
       {creating && (
-        <label>Nazwa klubu lub organizatora
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="np. UKS Opty Mielno" />
+        <label>{t('Nazwa klubu lub organizatora')}
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder={t('np. UKS Opty Mielno')} />
         </label>
       )}
-      <label>Hasło
+      <label>{t('Hasło')}
         <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete={creating ? 'new-password' : 'current-password'} />
-        {creating && <span className="muted small">Co najmniej 6 znaków.</span>}
+        {creating && <span className="muted small">{t('Co najmniej 6 znaków.')}</span>}
       </label>
       {creating && (
-        <label>Powtórz hasło
+        <label>{t('Powtórz hasło')}
           <input type="password" value={password2} onChange={(e) => setPassword2(e.target.value)} autoComplete="new-password" />
-          {password2 && password !== password2 && <span className="error small">Hasła się różnią.</span>}
+          {password2 && password !== password2 && <span className="error small">{t('Hasła się różnią.')}</span>}
         </label>
       )}
       {error && <p className="error">{error}</p>}
       <button className="btn btn-primary btn-lg" type="submit" disabled={!ready || busy}>
-        {busy ? 'Chwileczkę…' : creating ? 'Załóż konto' : 'Zaloguj się'}
+        {busy ? t('Chwileczkę…') : creating ? t('Załóż konto') : t('Zaloguj się')}
       </button>
     </form>
   )
@@ -120,28 +121,28 @@ function MyTournaments({ account }: { account: Account }) {
     <>
       <header className="acc-head">
         <div>
-          <p className="eyebrow">Moje turnieje</p>
+          <p className="eyebrow">{t('Moje turnieje')}</p>
           <h1>{account.name || account.login}</h1>
-          <span className="muted">Login: {account.login} · <a href="#konto">Dane konta i hasło</a></span>
+          <span className="muted">{t('Login')}: {account.login} · <a href="#konto">{t('Dane konta i hasło')}</a></span>
         </div>
-        <a className="btn btn-primary btn-lg" href="#nowy-turniej">+ Załóż nowy turniej</a>
+        <a className="btn btn-primary btn-lg" href="#nowy-turniej">+ {t('Załóż nowy turniej')}</a>
       </header>
       <UsageSummary account={account} usage={usage} />
       <section className="account-list">
-        <h2>Moje turnieje</h2>
+        <h2>{t('Moje turnieje')}</h2>
         {account.tournaments.length === 0 && (
-          <p className="muted">Nie masz jeszcze turniejów. Załóż pierwszy, zapisze się na tym koncie.</p>
+          <p className="muted">{t('Nie masz jeszcze turniejów. Załóż pierwszy, zapisze się na tym koncie.')}</p>
         )}
         <div className="acc-grid">
-          {account.tournaments.map((t) => (
-            <article key={t.id} className="panel account-t">
-              <h3>{t.name}</h3>
+          {account.tournaments.map((tr) => (
+            <article key={tr.id} className="panel account-t">
+              <h3>{tr.name}</h3>
               <div className="actions">
-                <a className="btn btn-primary" href={tournamentLink(t.id, '#panel')}>Panel organizatora</a>
-                <a className="btn" href={tournamentLink(t.id)}>Strona dla kibiców</a>
+                <a className="btn btn-primary" href={tournamentLink(tr.id, '#panel')}>{t('Panel organizatora')}</a>
+                <a className="btn" href={tournamentLink(tr.id)}>{t('Strona dla kibiców')}</a>
               </div>
-              <p className="muted small">PIN sędziego głównego: <b>{t.pin}</b>. Po wejściu z tego konta nie trzeba go wpisywać.</p>
-              {usage && <TournamentChart usage={usage[t.id]} />}
+              <p className="muted small">{t('PIN sędziego głównego:')} <b>{tr.pin}</b>. {t('Po wejściu z tego konta nie trzeba go wpisywać.')}</p>
+              {usage && <TournamentChart usage={usage[tr.id]} />}
             </article>
           ))}
         </div>
@@ -151,11 +152,11 @@ function MyTournaments({ account }: { account: Account }) {
 }
 
 const PROFILE_FIELDS: { key: Exclude<keyof AccountProfile, 'name' | 'about'>; label: string; type?: string; placeholder?: string }[] = [
-  { key: 'contactName', label: 'Osoba kontaktowa', placeholder: 'np. Krzysztof Rywak' },
-  { key: 'phone', label: 'Telefon', type: 'tel', placeholder: 'np. 600 100 200' },
-  { key: 'email', label: 'E-mail kontaktowy', type: 'email', placeholder: 'np. klub@example.pl' },
-  { key: 'city', label: 'Miejscowość', placeholder: 'np. Mielno' },
-  { key: 'website', label: 'Strona internetowa', type: 'url', placeholder: 'np. https://klub.pl' },
+  { key: 'contactName', label: tk('Osoba kontaktowa'), placeholder: tk('np. Krzysztof Rywak') },
+  { key: 'phone', label: tk('Telefon'), type: 'tel', placeholder: tk('np. 600 100 200') },
+  { key: 'email', label: tk('E-mail kontaktowy'), type: 'email', placeholder: tk('np. klub@example.pl') },
+  { key: 'city', label: tk('Miejscowość'), placeholder: tk('np. Mielno') },
+  { key: 'website', label: tk('Strona internetowa'), type: 'url', placeholder: tk('np. https://klub.pl') },
 ]
 
 /** "Moje konto": the account's details (all but the name optional) and its password. */
@@ -172,9 +173,9 @@ function Profile({ account }: { account: Account }) {
     setBusy(true)
     try {
       await saveProfile({ ...form, name: form.name.trim() })
-      setMsg('Zapisano.')
+      setMsg(t('Zapisano.'))
     } catch {
-      setMsg('Nie udało się zapisać. Sprawdź internet.')
+      setMsg(t('Nie udało się zapisać. Sprawdź internet.'))
     } finally {
       setBusy(false)
     }
@@ -183,32 +184,32 @@ function Profile({ account }: { account: Account }) {
     <>
       <header className="acc-head">
         <div>
-          <p className="eyebrow">Moje konto</p>
+          <p className="eyebrow">{t('Moje konto')}</p>
           <h1>{account.name || account.login}</h1>
-          <span className="muted">Login: <b>{account.login}</b> · <a href="#moje-turnieje">Moje turnieje ({account.tournaments.length})</a></span>
+          <span className="muted">{t('Login')}: <b>{account.login}</b> · <a href="#moje-turnieje">{t('Moje turnieje')} ({account.tournaments.length})</a></span>
         </div>
       </header>
       <div className="acc-cols">
         <form className="panel acc-form" onSubmit={save}>
-          <h2>Dane konta</h2>
-          <p className="muted small">Widoczne tylko dla Ciebie. Wypełnij, co chcesz, poza nazwą wszystko jest nieobowiązkowe.</p>
-          <label>Nazwa klubu lub organizatora
+          <h2>{t('Dane konta')}</h2>
+          <p className="muted small">{t('Widoczne tylko dla Ciebie. Wypełnij, co chcesz, poza nazwą wszystko jest nieobowiązkowe.')}</p>
+          <label>{t('Nazwa klubu lub organizatora')}
             <input value={form.name} onChange={(e) => set('name', e.target.value)} required />
           </label>
           <div className="acc-form-grid">
             {PROFILE_FIELDS.map((f) => (
-              <label key={f.key}>{f.label}
-                <input type={f.type ?? 'text'} value={form[f.key] ?? ''} placeholder={f.placeholder}
+              <label key={f.key}>{t(f.label)}
+                <input type={f.type ?? 'text'} value={form[f.key] ?? ''} placeholder={f.placeholder && t(f.placeholder)}
                   onChange={(e) => set(f.key, e.target.value)} />
               </label>
             ))}
           </div>
-          <label>O klubie / notatki
+          <label>{t('O klubie / notatki')}
             <textarea rows={3} value={form.about ?? ''} onChange={(e) => set('about', e.target.value)} />
           </label>
           <div className="actions">
-            <button className="btn btn-primary" type="submit" disabled={busy || !form.name.trim()}>{busy ? 'Zapisuję…' : 'Zapisz dane'}</button>
-            {msg && <span className={msg === 'Zapisano.' ? 'ok' : 'error'}>{msg}</span>}
+            <button className="btn btn-primary" type="submit" disabled={busy || !form.name.trim()}>{busy ? t('Zapisuję…') : t('Zapisz dane')}</button>
+            {msg && <span className={msg === t('Zapisano.') ? 'ok' : 'error'}>{msg}</span>}
           </div>
         </form>
         <ChangePassword />
@@ -230,9 +231,9 @@ function ChangePassword() {
   if (!open) {
     return (
       <section className="panel account-pass">
-        <h2>Hasło do konta</h2>
-        <p className="muted small">Hasło, którym logujesz się na konto SportLiveArena. To nie jest PIN turnieju: PIN zmienisz w panelu organizatora turnieju.</p>
-        <button className="btn" onClick={() => { setOpen(true); setMsg(null) }}>Zmień hasło do konta</button>
+        <h2>{t('Hasło do konta')}</h2>
+        <p className="muted small">{t('Hasło, którym logujesz się na konto SportLiveArena. To nie jest PIN turnieju: PIN zmienisz w panelu organizatora turnieju.')}</p>
+        <button className="btn" onClick={() => { setOpen(true); setMsg(null) }}>{t('Zmień hasło do konta')}</button>
         {msg?.ok && <p className="ok">{msg.text}</p>}
       </section>
     )
@@ -245,32 +246,32 @@ function ChangePassword() {
       await changePassword(current, next)
       setCurrent(''); setNext(''); setNext2('')
       setOpen(false)
-      setMsg({ ok: true, text: 'Hasło zmienione. Od teraz loguj się nowym hasłem.' })
+      setMsg({ ok: true, text: t('Hasło zmienione. Od teraz loguj się nowym hasłem.') })
     } catch (err) {
       const code = (err as { code?: string }).code
-      setMsg({ ok: false, text: code === 'auth/invalid-credential' || code === 'auth/wrong-password' ? 'Obecne hasło jest nieprawidłowe.' : accountError(err) })
+      setMsg({ ok: false, text: code === 'auth/invalid-credential' || code === 'auth/wrong-password' ? t('Obecne hasło jest nieprawidłowe.') : accountError(err) })
     } finally {
       setBusy(false)
     }
   }
   return (
     <form className="panel account-form account-pass" onSubmit={submit}>
-      <h2>Zmień hasło do konta</h2>
-      <label>Obecne hasło
+      <h2>{t('Zmień hasło do konta')}</h2>
+      <label>{t('Obecne hasło')}
         <input type="password" value={current} onChange={(e) => setCurrent(e.target.value)} autoComplete="current-password" />
       </label>
-      <label>Nowe hasło
+      <label>{t('Nowe hasło')}
         <input type="password" value={next} onChange={(e) => setNext(e.target.value)} autoComplete="new-password" />
-        <span className="muted small">Co najmniej 6 znaków.</span>
+        <span className="muted small">{t('Co najmniej 6 znaków.')}</span>
       </label>
-      <label>Powtórz nowe hasło
+      <label>{t('Powtórz nowe hasło')}
         <input type="password" value={next2} onChange={(e) => setNext2(e.target.value)} autoComplete="new-password" />
-        {next2 && next !== next2 && <span className="error small">Hasła się różnią.</span>}
+        {next2 && next !== next2 && <span className="error small">{t('Hasła się różnią.')}</span>}
       </label>
       {msg && !msg.ok && <p className="error">{msg.text}</p>}
       <div className="actions">
-        <button className="btn btn-primary" type="submit" disabled={!ready || busy}>{busy ? 'Zapisuję…' : 'Zapisz nowe hasło'}</button>
-        <button className="btn" type="button" onClick={() => setOpen(false)}>Anuluj</button>
+        <button className="btn btn-primary" type="submit" disabled={!ready || busy}>{busy ? t('Zapisuję…') : t('Zapisz nowe hasło')}</button>
+        <button className="btn" type="button" onClick={() => setOpen(false)}>{t('Anuluj')}</button>
       </div>
     </form>
   )
@@ -298,28 +299,27 @@ function UsageSummary({ account, usage }: { account: Account; usage: Record<stri
   return (
     <section className="usage">
       <div className="panel usage-card">
-        <p className="eyebrow">Zużycie dzisiaj</p>
-        <div className="usage-big"><b>{usage ? `${pct}%` : '…'}</b><span className="muted">darmowego limitu</span></div>
+        <p className="eyebrow">{t('Zużycie dzisiaj')}</p>
+        <div className="usage-big"><b>{usage ? `${pct}%` : '…'}</b><span className="muted">{t('darmowego limitu')}</span></div>
         <div className={`usage-bar ${level}`} role="progressbar" aria-valuenow={Math.min(pct, 100)} aria-valuemin={0} aria-valuemax={100}>
           <span style={{ width: `${Math.min(pct, 100)}%` }} />
         </div>
         <p className="muted small">
-          {today.toLocaleString('pl-PL')} z {FREE_VIEWS_PER_DAY.toLocaleString('pl-PL')} darmowych wejść kibiców na dziś.
-          {over > 0 && <> Ponad limit: <b>{over.toLocaleString('pl-PL')}</b> wejść (z kredytów).</>} Limit odnawia się o północy.
+          {t('{used} z {free} darmowych wejść kibiców na dziś.', { used: today.toLocaleString(locale()), free: FREE_VIEWS_PER_DAY.toLocaleString(locale()) })}
+          {over > 0 && <> {t('Ponad limit:')} <b>{over.toLocaleString(locale())}</b> {t('wejść (z kredytów).')}</>} {t('Limit odnawia się o północy.')}
         </p>
       </div>
       <div className="panel usage-card">
-        <p className="eyebrow">Kredyty</p>
-        <div className="usage-big"><b>{credits.toLocaleString('pl-PL')}</b><span className="muted">wejść na zapas</span></div>
-        <p className="muted small">Używane dopiero po wyczerpaniu dziennego darmowego limitu. Nie przepadają.</p>
-        <a className="btn btn-primary" href="#kredyty">Doładuj kredyty</a>
+        <p className="eyebrow">{t('Kredyty')}</p>
+        <div className="usage-big"><b>{credits.toLocaleString(locale())}</b><span className="muted">{t('wejść na zapas')}</span></div>
+        <p className="muted small">{t('Używane dopiero po wyczerpaniu dziennego darmowego limitu. Nie przepadają.')}</p>
+        <a className="btn btn-primary" href="#kredyty">{t('Doładuj kredyty')}</a>
       </div>
       <div className="panel usage-card">
-        <p className="eyebrow">Szacunkowy koszt dzisiaj</p>
-        <div className="usage-big"><b>{formatPln(pricePln(over))}</b><span className="muted">za wejścia ponad limit</span></div>
+        <p className="eyebrow">{t('Szacunkowy koszt dzisiaj')}</p>
+        <div className="usage-big"><b>{formatPln(pricePln(over))}</b><span className="muted">{t('za wejścia ponad limit')}</span></div>
         <p className="muted small">
-          Koszt bazy Google Firebase za dzisiejszy ruch: ok. {formatPln(firebaseCostPln(today))}
-          {' '}(ok. {READS_PER_VIEW} odczytów bazy na jedno wejście).
+          {t('Koszt bazy Google Firebase za dzisiejszy ruch: ok. {cost} (ok. {reads} odczytów bazy na jedno wejście).', { cost: formatPln(firebaseCostPln(today)), reads: READS_PER_VIEW })}
         </p>
       </div>
     </section>
@@ -328,15 +328,15 @@ function UsageSummary({ account, usage }: { account: Account; usage: Record<stri
 
 /** Visits per day for the last week, as small bars. */
 function TournamentChart({ usage }: { usage: TournamentUsage | undefined }) {
-  if (!usage || usage.days.length === 0) return <p className="muted small">Wejścia: jeszcze nikt nie otwierał strony turnieju.</p>
+  if (!usage || usage.days.length === 0) return <p className="muted small">{t('Wejścia: jeszcze nikt nie otwierał strony turnieju.')}</p>
   const days = [...usage.days].reverse()
   const max = Math.max(...days.map((d) => d.views), 1)
   return (
     <div className="t-usage">
-      <p className="small"><b>Dziś: {usage.today.toLocaleString('pl-PL')} wejść</b> · {freeUsedPercent(usage.today)}% dziennego limitu</p>
-      <div className="t-bars" aria-label="Wejścia w ostatnich dniach">
+      <p className="small"><b>{t('Dziś: {n} wejść', { n: usage.today.toLocaleString(locale()) })}</b> · {t('{pct}% dziennego limitu', { pct: freeUsedPercent(usage.today) })}</p>
+      <div className="t-bars" aria-label={t('Wejścia w ostatnich dniach')}>
         {days.map((d) => (
-          <div key={d.day} className="t-bar" title={`${d.day}: ${d.views} wejść`}>
+          <div key={d.day} className="t-bar" title={`${d.day}: ${t('{n} wejść', { n: d.views })}`}>
             <span style={{ height: `${Math.max(4, d.views * 100 / max)}%` }} />
             <small>{d.day.slice(8)}.{d.day.slice(5, 7)}</small>
           </div>
@@ -356,43 +356,41 @@ export function Credits({ account }: { account: Account }) {
     <>
       <header className="acc-head">
         <div>
-          <p className="eyebrow">Kredyty</p>
-          <h1>Masz {(account.credits ?? 0).toLocaleString('pl-PL')} wejść na zapas</h1>
-          <span className="muted">Każdego dnia pierwsze {FREE_VIEWS_PER_DAY.toLocaleString('pl-PL')} wejść kibiców jest za darmo. Kredyty pokrywają ruch ponad ten limit.</span>
+          <p className="eyebrow">{t('Kredyty')}</p>
+          <h1>{t('Masz {n} wejść na zapas', { n: (account.credits ?? 0).toLocaleString(locale()) })}</h1>
+          <span className="muted">{t('Każdego dnia pierwsze {n} wejść kibiców jest za darmo. Kredyty pokrywają ruch ponad ten limit.', { n: FREE_VIEWS_PER_DAY.toLocaleString(locale()) })}</span>
         </div>
       </header>
       <section className="credit-packs">
         {PACKAGES.map((p, i) => (
           <article key={p.views} className={`panel credit-pack ${i === 1 ? 'popular' : ''}`}>
-            {i === 1 && <span className="credit-badge">Najczęściej wybierany</span>}
-            <h3>{p.views.toLocaleString('pl-PL')} wejść</h3>
+            {i === 1 && <span className="credit-badge">{t('Najczęściej wybierany')}</span>}
+            <h3>{t('{n} wejść', { n: p.views.toLocaleString(locale()) })}</h3>
             <p className="credit-price">{p.pln} zł</p>
-            <p className="muted small">{(p.pln * 1000 / p.views).toFixed(2).replace('.', ',')} zł za 1000 wejść</p>
-            <button className="btn btn-primary" disabled title="Płatności online wkrótce">Doładuj</button>
+            <p className="muted small">{t('{price} za 1000 wejść', { price: formatPln(p.pln * 1000 / p.views) })}</p>
+            <button className="btn btn-primary" disabled title={t('Płatności online wkrótce')}>{t('Doładuj')}</button>
           </article>
         ))}
       </section>
       <p className="notice-inline">
-        Płatności online (BLIK, karta) uruchomimy wkrótce. Do tego czasu kredyty doładowuje administrator serwisu po
-        przelewie.
+        {t('Płatności online (BLIK, karta) uruchomimy wkrótce. Do tego czasu kredyty doładowuje administrator serwisu po przelewie.')}
       </p>
       <section className="panel credit-calc">
-        <h2>Ile to będzie kosztować?</h2>
+        <h2>{t('Ile to będzie kosztować?')}</h2>
         <div className="form-row">
-          <label>Wejść kibiców dziennie
+          <label>{t('Wejść kibiców dziennie')}
             <input type="number" min={0} step={500} value={views} onChange={(e) => setViews(Math.max(0, Number(e.target.value) || 0))} />
           </label>
-          <label>Dni turnieju
+          <label>{t('Dni turnieju')}
             <input type="number" min={1} max={30} value={days} onChange={(e) => setDays(Math.max(1, Math.min(30, Number(e.target.value) || 1)))} />
           </label>
         </div>
         <p>
-          Ponad darmowy limit: <b>{total.toLocaleString('pl-PL')}</b> wejść → szacunkowo <b>{formatPln(pricePln(total))}</b>.
-          {total === 0 && ' Taki turniej mieści się w darmowym limicie.'}
+          {t('Ponad darmowy limit:')} <b>{t('{n} wejść', { n: total.toLocaleString(locale()) })}</b> → {t('szacunkowo')} <b>{formatPln(pricePln(total))}</b>.
+          {total === 0 && ` ${t('Taki turniej mieści się w darmowym limicie.')}`}
         </p>
         <p className="muted small">
-          Dla porównania: turniej na 60 drużyn z rodzicami to zwykle 2–5 tys. wejść dziennie. Koszt bazy Google za ten
-          ruch: ok. {formatPln(firebaseCostPln(views * days))}.
+          {t('Dla porównania: turniej na 60 drużyn z rodzicami to zwykle 2–5 tys. wejść dziennie. Koszt bazy Google za ten ruch: ok. {cost}.', { cost: formatPln(firebaseCostPln(views * days)) })}
         </p>
       </section>
     </>

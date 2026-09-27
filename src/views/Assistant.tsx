@@ -1,3 +1,5 @@
+import { AttachButtons, AttachedList } from './Attach'
+import { t } from '../i18n'
 import { useState } from 'react'
 
 /** What the assistant returns (schema in logic/assistantPrompt.ts). */
@@ -14,9 +16,7 @@ export interface AssistantDraft {
   notes: string
 }
 
-const EXAMPLE = `np. Turniej mini siatkówki dziewcząt 14 marca w Mielnie od 9:00, 4 boiska, mecze co 20 minut, 1 set do 25.
-Dwójki: UKS Orzeł 1, UKS Orzeł 2, MKS Fala, Sokół Koszalin, Albatros A…
-Trójki: … (możesz wkleić całą listę z kartki albo maila, także z podziałem na grupy)`
+const EXAMPLE = t('np. Turniej mini siatkówki dziewcząt 14 marca w Mielnie od 9:00, 4 boiska, mecze co 20 minut, 1 set do 25.\nDwójki: UKS Orzeł 1, UKS Orzeł 2, MKS Fala, Sokół Koszalin, Albatros A…\nTrójki: … (możesz wkleić całą listę z kartki albo maila, także z podziałem na grupy)')
 
 /**
  * "Asystent AI": the organiser describes the tournament or pastes notes (team lists, groups,
@@ -28,6 +28,7 @@ export function Assistant({ signedIn, onDraft }: { signedIn: boolean; onDraft: (
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [notes, setNotes] = useState('')
+  const [files, setFiles] = useState<File[]>([])
 
   const ask = async () => {
     setBusy(true)
@@ -36,11 +37,11 @@ export function Assistant({ signedIn, onDraft }: { signedIn: boolean; onDraft: (
     try {
       // Loaded only when used: the AI part of Firebase is large.
       const { askAssistant } = await import('../store/assistant')
-      const draft = await askAssistant(text)
+      const draft = await askAssistant(text, files)
       onDraft(draft)
       setNotes(draft.notes)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Asystent jest chwilowo niedostępny.')
+      setError(e instanceof Error ? e.message : t('Asystent jest chwilowo niedostępny.'))
     } finally {
       setBusy(false)
     }
@@ -51,42 +52,45 @@ export function Assistant({ signedIn, onDraft }: { signedIn: boolean; onDraft: (
       <section className="ai-hero">
         <DeskArt />
         <div className="ai-hero-text">
-          <p className="ai-hero-badge">✨ Nowość · za darmo</p>
-          <h2>Asystent AI założy turniej za Ciebie</h2>
+          <p className="ai-hero-badge">✨ {t('Nowość · za darmo')}</p>
+          <h2>{t('Asystent AI założy turniej za Ciebie')}</h2>
           <p>
-            Nie musisz przepisywać drużyn i ustawień. Opisz turniej własnymi słowami albo <b>wklej notatki</b>: listę
-            drużyn z maila, kartki czy Excela, podział na grupy, dzień i godzinę. Asystent sam:
+            {t('Nie musisz przepisywać drużyn i ustawień. Opisz turniej własnymi słowami, wklej notatki albo zrób zdjęcie kartki: listę drużyn, podział na grupy, dzień i godzinę. Asystent sam:')}
           </p>
           <ul>
-            <li>rozpozna dyscyplinę i zasady meczu,</li>
-            <li>wpisze datę, godzinę, liczbę boisk i kategorie,</li>
-            <li>przepisze wszystkie drużyny i grupy,</li>
-            <li>powie, czego brakuje, żebyś mógł to uzupełnić.</li>
+            <li>{t('rozpozna dyscyplinę i zasady meczu,')}</li>
+            <li>{t('wpisze datę, godzinę, liczbę boisk i kategorie,')}</li>
+            <li>{t('przepisze wszystkie drużyny i grupy,')}</li>
+            <li>{t('powie, czego brakuje, żebyś mógł to uzupełnić.')}</li>
           </ul>
-          <button className="ai-cta" type="button" onClick={() => setOpen(true)}>✨ Użyj asystenta AI</button>
-          <p className="ai-hero-note">Wolisz sam? Formularz jest niżej.</p>
+          <button className="ai-cta" type="button" onClick={() => setOpen(true)}>✨ {t('Użyj asystenta AI')}</button>
+          <p className="ai-hero-note">{t('Wolisz sam? Formularz jest niżej.')}</p>
         </div>
       </section>
     )
   }
   return (
     <section className="panel ai-box">
-      <h2>✨ Asystent AI</h2>
-      {!signedIn && <p className="notice-inline"><a href="#konto">Zaloguj się</a>, żeby korzystać z asystenta.</p>}
-      <label>Opisz turniej albo wklej notatki (lista drużyn, grupy, dzień i godzina, zasady)
+      <h2>✨ {t('Asystent AI')}</h2>
+      {!signedIn && <p className="notice-inline"><a href="#konto">{t('Zaloguj się')}</a>{t(', żeby korzystać z asystenta.')}</p>}
+      <label>{t('Opisz turniej albo wklej notatki (lista drużyn, grupy, dzień i godzina, zasady)')}
         <textarea rows={8} value={text} onChange={(e) => setText(e.target.value)} placeholder={EXAMPLE} />
       </label>
+      <div className="setup-ai">
+        <AttachButtons disabled={busy} onFiles={(more) => setFiles((f) => [...f, ...more].slice(0, 6))} />
+        <span className="muted small">{t('Zdjęcie kartki, PDF albo CSV z listą drużyn.')}</span>
+      </div>
+      <AttachedList files={files} onRemove={(i) => setFiles((f) => f.filter((_, j) => j !== i))} />
       {error && <p className="error">{error}</p>}
-      {notes && <p className="ai-notes"><b>Asystent:</b> {notes} Sprawdź formularz poniżej i popraw, co trzeba.</p>}
+      {notes && <p className="ai-notes"><b>{t('Asystent:')}</b> {notes} {t('Sprawdź formularz poniżej i popraw, co trzeba.')}</p>}
       <div className="actions">
-        <button className="btn btn-primary" type="button" disabled={busy || !text.trim() || !signedIn} onClick={() => void ask()}>
-          {busy ? 'Asystent przygotowuje turniej…' : 'Przygotuj turniej'}
+        <button className="btn btn-primary" type="button" disabled={busy || (!text.trim() && !files.length) || !signedIn} onClick={() => void ask()}>
+          {busy ? t('Asystent przygotowuje turniej…') : t('Przygotuj turniej')}
         </button>
-        <button className="btn" type="button" onClick={() => setOpen(false)}>Zamknij</button>
+        <button className="btn" type="button" onClick={() => setOpen(false)}>{t('Zamknij')}</button>
       </div>
       <p className="muted small">
-        Asystent wypełnia tylko formularz. Nic nie zapisze się, dopóki nie klikniesz „Dalej”. Asystent działa na Google
-        Gemini: wklejaj nazwy drużyn i ustawienia turnieju, bez telefonów, adresów i innych danych osobowych.
+        {t('Asystent wypełnia tylko formularz. Nic nie zapisze się, dopóki nie klikniesz „Dalej”. Asystent działa na Google Gemini: wklejaj nazwy drużyn i ustawienia turnieju, bez telefonów, adresów i innych danych osobowych.')}
       </p>
     </section>
   )
@@ -94,8 +98,9 @@ export function Assistant({ signedIn, onDraft }: { signedIn: boolean; onDraft: (
 
 /** Someone at a desk with a laptop, and the assistant's sparkles over the screen. */
 function DeskArt() {
+  const bubble = t('Zrób mi turniej!')
   return (
-    <svg className="ai-art" viewBox="0 0 320 240" role="img" aria-label="Organizator przy biurku z laptopem i asystentem AI">
+    <svg className="ai-art" viewBox="0 0 320 240" role="img" aria-label={t('Organizator przy biurku z laptopem i asystentem AI')}>
       <defs>
         <linearGradient id="ai-screen" x1="0" y1="0" x2="1" y2="1">
           <stop offset="0" stopColor="#3d7bff" />
@@ -134,9 +139,10 @@ function DeskArt() {
       <g className="ai-spark s2"><path d="M288 76 l4 9 9 4 -9 4 -4 9 -4 -9 -9 -4 9 -4z" fill="#6a2cff" /></g>
       <g className="ai-spark s3"><path d="M214 30 l3 7 7 3 -7 3 -3 7 -3 -7 -7 -3 7 -3z" fill="#3d7bff" /></g>
       {/* speech bubble */}
-      <rect x="18" y="14" width="118" height="34" rx="12" fill="#fff" stroke="#d5dde8" />
+      <rect x="8" y="14" width="150" height="34" rx="12" fill="#fff" stroke="#d5dde8" />
       <path d="M70 48 l10 10 2 -10z" fill="#fff" />
-      <text x="77" y="36" textAnchor="middle" fontSize="12" fontWeight="700" fill="#0e1b2c">Zrób mi turniej!</text>
+      <text x="83" y="36" textAnchor="middle" fontSize="12" fontWeight="700" fill="#0e1b2c"
+        {...(bubble.length > 18 ? { textLength: 136, lengthAdjust: 'spacingAndGlyphs' } : {})}>{bubble}</text>
     </svg>
   )
 }

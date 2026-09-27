@@ -1,3 +1,5 @@
+import { LangPicker } from './LangPicker'
+import { t } from '../i18n'
 import QRCode from 'qrcode'
 import { useEffect, useState, type ReactNode } from 'react'
 import logo from '../assets/logo-opty-mielno.png'
@@ -14,10 +16,11 @@ export function InfoHero({ nav }: { nav: ReactNode }) {
       <header className="info-hero">
         <div className="info-hero-inner">
           <div>
-            <p className="eyebrow">Wyniki na żywo</p>
+            <p className="eyebrow">{t('Wyniki na żywo')}</p>
             <h1>{state.tournament.name}</h1>
             {state.tournament.subtitle && <p className="info-when">{state.tournament.subtitle}</p>}
           </div>
+          <LangPicker className="info-lang" />
         </div>
         {nav}
       </header>
@@ -52,8 +55,8 @@ function TournamentStart() {
     return (
       <div className="info">
         <section className="panel">
-          <h2>Nie ma jeszcze takiego turnieju</h2>
-          <p>Sprawdź adres albo poproś organizatora o link. Organizator może go założyć na stronie <a href="#nowy-turniej">Załóż turniej</a>.</p>
+          <h2>{t('Nie ma jeszcze takiego turnieju')}</h2>
+          <p>{t('Sprawdź adres albo poproś organizatora o link. Organizator może go założyć na stronie')} <a href="#nowy-turniej">{t('Załóż turniej')}</a>.</p>
         </section>
       </div>
     )
@@ -63,16 +66,15 @@ function TournamentStart() {
       {state.teams.length > 0 && <MyTeams state={state} />}
       <section className="info-live">
         <div className="info-live-text">
-          <h2>Grupy, mecze i wyniki</h2>
+          <h2>{t('Grupy, mecze i wyniki')}</h2>
           <p>
-            Grupy, kto z kim i o której gra, tabele i wyniki na żywo, na bieżąco w trakcie turnieju. Zeskanuj kod
-            albo wyślij link rodzicom i trenerom.
+            {t('Grupy, kto z kim i o której gra, tabele i wyniki na żywo, na bieżąco w trakcie turnieju. Zeskanuj kod albo wyślij link rodzicom i trenerom.')}
           </p>
-          <ShareLink title={state.tournament.name} text={`${state.tournament.name} – grupy, mecze i wyniki na żywo:`} />
+          <ShareLink title={state.tournament.name} text={`${state.tournament.name} – ${t('grupy, mecze i wyniki na żywo:')}`} />
         </div>
-        <div className="info-qr" aria-label="Kod QR do wyników" dangerouslySetInnerHTML={{ __html: qr }} />
+        <div className="info-qr" aria-label={t('Kod QR do wyników')} dangerouslySetInnerHTML={{ __html: qr }} />
       </section>
-      {state.groups.length === 0 && <p className="muted">Organizator jeszcze nie rozlosował grup.</p>}
+      {state.groups.length === 0 && <p className="muted">{t('Organizator jeszcze nie rozlosował grup.')}</p>}
     </div>
   )
 }
@@ -218,5 +220,5 @@ function ShareLink({ title, text }: { title: string; text: string }) {
       () => {},
     )
   }
-  return <button className="btn btn-lg btn-share" onClick={share}>{copied ? 'Skopiowano ✓' : 'Udostępnij link'}</button>
+  return <button className="btn btn-lg btn-share" onClick={share}>{copied ? `${t('Skopiowano')} ✓` : t('Udostępnij link')}</button>
 }

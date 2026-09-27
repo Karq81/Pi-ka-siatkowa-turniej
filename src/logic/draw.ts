@@ -1,3 +1,4 @@
+import { t } from '../i18n'
 import type { Group, State, Team } from '../types'
 import { buildGroupSchedule, type ScheduleOptions } from './schedule'
 
@@ -32,7 +33,7 @@ export const GROUP_LETTERS = 'ABCDEFGHIJKL'
  */
 export function drawGroups(teams: Team[], categoryId: string, count: number, rand: () => number = Math.random): Group[] {
   const groups: Group[] = Array.from({ length: count }, (_, i) => ({
-    id: `${categoryId}g${i + 1}`, categoryId, name: `Grupa ${GROUP_LETTERS[i]}`, teamIds: [],
+    id: `${categoryId}g${i + 1}`, categoryId, name: t('Grupa {letter}', { letter: GROUP_LETTERS[i] }), teamIds: [],
   }))
   const clubs = new Map<string, Team[]>()
   for (const t of shuffle(teams.filter((x) => x.categoryId === categoryId), rand)) {

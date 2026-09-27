@@ -1,3 +1,5 @@
+import { LangPicker } from './LangPicker'
+import { t, tk } from '../i18n'
 import { useState } from 'react'
 import { BRAND, IS_PLATFORM_HOST } from '../config'
 import { formatRatio, isScore, scoreUnit, standings, tally } from '../logic/scoring'
@@ -17,10 +19,10 @@ import { BackBar, courtLabel, formatDay, formatTime, ScoreLine, StatusPill, useL
  * Tables and the full schedule stay reachable (#tabele, #terminarz) but are not in the menu.
  */
 const TABS = [
-  { route: '', label: 'Start' },
-  { route: 'grupy', label: 'Grupy i terminarz' },
-  { route: 'na-zywo', label: 'Na żywo' },
-  { route: 'wyniki', label: 'Wyniki' },
+  { route: '', label: tk('Start') },
+  { route: 'grupy', label: tk('Grupy i terminarz') },
+  { route: 'na-zywo', label: tk('Na żywo') },
+  { route: 'wyniki', label: tk('Wyniki') },
 ]
 const HIDDEN_ROUTES = ['tabele', 'terminarz', 'drabinka']
 
@@ -30,13 +32,13 @@ export function Public({ route }: { route: string }) {
   const detail = /^(grupa|mecz|druzyna)-(.+)$/.exec(route)
   // One court's page (its board and queue) sits under "Na żywo".
   const courtPage = /^kolejka-(\d+)$/.exec(route)
-  const known = TABS.some((t) => t.route === route) || HIDDEN_ROUTES.includes(route)
+  const known = TABS.some((x) => x.route === route) || HIDDEN_ROUTES.includes(route)
   const tab = courtPage ? 'na-zywo' : detail || route === 'drabinka' ? 'grupy' : known ? route : ''
   const nav = (
-    <nav className="tabs" aria-label="Sekcje">
-      {TABS.map((t) => (
-        <a key={t.route} href={`#${t.route}`} className={tab === t.route ? 'active' : ''}>
-          {t.label}
+    <nav className="tabs" aria-label={t('Sekcje')}>
+      {TABS.map((x) => (
+        <a key={x.route} href={`#${x.route}`} className={tab === x.route ? 'active' : ''}>
+          {t(x.label)}
         </a>
       ))}
     </nav>
@@ -58,7 +60,8 @@ export function Public({ route }: { route: string }) {
       </main>
       {/* Public pages are view-only: the organiser panel lives at #panel and is not linked from here. */}
       <footer className="footer muted small">
-        Wyniki odświeżają się same, nie trzeba przeładowywać strony. · <a href={IS_PLATFORM_HOST ? '/' : '#o-systemie'}>O systemie {BRAND}</a>
+        {t('Wyniki odświeżają się same, nie trzeba przeładowywać strony.')} · <a href={IS_PLATFORM_HOST ? '/' : '#o-systemie'}>{t('O systemie {brand}', { brand: BRAND })}</a>
+        {' '}· <LangPicker />
       </footer>
     </div>
   )
@@ -79,61 +82,61 @@ export function CourtCard({ state, court, big = false, referee = false }: { stat
   const rules = state.tournament.rules
   const refLink = referee && (
     <div className="ref-links">
-      <a className="btn btn-ref" href={`#boisko-${court}`}>Sędziuj na żywo</a>
-      <a className="btn btn-ref" href={`#wynik-${court}`}>Podaj wynik</a>
+      <a className="btn btn-ref" href={`#boisko-${court}`}>{t('Sędziuj na żywo')}</a>
+      <a className="btn btn-ref" href={`#wynik-${court}`}>{t('Podaj wynik')}</a>
     </div>
   )
   const current = board.match
   if (!current) {
     return (
       <article className="court court-idle">
-        <header><span className="court-no">Boisko {courtLabel(court)}</span></header>
-        <p className="muted">Brak kolejnych meczów</p>
+        <header><span className="court-no">{t('Boisko {n}', { n: courtLabel(court) })}</span></header>
+        <p className="muted">{t('Brak kolejnych meczów')}</p>
       </article>
     )
   }
   const live = board.mode === 'live'
   const finished = board.mode === 'finished'
-  const t = tally(rules, current.sets)
+  const tl = tally(rules, current.sets)
   const multi = rules.sets > 1
   // Points: the set in progress while playing, the final score once finished.
   const shown = current.sets.length > 0 && (live || finished)
   const cur = shown ? current.sets[current.sets.length - 1] : undefined
-  const winA = finished && t.setsA > t.setsB
-  const winB = finished && t.setsB > t.setsA
+  const winA = finished && tl.setsA > tl.setsB
+  const winB = finished && tl.setsB > tl.setsA
   return (
     <article className={`court mode-${board.mode} ${big ? 'court-big' : ''} ${mine.includes(current.teamA) || mine.includes(current.teamB) ? 'mine' : ''}`}>
       <header>
         {referee || big
-          ? <span className="court-no">Boisko {courtLabel(court)}</span>
-          : <a className="court-no court-link" href={`#kolejka-${court}`}>Boisko {courtLabel(court)} ›</a>}
+          ? <span className="court-no">{t('Boisko {n}', { n: courtLabel(court) })}</span>
+          : <a className="court-no court-link" href={`#kolejka-${court}`}>{t('Boisko {n}', { n: courtLabel(court) })} ›</a>}
         {live && <StatusPill status="live" />}
         {finished && <StatusPill status="finished" />}
-        {board.mode === 'next' && <span className="pill pill-next">Następne<span className="pill-long"> spotkanie</span> · {formatTime(current.start)}</span>}
+        {board.mode === 'next' && <span className="pill pill-next">{t('Następne')}<span className="pill-long"> {t('spotkanie')}</span> · {formatTime(current.start)}</span>}
       </header>
       <p className="court-meta">{categoryName(current.categoryId)} · {stageName(current)} · {formatTime(current.start)}</p>
       <a className="board" href={`#mecz-${current.id}`}>
-        <TeamRow name={side(current, 'a')} sets={multi ? t.setsA : undefined} points={cur?.a} live={shown} win={winA} mine={mine.includes(current.teamA)} />
-        <TeamRow name={side(current, 'b')} sets={multi ? t.setsB : undefined} points={cur?.b} live={shown} win={winB} mine={mine.includes(current.teamB)} />
+        <TeamRow name={side(current, 'a')} sets={multi ? tl.setsA : undefined} points={cur?.a} live={shown} win={winA} mine={mine.includes(current.teamA)} />
+        <TeamRow name={side(current, 'b')} sets={multi ? tl.setsB : undefined} points={cur?.b} live={shown} win={winB} mine={mine.includes(current.teamB)} />
       </a>
-      {live && !current.sets.length && <p className="court-sets muted">Mecz trwa. Wynik pojawi się po meczu.</p>}
+      {live && !current.sets.length && <p className="court-sets muted">{t('Mecz trwa. Wynik pojawi się po meczu.')}</p>}
       {board.mode === 'next' && current.start && (() => {
         const mins = Math.ceil((new Date(current.start).getTime() - now) / 60000)
-        return mins > 0 && mins <= 15 ? <p className="court-soon">Zaczyna się za {mins} min</p> : null
+        return mins > 0 && mins <= 15 ? <p className="court-soon">{t('Zaczyna się za {n} min', { n: mins })}</p> : null
       })()}
       {board.previous && (() => {
         const p = board.previous
         const last = p.sets[p.sets.length - 1]
         return (
           <p className="court-prev muted">
-            Poprzedni: {side(p, 'a')} <b>{multi ? `${tally(rules, p.sets).setsA}:${tally(rules, p.sets).setsB}` : `${last?.a ?? 0}:${last?.b ?? 0}`}</b> {side(p, 'b')}
+            {t('Poprzedni:')} {side(p, 'a')} <b>{multi ? `${tally(rules, p.sets).setsA}:${tally(rules, p.sets).setsB}` : `${last?.a ?? 0}:${last?.b ?? 0}`}</b> {side(p, 'b')}
           </p>
         )
       })()}
       {multi && current.sets.length > 1 && (live || finished) && (
-        <p className="court-sets muted">Sety: {current.sets.map((s) => `${s.a}:${s.b}`).join(', ')}</p>
+        <p className="court-sets muted">{t('Sety:')} {current.sets.map((s) => `${s.a}:${s.b}`).join(', ')}</p>
       )}
-      {!referee && !big && <a className="court-queue-link" href={`#kolejka-${court}`}>Kolejne mecze na boisku ›</a>}
+      {!referee && !big && <a className="court-queue-link" href={`#kolejka-${court}`}>{t('Kolejne mecze na boisku ›')}</a>}
       {refLink}
     </article>
   )
@@ -145,8 +148,8 @@ function TeamRow({ name, sets, points, live, win = false, mine = false }: {
 }) {
   return (
     <div className={`team-row ${win ? 'win' : ''} ${mine ? 'mine' : ''}`}>
-      <span className="team-name">{mine && <span className="mine-star" aria-label="Obserwowana">★ </span>}{name}</span>
-      {live && sets !== undefined && <span className="sets" title="Wygrane sety">{sets}</span>}
+      <span className="team-name">{mine && <span className="mine-star" aria-label={t('Obserwowana')}>★ </span>}{name}</span>
+      {live && sets !== undefined && <span className="sets" title={t('Wygrane sety')}>{sets}</span>}
       {live && <span className="points">{points ?? 0}</span>}
     </div>
   )
@@ -160,7 +163,7 @@ function CourtPage({ state, court }: { state: State; court: number }) {
   const now = useNow(15000)
   const { categoryName, stageName } = useLookups(state)
   const onCourt = state.matches.filter((m) => m.court === court).sort((a, b) => a.start.localeCompare(b.start))
-  if (!onCourt.length) return <p className="muted">Na tym boisku nie ma meczów.</p>
+  if (!onCourt.length) return <p className="muted">{t('Na tym boisku nie ma meczów.')}</p>
   const board = courtBoard(state, court, now)
   const played = onCourt.filter((m) => m.status === 'finished').reverse()
   const first = onCourt[0]
@@ -171,7 +174,7 @@ function CourtPage({ state, court }: { state: State; court: number }) {
       <CourtQueue state={state} court={court} skip={board.match?.id} />
       {played.length > 0 && (
         <section>
-          <h3 className="list-title">Rozegrane na tym boisku</h3>
+          <h3 className="list-title">{t('Rozegrane na tym boisku')}</h3>
           <MatchList state={state} matches={played} />
         </section>
       )}
@@ -188,16 +191,17 @@ function LiveCourts({ state }: { state: State }) {
   return (
     <>
       <NextMatch state={state} />
-      <h2>Boiska</h2>
+      <h2>{t('Boiska')}</h2>
       <section className="courts">
         {courts.map((c) => <CourtCard key={c} state={state} court={c} />)}
       </section>
       <p className="court-rule">
-        ⏱️ Każda grupa gra na swoim boisku, mecz za meczem. <b>Następny mecz zaczyna się 2 minuty po zakończeniu
-        meczu, który trwa</b>: godzina ustawia się sama, gdy sędzia poda wynik. Godziny dalszych meczów są orientacyjne.
+        ⏱️ {t('Każda grupa gra na swoim boisku, mecz za meczem.')}{' '}
+        <b>{t('Następny mecz zaczyna się 2 minuty po zakończeniu meczu, który trwa')}</b>
+        {t(': godzina ustawia się sama, gdy sędzia poda wynik. Godziny dalszych meczów są orientacyjne.')}
       </p>
       <Upcoming state={state} />
-      <h2>Ostatnie wyniki</h2>
+      <h2>{t('Ostatnie wyniki')}</h2>
       <MatchList state={state} matches={recent} />
     </>
   )
@@ -215,14 +219,14 @@ export function Upcoming({ state }: { state: State }) {
   const team = (id: string) => (id ? state.teams.find((x) => x.id === id) : undefined)
   return (
     <section className="upcoming">
-      <h2>Nadchodzące mecze</h2>
-      <p className="muted small">Kolejny mecz na każdym boisku. Godzina zmienia się sama: 2 minuty po zakończeniu meczu, który trwa.</p>
-      {!matches.length && <p className="muted">Brak kolejnych meczów.</p>}
+      <h2>{t('Nadchodzące mecze')}</h2>
+      <p className="muted small">{t('Kolejny mecz na każdym boisku. Godzina zmienia się sama: 2 minuty po zakończeniu meczu, który trwa.')}</p>
+      {!matches.length && <p className="muted">{t('Brak kolejnych meczów.')}</p>}
       <div className="up-grid">
         {matches.map((m) => (
           <a key={m.id} href={`#mecz-${m.id}`} className={`up-card ${mine.includes(m.teamA) || mine.includes(m.teamB) ? 'mine' : ''}`}>
             <header>
-              <span className="up-court">Boisko {courtLabel(m.court)}</span>
+              <span className="up-court">{t('Boisko {n}', { n: courtLabel(m.court) })}</span>
               <b className="up-at">{formatTime(m.start)}</b>
             </header>
             <span className="up-cat">{categoryName(m.categoryId)} · {stageName(m)}</span>
@@ -244,7 +248,7 @@ export function Upcoming({ state }: { state: State }) {
 
 function CategoryChips({ state, value, onChange }: { state: State; value: string; onChange: (id: string) => void }) {
   return (
-    <div className="chips" role="tablist" aria-label="Kategoria">
+    <div className="chips" role="tablist" aria-label={t('Kategoria')}>
       {state.categories.map((c) => (
         <button
           key={c.id}
@@ -277,9 +281,9 @@ export function GroupTable({ state, groupId, title = true }: { state: State; gro
         <table>
           <thead>
             <tr>
-              <th>#</th><th className="left">Drużyna</th><th title="Mecze">M</th><th title="Wygrane">W</th>
-              {draws && <th title="Remisy">R</th>}<th title="Przegrane">P</th><th title="Punkty">Pkt</th>{multi && <th title="Sety">Sety</th>}
-              <th title={score ? 'Zdobyte i stracone' : `Stosunek: ${unit}`}>{unit === 'małe punkty' ? 'Małe pkt' : unit[0].toUpperCase() + unit.slice(1)}</th>
+              <th>#</th><th className="left">{t('Drużyna')}</th><th title={t('Mecze')}>{t('M')}</th><th title={t('Wygrane')}>{t('W')}</th>
+              {draws && <th title={t('Remisy')}>{t('R')}</th>}<th title={t('Przegrane')}>{t('P')}</th><th title={t('Punkty')}>{t('Pkt')}</th>{multi && <th title={t('Sety')}>{t('Sety')}</th>}
+              <th title={score ? t('Zdobyte i stracone') : t('Stosunek: {unit}', { unit })}>{!score && rules.unit !== 'gemy' ? t('Małe pkt') : unit[0].toUpperCase() + unit.slice(1)}</th>
             </tr>
           </thead>
           <tbody>
@@ -312,8 +316,8 @@ function Tables({ state }: { state: State }) {
       </section>
       <p className="muted small">
         {isScore(state.tournament.rules)
-          ? `Kolejność: punkty, różnica (${scoreUnit(state.tournament.rules)}), więcej zdobytych, bezpośredni mecz.`
-          : 'Kolejność: punkty, stosunek setów, stosunek małych punktów, bezpośredni mecz.'}
+          ? t('Kolejność: punkty, różnica ({unit}), więcej zdobytych, bezpośredni mecz.', { unit: scoreUnit(state.tournament.rules) })
+          : t('Kolejność: punkty, stosunek setów, stosunek małych punktów, bezpośredni mecz.')}
       </p>
     </>
   )
@@ -322,18 +326,18 @@ function Tables({ state }: { state: State }) {
 export function MatchList({ state, matches, onPick }: { state: State; matches: Match[]; onPick?: (m: Match) => void }) {
   const { categoryName, stageName, side } = useLookups(state)
   const mine = useFavorites()
-  if (!matches.length) return <p className="muted">Brak meczów.</p>
+  if (!matches.length) return <p className="muted">{t('Brak meczów.')}</p>
   return (
     <ul className="matches">
       {matches.map((m) => {
-        const t = tally(state.tournament.rules, m.sets)
-        const winA = m.status === 'finished' && t.setsA > t.setsB
-        const winB = m.status === 'finished' && t.setsB > t.setsA
+        const tl = tally(state.tournament.rules, m.sets)
+        const winA = m.status === 'finished' && tl.setsA > tl.setsB
+        const winB = m.status === 'finished' && tl.setsB > tl.setsA
         const body = (
           <>
             <span className="m-when">
               <b>{formatTime(m.start)}</b>
-              <span className="muted">Boisko {courtLabel(m.court)}</span>
+              <span className="muted">{t('Boisko {n}', { n: courtLabel(m.court) })}</span>
             </span>
             <span className="m-teams">
               <span className={`${winA ? 'win' : ''} ${mine.includes(m.teamA) ? 'mine' : ''}`}>{mine.includes(m.teamA) && '★ '}{side(m, 'a')}</span>
@@ -374,12 +378,12 @@ function Schedule({ state }: { state: State }) {
         <input
           id="team-search"
           type="search"
-          placeholder="Szukaj drużyny, np. Orlik"
+          placeholder={t('Szukaj drużyny, np. Orlik')}
           value={q}
           onChange={(e) => setQ(e.target.value)}
         />
         <div className="chips">
-          <button className={`chip ${cat === '' ? 'active' : ''}`} onClick={() => setCat('')}>Wszystkie</button>
+          <button className={`chip ${cat === '' ? 'active' : ''}`} onClick={() => setCat('')}>{t('Wszystkie')}</button>
           {state.categories.map((c) => (
             <button key={c.id} className={`chip ${cat === c.id ? 'active' : ''}`} onClick={() => setCat(c.id)}>{c.name}</button>
           ))}
@@ -391,7 +395,7 @@ function Schedule({ state }: { state: State }) {
           <MatchList state={state} matches={list.filter((m) => m.start.startsWith(d))} />
         </section>
       ))}
-      {!days.length && <p className="muted">Nic nie znaleziono.</p>}
+      {!days.length && <p className="muted">{t('Nic nie znaleziono.')}</p>}
     </>
   )
 }
@@ -412,30 +416,30 @@ function Results({ state }: { state: State }) {
   return (
     <>
       <div className="filters">
-        <input id="results-search" type="search" placeholder="Szukaj drużyny" value={q} onChange={(e) => setQ(e.target.value)} />
+        <input id="results-search" type="search" placeholder={t('Szukaj drużyny')} value={q} onChange={(e) => setQ(e.target.value)} />
         <div className="chips">
-          <button className={`chip ${cat === '' ? 'active' : ''}`} onClick={() => setCat('')}>Wszystkie</button>
+          <button className={`chip ${cat === '' ? 'active' : ''}`} onClick={() => setCat('')}>{t('Wszystkie')}</button>
           {state.categories.map((c) => (
             <button key={c.id} className={`chip ${cat === c.id ? 'active' : ''}`} onClick={() => setCat(c.id)}>{c.name}</button>
           ))}
         </div>
       </div>
-      {!list.length && <p className="muted">Jeszcze nie ma zakończonych meczów. Wyniki pojawią się tu zaraz po każdym meczu.</p>}
+      {!list.length && <p className="muted">{t('Jeszcze nie ma zakończonych meczów. Wyniki pojawią się tu zaraz po każdym meczu.')}</p>}
       {!!list.length && (
         <div className="table-card">
           <div className="table-scroll">
             <table className="results">
               <thead>
                 <tr>
-                  <th className="left">Godz.</th>
-                  <th className="left">Mecz</th>
-                  <th>Wynik</th>
-                  <th className="left hide-narrow">Faza</th>
+                  <th className="left">{t('Godz.')}</th>
+                  <th className="left">{t('Mecz')}</th>
+                  <th>{t('Wynik')}</th>
+                  <th className="left hide-narrow">{t('Faza')}</th>
                 </tr>
               </thead>
               <tbody>
                 {list.map((m) => {
-                  const t = tally(rules, m.sets)
+                  const tl = tally(rules, m.sets)
                   const single = m.sets.length === 1
                   return (
                     <tr key={m.id} className={mine.includes(m.teamA) || mine.includes(m.teamB) ? 'mine' : ''}>
@@ -445,8 +449,8 @@ function Results({ state }: { state: State }) {
                       </td>
                       <td className="left teams">
                         <a href={`#mecz-${m.id}`} className="plain-link">
-                          <span className={t.setsA > t.setsB ? 'win' : ''}>{side(m, 'a')}</span>
-                          <span className={t.setsB > t.setsA ? 'win' : ''}>{side(m, 'b')}</span>
+                          <span className={tl.setsA > tl.setsB ? 'win' : ''}>{side(m, 'a')}</span>
+                          <span className={tl.setsB > tl.setsA ? 'win' : ''}>{side(m, 'b')}</span>
                         </a>
                       </td>
                       <td className="score">
@@ -454,7 +458,7 @@ function Results({ state }: { state: State }) {
                           <b>{m.sets[0].a}:{m.sets[0].b}</b>
                         ) : (
                           <>
-                            <b>{t.setsA}:{t.setsB}</b>
+                            <b>{tl.setsA}:{tl.setsB}</b>
                             <span className="muted small">{m.sets.map((s) => `${s.a}:${s.b}`).join(', ')}</span>
                           </>
                         )}

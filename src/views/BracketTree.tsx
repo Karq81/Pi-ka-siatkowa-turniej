@@ -1,3 +1,4 @@
+import { t } from '../i18n'
 import { useFavorites } from '../favorites'
 import type { BracketSlot } from '../logic/knockout'
 import { tally } from '../logic/scoring'
@@ -23,19 +24,19 @@ export function BracketTree({ state, slots }: { state: State; slots: BracketSlot
       <div className="draw">
         <Tree
           state={state}
-          titles={top ? ['Ćwierćfinały', 'Półfinały', 'Finał'] : ['1. runda', '2. runda', `O ${from}. miejsce`]}
+          titles={top ? [t('Ćwierćfinały'), t('Półfinały'), t('Finał')] : [t('1. runda'), t('2. runda'), t('O {n}. miejsce', { n: from })]}
           rounds={[['Q1', 'Q2', 'Q3', 'Q4'].map(get), ['W1', 'W2'].map(get), [P(from)]]}
           winnerPlace={from}
         />
-        <Extra state={state} title={`Mecz o ${from + 2}. miejsce`} match={P(from + 2)} />
+        <Extra state={state} title={t('Mecz o {n}. miejsce', { n: from + 2 })} match={P(from + 2)} />
         <h4 className="draw-sub">O miejsca {from + 4}–{from + 7}</h4>
         <Tree
           state={state}
-          titles={['Półfinały', `O ${from + 4}. miejsce`]}
+          titles={[t('Półfinały'), t('O {n}. miejsce', { n: from + 4 })]}
           rounds={[['L1', 'L2'].map(get), [P(from + 4)]]}
           winnerPlace={from + 4}
         />
-        <Extra state={state} title={`Mecz o ${from + 6}. miejsce`} match={P(from + 6)} />
+        <Extra state={state} title={t('Mecz o {n}. miejsce', { n: from + 6 })} match={P(from + 6)} />
       </div>
     )
   }
@@ -44,15 +45,15 @@ export function BracketTree({ state, slots }: { state: State; slots: BracketSlot
       <div className="draw">
         <Tree
           state={state}
-          titles={[top ? 'Półfinały' : '1. runda', top ? 'Finał' : `O ${from}. miejsce`]}
+          titles={[top ? t('Półfinały') : t('1. runda'), top ? t('Finał') : t('O {n}. miejsce', { n: from })]}
           rounds={[['S1', 'S2'].map(get), [P(from)]]}
           winnerPlace={from}
         />
-        <Extra state={state} title={`Mecz o ${from + 2}. miejsce`} match={P(from + 2)} />
+        <Extra state={state} title={t('Mecz o {n}. miejsce', { n: from + 2 })} match={P(from + 2)} />
       </div>
     )
   }
-  return <div className="draw"><Extra state={state} title={top ? 'Finał' : `O ${from}. miejsce`} match={P(from)} /></div>
+  return <div className="draw"><Extra state={state} title={top ? t('Finał') : t('O {n}. miejsce', { n: from })} match={P(from)} /></div>
 }
 
 /** Rounds as columns; each pair of matches is joined by a line to the match they feed. */
@@ -62,7 +63,7 @@ function Tree({ state, titles, rounds, winnerPlace }: {
   const last = rounds[rounds.length - 1][0]
   return (
     <>
-    <p className="tree-hint">Przesuń drabinkę w bok, żeby zobaczyć dalsze rundy →</p>
+    <p className="tree-hint">{t('Przesuń drabinkę w bok, żeby zobaczyć dalsze rundy →')}</p>
     <div className="tree-scroll">
       <div className="tree" style={{ ['--rounds' as string]: rounds.length }}>
         {rounds.map((round, r) => (
@@ -113,13 +114,13 @@ function Champion({ state, match, place }: { state: State; match?: Match; place:
   const { teamName } = useLookups(state)
   let id = ''
   if (match?.status === 'finished') {
-    const t = tally(state.tournament.rules, match.sets)
-    id = t.setsA > t.setsB ? match.teamA : t.setsB > t.setsA ? match.teamB : ''
+    const tl = tally(state.tournament.rules, match.sets)
+    id = tl.setsA > tl.setsB ? match.teamA : tl.setsB > tl.setsA ? match.teamB : ''
   }
   return (
     <div className={`champ ${id ? 'has' : ''}`}>
       <span className="champ-place">{place === 1 ? '🏆' : `${place}.`}</span>
-      <span>{id ? teamName(id) : place === 1 ? 'Zwycięzca' : `${place}. miejsce`}</span>
+      <span>{id ? teamName(id) : place === 1 ? t('Zwycięzca') : t('{n}. miejsce', { n: place })}</span>
     </div>
   )
 }
@@ -130,7 +131,7 @@ function BMatch({ state, match: m }: { state: State; match?: Match }) {
   const mine = useFavorites()
   if (!m) return <div className="bm bm-empty" />
   const rules = state.tournament.rules
-  const t = tally(rules, m.sets)
+  const tl = tally(rules, m.sets)
   const cur = m.sets[m.sets.length - 1]
   const single = rules.sets === 1
   const played = m.status !== 'scheduled' && m.sets.length > 0
@@ -138,8 +139,8 @@ function BMatch({ state, match: m }: { state: State; match?: Match }) {
   const team = (id: string) => (id ? state.teams.find((x) => x.id === id) : undefined)
   const row = (s: 'a' | 'b') => {
     const id = s === 'a' ? m.teamA : m.teamB
-    const score = single ? (s === 'a' ? cur?.a : cur?.b) : (s === 'a' ? t.setsA : t.setsB)
-    const won = done && (s === 'a' ? t.setsA > t.setsB : t.setsB > t.setsA)
+    const score = single ? (s === 'a' ? cur?.a : cur?.b) : (s === 'a' ? tl.setsA : tl.setsB)
+    const won = done && (s === 'a' ? tl.setsA > tl.setsB : tl.setsB > tl.setsA)
     return (
       <div className={`bm-row ${won ? 'won' : ''} ${done && !won ? 'lost' : ''} ${mine.includes(id) ? 'mine' : ''}`}>
         {id ? <TeamBadge team={team(id)} size="sm" /> : <span className="bm-dot" aria-hidden="true" />}

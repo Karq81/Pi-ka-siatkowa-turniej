@@ -4,6 +4,7 @@ import { tally } from './logic/scoring'
 import { canScore } from './logic/pins'
 import { store, useSession, useSync } from './store/store'
 import type { Match, Rules, State } from './types'
+import { locale, t } from './i18n'
 
 /** Routes are plain hash tokens (#tabele, #boisko-3) so links survive being shared. */
 export function useRoute(): string {
@@ -41,7 +42,7 @@ export function BackBar({ fallback }: { fallback: string }) {
           else location.hash = fallback
         }}
       >
-        <span aria-hidden="true">←</span> Wstecz
+        <span aria-hidden="true">←</span> {t('Wstecz')}
       </button>
     </div>
   )
@@ -78,15 +79,14 @@ export function useLookups(state: State) {
   }, [state])
 }
 
-const DAYS = ['niedz.', 'pon.', 'wt.', 'śr.', 'czw.', 'pt.', 'sob.']
-
 export function formatTime(iso: string) {
   return iso.slice(11, 16)
 }
 
 export function formatDay(iso: string) {
   const d = new Date(iso)
-  return `${DAYS[d.getDay()]} ${d.getDate()}.${String(d.getMonth() + 1).padStart(2, '0')}`
+  const day = new Intl.DateTimeFormat(locale(), { weekday: 'short' }).format(d)
+  return `${day} ${d.getDate()}.${String(d.getMonth() + 1).padStart(2, '0')}`
 }
 
 /** The match a court is playing now, or the next one waiting for it. */
@@ -110,20 +110,20 @@ export function useNow(ms = 1000) {
 }
 
 export function StatusPill({ status }: { status: Match['status'] }) {
-  if (status === 'live') return <span className="pill pill-live"><i />Trwa</span>
-  if (status === 'finished') return <span className="pill pill-done">Koniec meczu</span>
-  return <span className="pill">Zaplanowany</span>
+  if (status === 'live') return <span className="pill pill-live"><i />{t('Trwa')}</span>
+  if (status === 'finished') return <span className="pill pill-done">{t('Koniec meczu')}</span>
+  return <span className="pill">{t('Zaplanowany')}</span>
 }
 
 /** Compact score line: sets won and each set's points. */
 export function ScoreLine({ match, rules }: { match: Match; rules: Rules }) {
   if (match.status === 'scheduled') return <span className="muted">{formatTime(match.start)}</span>
-  if (!match.sets.length) return <span className="muted">wynik po meczu</span>
+  if (!match.sets.length) return <span className="muted">{t('wynik po meczu')}</span>
   if (match.sets.length === 1) return <span className="scoreline"><b>{match.sets[0].a}:{match.sets[0].b}</b></span>
-  const t = tally(rules, match.sets)
+  const score = tally(rules, match.sets)
   return (
     <span className="scoreline">
-      <b>{t.setsA}:{t.setsB}</b>
+      <b>{score.setsA}:{score.setsB}</b>
       <span className="muted">({match.sets.map((s) => `${s.a}:${s.b}`).join(', ')})</span>
     </span>
   )
@@ -151,7 +151,7 @@ export function PinGate({ court, label, children }: { court?: number; label: str
         setError(!ok)
       }}
     >
-      <label htmlFor="pin-input">{label}: wpisz {court ? 'klucz boiska' : 'PIN'}</label>
+      <label htmlFor="pin-input">{court ? t('{label}: wpisz klucz boiska', { label }) : t('{label}: wpisz PIN', { label })}</label>
       <input
         id="pin-input"
         inputMode="numeric"
@@ -159,8 +159,8 @@ export function PinGate({ court, label, children }: { court?: number; label: str
         value={value}
         onChange={(e) => { setValue(e.target.value); setError(false) }}
       />
-      {error && <p className="error">{court ? `To nie jest klucz do boiska ${court}. Zapytaj sędziego głównego.` : 'Nieprawidłowy PIN.'}</p>}
-      <button className="btn btn-primary" type="submit" disabled={busy || !value}>{busy ? 'Sprawdzam…' : 'Wejdź'}</button>
+      {error && <p className="error">{court ? t('To nie jest klucz do boiska {court}. Zapytaj sędziego głównego.', { court }) : t('Nieprawidłowy PIN.')}</p>}
+      <button className="btn btn-primary" type="submit" disabled={busy || !value}>{busy ? t('Sprawdzam…') : t('Wejdź')}</button>
     </form>
   )
 }
@@ -179,14 +179,14 @@ export function SyncBanner() {
   if (sync.mode === 'local') {
     return (
       <div className="banner" role="status">
-        Tryb pokazowy: dane zapisują się tylko na tym urządzeniu i nikt inny ich nie widzi.
+        {t('Tryb pokazowy: dane zapisują się tylko na tym urządzeniu i nikt inny ich nie widzi.')}
       </div>
     )
   }
   if (sync.mode === 'online' && !sync.connected) {
     return (
       <div className="banner" role="status">
-        Brak połączenia. {sync.pending ? 'Wyniki są zapisane w telefonie i wyślą się same, gdy wróci internet.' : 'Pokazuję ostatnie znane wyniki.'}
+        {t('Brak połączenia.')} {sync.pending ? t('Wyniki są zapisane w telefonie i wyślą się same, gdy wróci internet.') : t('Pokazuję ostatnie znane wyniki.')}
       </div>
     )
   }

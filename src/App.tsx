@@ -10,6 +10,7 @@ import { Organizer } from './views/Organizer'
 import { Tv } from './views/Tv'
 import { useEffect } from 'react'
 import { SyncBanner, useRoute } from './ui'
+import { HelpBot } from './views/HelpBot'
 
 /**
  * Phones show the public pages and the organiser panel laid out like the desktop view,
@@ -66,6 +67,8 @@ export function App() {
       {/* The service pages show no tournament, so no connection notices either. */}
       {!(IS_LANDING || PLATFORM_ROUTES.includes(route)) && <SyncBanner />}
       <Screen route={route} />
+      {/* The AI help desk on the service's and the organiser's screens (not on fans' or scoring screens). */}
+      {(IS_LANDING || PLATFORM_ROUTES.includes(route) || /^(panel(-[a-z]+)?|admin|kartki|sedzia)$/.test(route)) && <HelpBot route={route} />}
     </>
   )
 }

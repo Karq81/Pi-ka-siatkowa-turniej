@@ -1,6 +1,7 @@
+import { locale, t } from '../i18n'
 import { useEffect, useState, type ReactNode } from 'react'
 import { BRAND } from '../config'
-import { SPORTS } from '../logic/sports'
+import { SPORTS, sportName } from '../logic/sports'
 import { countSiteVisit, useAccount } from '../store/accounts'
 import { Demo } from './Demo'
 import { PlatformNav } from './Platform'
@@ -22,28 +23,27 @@ export function About() {
         <div className="ab-hero-bg" aria-hidden="true" />
         <div className="pf-wrap ab-hero-grid">
           <div className="ab-hero-text">
-            <p className="ab-badge"><span className="ab-dot" /> Z asystentem AI · dowolny sport · za darmo</p>
+            <p className="ab-badge"><span className="ab-dot" /> {t('Z asystentem AI · dowolny sport · za darmo')}</p>
             <h1>
-              Napisz, jaki turniej chcesz. <span>Resztę zrobimy za Ciebie.</span>
+              {t('Napisz, jaki turniej chcesz.')} <span>{t('Resztę zrobimy za Ciebie.')}</span>
             </h1>
             <p className="ab-lead">
-              Nie musisz znać żadnego programu. Opisz turniej swoimi słowami albo przepisz go z kartki, a asystent AI
-              ułoży drużyny, grupy i terminarz. Kibice oglądają wyniki na żywo w telefonie.
+              {t('Nie musisz znać żadnego programu. Opisz turniej swoimi słowami albo przepisz go z kartki, a asystent AI ułoży drużyny, grupy i terminarz. Kibice oglądają wyniki na żywo w telefonie.')}
             </p>
             <ul className="ab-checks">
-              <li>Piszesz po swojemu, bez formularzy i tabelek</li>
-              <li>Pełna kontrola: każdą rzecz zmienisz sam</li>
-              <li>{disciplines.length} dyscyplin z gotowymi zasadami, a do tego dowolna inna</li>
+              <li>{t('Piszesz po swojemu, bez formularzy i tabelek')}</li>
+              <li>{t('Pełna kontrola: każdą rzecz zmienisz sam')}</li>
+              <li>{t('{n} dyscyplin z gotowymi zasadami, a do tego dowolna inna', { n: disciplines.length })}</li>
             </ul>
             <div className="ab-cta">
-              <a className="ab-btn primary" href={start}>Załóż turniej za darmo</a>
-              <a className="ab-btn light" href="#jak-to-dziala">▶ Zobacz, jak to działa</a>
+              <a className="ab-btn primary" href={start}>{t('Załóż turniej za darmo')}</a>
+              <a className="ab-btn light" href="#jak-to-dziala">▶ {t('Zobacz, jak to działa')}</a>
             </div>
             <div className="ab-visits" aria-live="polite">
               <span className="ab-visits-icon" aria-hidden="true">👀</span>
               <span>
-                <b>{visits === null ? '…' : visits.toLocaleString('pl-PL')}</b>
-                <small>odwiedzin strony</small>
+                <b>{visits === null ? '…' : visits.toLocaleString(locale())}</b>
+                <small>{t('odwiedzin strony')}</small>
               </span>
             </div>
           </div>
@@ -53,50 +53,48 @@ export function About() {
 
       <section className="ab-sports" aria-label="Dyscypliny">
         <div className="pf-wrap">
-          <p className="ab-sports-title">Gotowe wzorce turniejów</p>
+          <p className="ab-sports-title">{t('Gotowe wzorce turniejów')}</p>
           <ul className="ab-chips">
-            {disciplines.map((s) => <li key={s.id}>{s.label}</li>)}
-            <li className="more">+ dowolna inna dyscyplina</li>
+            {disciplines.map((s) => <li key={s.id}>{sportName(s)}</li>)}
+            <li className="more">+ {t('dowolna inna dyscyplina')}</li>
           </ul>
         </div>
       </section>
 
       <section className="ab-sec" id="jak-to-dziala">
         <div className="pf-wrap">
-          <h2>Zobacz, jak to działa</h2>
-          <p className="ab-sub">Od pomysłu do turnieju na żywo w kilka minut. Bez szkoleń i bez instrukcji.</p>
+          <h2>{t('Zobacz, jak to działa')}</h2>
+          <p className="ab-sub">{t('Od pomysłu do turnieju na żywo w kilka minut. Bez szkoleń i bez instrukcji.')}</p>
           <Demo />
         </div>
       </section>
 
       <section className="ab-sec alt">
         <div className="pf-wrap">
-          <h2>Napisz, co chcesz i jak chcesz</h2>
+          <h2>{t('Napisz, co chcesz i jak chcesz')}</h2>
           <p className="ab-sub">
-            Asystent AI rozumie zwykły język. Wystarczy, że odpowiesz mu na trzy pytania, w dowolnej kolejności i
-            dowolnymi słowami.
+            {t('Asystent AI rozumie zwykły język. Wystarczy, że odpowiesz mu na trzy pytania, w dowolnej kolejności i dowolnymi słowami.')}
           </p>
           <div className="ab-talk">
             <div className="ab-grid3">
-              <Card icon="📅" title="Co to za turniej?">
-                Dyscyplina, dzień, godzina startu i ile masz boisk, kortów albo stołów.
+              <Card icon="📅" title={t('Co to za turniej?')}>
+                {t('Dyscyplina, dzień, godzina startu i ile masz boisk, kortów albo stołów.')}
               </Card>
-              <Card icon="👥" title="Kto gra?">
-                Lista drużyn albo zawodników. Wklej ją z kartki, maila, Excela czy WhatsAppa.
+              <Card icon="👥" title={t('Kto gra?')}>
+                {t('Lista drużyn albo zawodników. Wklej ją z kartki, maila, Excela czy WhatsAppa.')}
               </Card>
-              <Card icon="🧩" title="Jak ma wyglądać?">
-                Grupy, kategorie wiekowe, ile trwa mecz, do ilu się gra. Nie wiesz? Asystent zaproponuje.
+              <Card icon="🧩" title={t('Jak ma wyglądać?')}>
+                {t('Grupy, kategorie wiekowe, ile trwa mecz, do ilu się gra. Nie wiesz? Asystent zaproponuje.')}
               </Card>
             </div>
             <figure className="ab-note">
-              <figcaption>Na przykład tak:</figcaption>
+              <figcaption>{t('Na przykład tak:')}</figcaption>
               <blockquote>
-                „Sobota od 9:00, siatkówka dziewcząt, 3 boiska, jeden set do 25. Młodziczki: Orzeł, Fala, Sokół, Iskra.
-                Kadetki: Orzeł, Fala, Wicher, Kometa, Sokół, podzielić na dwie grupy.”
+                {t('„Sobota od 9:00, siatkówka dziewcząt, 3 boiska, jeden set do 25. Młodziczki: Orzeł, Fala, Sokół, Iskra. Kadetki: Orzeł, Fala, Wicher, Kometa, Sokół, podzielić na dwie grupy.”')}
               </blockquote>
               <p>
-                To wszystko. Asystent przepisze drużyny, ułoży grupy i terminarz, a na koniec powie, czego mu
-                zabrakło. <b>Nie musisz pisać ładnie. Wystarczy, że wiesz, czego chcesz.</b>
+                {t('To wszystko. Asystent przepisze drużyny, ułoży grupy i terminarz, a na koniec powie, czego mu zabrakło.')}{' '}
+                <b>{t('Nie musisz pisać ładnie. Wystarczy, że wiesz, czego chcesz.')}</b>
               </p>
             </figure>
           </div>
@@ -105,30 +103,26 @@ export function About() {
 
       <section className="ab-sec">
         <div className="pf-wrap">
-          <h2>Co dostajesz</h2>
-          <p className="ab-sub">Asystent przygotowuje, a Ty decydujesz. To wciąż Twój turniej.</p>
+          <h2>{t('Co dostajesz')}</h2>
+          <p className="ab-sub">{t('Asystent przygotowuje, a Ty decydujesz. To wciąż Twój turniej.')}</p>
           <div className="ab-grid3">
-            <Card icon="🎛️" title="Pełna kontrola">
-              Drużyny, grupy, kategorie, boiska, godziny i zasady ustawiasz tak, jak lubisz. Asystent tylko podpowiada,
-              ostatnie słowo zawsze należy do Ciebie.
+            <Card icon="🎛️" title={t('Pełna kontrola')}>
+              {t('Drużyny, grupy, kategorie, boiska, godziny i zasady ustawiasz tak, jak lubisz. Asystent tylko podpowiada, ostatnie słowo zawsze należy do Ciebie.')}
             </Card>
-            <Card icon="🏅" title="Każdy sport, każdy format">
-              Siatkówka, piłka, tenis, padel, koszykówka, ping-pong i wiele innych, z gotową punktacją. Twojego sportu
-              nie ma? Ustawisz własne zasady.
+            <Card icon="🏅" title={t('Każdy sport, każdy format')}>
+              {t('Siatkówka, piłka, tenis, padel, koszykówka, ping-pong i wiele innych, z gotową punktacją. Twojego sportu nie ma? Ustawisz własne zasady.')}
             </Card>
-            <Card icon="📺" title="Wyniki na żywo">
-              Kibic widzi, co gra teraz, jaki jest wynik i kiedy następny mecz. Tabele liczą się same.
+            <Card icon="📺" title={t('Wyniki na żywo')}>
+              {t('Kibic widzi, co gra teraz, jaki jest wynik i kiedy następny mecz. Tabele liczą się same.')}
             </Card>
-            <Card icon="📱" title="Sędzia z telefonem">
-              Każde boisko dostaje swój link. Sędzia wpisuje wynik dużymi przyciskami, a pomyłkę poprawia jednym
-              kliknięciem.
+            <Card icon="📱" title={t('Sędzia z telefonem')}>
+              {t('Każde boisko dostaje swój link. Sędzia wpisuje wynik dużymi przyciskami, a pomyłkę poprawia jednym kliknięciem.')}
             </Card>
-            <Card icon="🔳" title="Link i kod QR">
-              Jeden kod na plakacie w hali i jeden link na grupę rodziców. Nikt nic nie instaluje.
+            <Card icon="🔳" title={t('Link i kod QR')}>
+              {t('Jeden kod na plakacie w hali i jeden link na grupę rodziców. Nikt nic nie instaluje.')}
             </Card>
-            <Card icon="👤" title="Wszystko w jednym miejscu">
-              Twoje turnieje na koncie, gotowe do otwarcia jednym kliknięciem, razem z liczbą
-              odwiedzin kibiców.
+            <Card icon="👤" title={t('Wszystko w jednym miejscu')}>
+              {t('Twoje turnieje na koncie, gotowe do otwarcia jednym kliknięciem, razem z liczbą odwiedzin kibiców.')}
             </Card>
           </div>
         </div>
@@ -136,10 +130,9 @@ export function About() {
 
       <section className="ab-sec alt">
         <div className="pf-wrap">
-          <h2>Ile to kosztuje?</h2>
+          <h2>{t('Ile to kosztuje?')}</h2>
           <p className="ab-sub">
-            Zaczynasz za darmo, razem z asystentem AI. Zwykły turniej mieści się w darmowym limicie odsłon. Dopiero przy
-            bardzo dużej liczbie kibiców dokupujesz pakiet.
+            {t('Zaczynasz za darmo, razem z asystentem AI. Zwykły turniej mieści się w darmowym limicie odsłon. Dopiero przy bardzo dużej liczbie kibiców dokupujesz pakiet.')}
           </p>
         </div>
       </section>
@@ -148,10 +141,10 @@ export function About() {
         <div className="pf-wrap">
           <div className="ab-final-inner">
             <div>
-              <h2>Masz pomysł na turniej? Napisz go.</h2>
-              <p>Ty wiesz, jak ma wyglądać. My zrobimy z tego turniej na żywo.</p>
+              <h2>{t('Masz pomysł na turniej? Napisz go.')}</h2>
+              <p>{t('Ty wiesz, jak ma wyglądać. My zrobimy z tego turniej na żywo.')}</p>
             </div>
-            <a className="ab-btn primary" href={start}>Załóż turniej za darmo</a>
+            <a className="ab-btn primary" href={start}>{t('Załóż turniej za darmo')}</a>
           </div>
         </div>
       </section>
@@ -182,7 +175,7 @@ function useSiteVisits(): number | null {
  */
 function HeroArt() {
   return (
-    <div className="ab-art" aria-label="Przykład ekranu dla kibiców">
+    <div className="ab-art" aria-label={t('Przykład ekranu dla kibiców')}>
       <svg className="ab-pitch" viewBox="0 0 400 260" aria-hidden="true">
         <defs>
           <linearGradient id="pitch-g" x1="0" y1="0" x2="0" y2="1">
@@ -205,27 +198,27 @@ function HeroArt() {
       </svg>
       <div className="ab-phone">
         <div className="ab-phone-screen">
-          <p className="ab-ph-title">Turniej · Na żywo</p>
+          <p className="ab-ph-title">{t('Turniej')} · {t('Na żywo')}</p>
           <div className="ab-ph-card">
-            <p className="ab-ph-top"><span className="ab-live">● NA ŻYWO</span> Boisko 2 · Grupa A</p>
-            <div className="ab-ph-row"><span>Orły</span><b>2</b></div>
-            <div className="ab-ph-row"><span>Sokoły</span><b>1</b></div>
+            <p className="ab-ph-top"><span className="ab-live">● {t('NA ŻYWO')}</span> {t('Boisko {n}', { n: 2 })} · {t('Grupa {letter}', { letter: 'A' })}</p>
+            <div className="ab-ph-row"><span>{t('Orły')}</span><b>2</b></div>
+            <div className="ab-ph-row"><span>{t('Sokoły')}</span><b>1</b></div>
           </div>
           <div className="ab-ph-card">
-            <p className="ab-ph-top">Kort 1 · następny mecz</p>
-            <p className="ab-ph-soon">Zaczyna się za 4 min</p>
+            <p className="ab-ph-top">{t('Kort {n}', { n: 1 })} · {t('następny mecz')}</p>
+            <p className="ab-ph-soon">{t('Zaczyna się za {n} min', { n: 4 })}</p>
           </div>
           <div className="ab-ph-table">
-            <p className="ab-ph-top">Tabela · Grupa A</p>
-            {['Orły', 'Sokoły', 'Jastrzębie'].map((t, i) => (
-              <div className="ab-ph-row" key={t}><span>{i + 1}. {t}</span><b>{6 - 3 * i} pkt</b></div>
+            <p className="ab-ph-top">{t('Tabela')} · {t('Grupa {letter}', { letter: 'A' })}</p>
+            {[t('Orły'), t('Sokoły'), t('Jastrzębie')].map((team, i) => (
+              <div className="ab-ph-row" key={team}><span>{i + 1}. {team}</span><b>{t('{n} pkt', { n: 6 - 3 * i })}</b></div>
             ))}
           </div>
         </div>
       </div>
-      <div className="ab-float f1"><span>🎾 Padel</span><b>6:4 3:6 10:8</b></div>
-      <div className="ab-float f2"><span>🏐 Siatkówka</span><b>2:1</b></div>
-      <div className="ab-float f3"><span>🏀 Koszykówka</span><b>78:74</b></div>
+      <div className="ab-float f1"><span>🎾 {t('Padel')}</span><b>6:4 3:6 10:8</b></div>
+      <div className="ab-float f2"><span>🏐 {t('Siatkówka')}</span><b>2:1</b></div>
+      <div className="ab-float f3"><span>🏀 {t('Koszykówka')}</span><b>78:74</b></div>
     </div>
   )
 }

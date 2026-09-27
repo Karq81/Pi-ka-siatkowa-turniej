@@ -1,3 +1,4 @@
+import { t } from '../i18n'
 import { useEffect, useState } from 'react'
 import { useStore } from '../store/store'
 import { hasKnockout } from '../logic/knockout'
@@ -17,8 +18,8 @@ export function Tv() {
   ]
   const [i, setI] = useState(0)
   useEffect(() => {
-    const t = setInterval(() => setI((x) => x + 1), SLIDE_SECONDS * 1000)
-    return () => clearInterval(t)
+    const timer = setInterval(() => setI((x) => x + 1), SLIDE_SECONDS * 1000)
+    return () => clearInterval(timer)
   }, [])
   const slide = slides[i % slides.length]
   const isBracket = slide.startsWith('ko:')
@@ -27,7 +28,7 @@ export function Tv() {
     <div className="tv">
       <header className="tv-head">
         <h1>{state.tournament.name}</h1>
-        <span>{category ? `${isBracket ? 'Drabinka' : 'Tabele'} · ${category.name}` : 'Na żywo'}</span>
+        <span>{category ? `${isBracket ? t('Drabinka') : t('Tabele')} · ${category.name}` : t('Na żywo')}</span>
       </header>
       {isBracket && category ? (
         <BracketBoard state={state} categoryId={category.id} />
@@ -44,7 +45,7 @@ export function Tv() {
           ))}
         </section>
       )}
-      <a className="tv-exit" href="#panel">Wyjdź z trybu TV</a>
+      <a className="tv-exit" href="#panel">{t('Wyjdź z trybu TV')}</a>
     </div>
   )
 }

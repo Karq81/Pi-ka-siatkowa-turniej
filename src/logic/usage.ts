@@ -48,5 +48,6 @@ export function dayKey(d: Date = new Date()): string {
 }
 
 export function formatPln(v: number): string {
-  return `${v.toLocaleString('pl-PL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} zł`
-}
+  return `${v.toLocaleString(locale(), { minimumFractionDigits: 2, maximumFractionDigits: 2 })} zł`
+}import { locale } from '../i18n'
+

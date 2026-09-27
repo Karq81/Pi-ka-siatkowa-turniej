@@ -1,3 +1,4 @@
+import { t, tk } from '../i18n'
 import { initializeApp, type FirebaseOptions } from 'firebase/app'
 import { connectAuthEmulator, getAuth, signInAnonymously, type Auth } from 'firebase/auth'
 import {
@@ -83,8 +84,8 @@ export function createFirebaseStore(config: FirebaseOptions, tournamentId: strin
   const fail = (what: string) => (e: unknown) => {
     const code = (e as { code?: string }).code
     const msg = code === 'permission-denied'
-      ? `${what}: brak uprawnień. Zaloguj się ponownie PIN-em.`
-      : `${what}: nie udało się zapisać. Sprawdź internet i spróbuj jeszcze raz.`
+      ? t('{what}: brak uprawnień. Zaloguj się ponownie PIN-em.', { what: t(what) })
+      : t('{what}: nie udało się zapisać. Sprawdź internet i spróbuj jeszcze raz.', { what: t(what) })
     console.error(what, e)
     if (code === 'permission-denied') saveSession(null)
     setSync({ error: msg })
@@ -94,7 +95,7 @@ export function createFirebaseStore(config: FirebaseOptions, tournamentId: strin
   // device, otherwise anonymously. Sessions (PIN logins) belong to whoever is signed in.
   const ready = auth.authStateReady()
     .then(() => (auth.currentUser ? undefined : signInAnonymously(auth).then(() => undefined)))
-    .catch(fail('Logowanie'))
+    .catch(fail(tk('Logowanie')))
   const currentUser = async () => {
     await ready
     if (!auth.currentUser) await signInAnonymously(auth)
@@ -116,7 +117,7 @@ export function createFirebaseStore(config: FirebaseOptions, tournamentId: strin
     if (data) state = { ...state, ...data, matches: state.matches }
     if (snap.exists() && !snap.metadata.fromCache) countVisit()
     setSync({ empty: !snap.exists() && !snap.metadata.fromCache, connected: !snap.metadata.fromCache })
-  }, fail('Odczyt turnieju'))
+  }, fail(tk('Odczyt turnieju')))
 
   // Documents in `matches` that are not court sheets (the old one-document-per-match layout).
   let legacy: string[] = []
@@ -128,7 +129,7 @@ export function createFirebaseStore(config: FirebaseOptions, tournamentId: strin
       : snap.docs.map((d) => d.data() as Match)
     state = { ...state, matches }
     setSync({ pending: snap.metadata.hasPendingWrites, connected: !snap.metadata.fromCache })
-  }, fail('Odczyt meczów'))
+  }, fail(tk('Odczyt meczów')))
 
   const saveSession = (s: Session | null) => {
     session = s
@@ -152,7 +153,7 @@ export function createFirebaseStore(config: FirebaseOptions, tournamentId: strin
         return true
       } catch (e) {
         if ((e as { code?: string }).code === 'timeout') {
-          setSync({ error: 'Brak połączenia z internetem. Logowanie PIN-em wymaga internetu.' })
+          setSync({ error: t('Brak połączenia z internetem. Logowanie PIN-em wymaga internetu.') })
           return false
         }
       }
@@ -193,7 +194,7 @@ export function createFirebaseStore(config: FirebaseOptions, tournamentId: strin
         const [first, ...more] = ms.flatMap((m) => [new FieldPath('matches', m.id), m])
         b.update(sheetRef(court), first as FieldPath, more[0], ...more.slice(1))
       }
-      b.commit().catch(fail('Zapis wyniku'))
+      b.commit().catch(fail(tk('Zapis wyniku')))
     },
     async replace(next) {
       const ops: ((b: ReturnType<typeof writeBatch>) => void)[] = []
@@ -214,13 +215,13 @@ export function createFirebaseStore(config: FirebaseOptions, tournamentId: strin
           await b.commit()
         }
       } catch (e) {
-        fail('Zapis turnieju')(e)
+        fail(tk('Zapis turnieju'))(e)
       }
     },
     updateTournament(patch) {
       state = { ...state, tournament: { ...state.tournament, ...patch } }
       notify()
-      updateDoc(tRef, { tournament: state.tournament }).catch(fail('Zapis ustawień'))
+      updateDoc(tRef, { tournament: state.tournament }).catch(fail(tk('Zapis ustawień')))
     },
     async getPins() {
       try {

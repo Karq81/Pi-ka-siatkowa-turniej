@@ -1,3 +1,4 @@
+import { t, tk } from '../i18n'
 import QRCode from 'qrcode'
 import { useEffect, useState } from 'react'
 import { IS_ALBATROS, TOURNAMENT_ID, tournamentUrl } from '../config'
@@ -14,12 +15,12 @@ import { CourtCard, MatchList } from './Public'
 import { ResultForm } from './ResultForm'
 
 const TABS = [
-  { id: 'boiska', label: 'Boiska' },
-  { id: 'wynik', label: 'Podaj wynik' },
-  { id: 'mecze', label: 'Mecze i poprawki' },
-  { id: 'klucze', label: 'Klucze boisk' },
-  { id: 'dane', label: 'Drużyny i terminarz' },
-  { id: 'ustawienia', label: 'Ustawienia' },
+  { id: 'boiska', label: tk('Boiska') },
+  { id: 'wynik', label: tk('Podaj wynik') },
+  { id: 'mecze', label: tk('Mecze i poprawki') },
+  { id: 'klucze', label: tk('Klucze boisk') },
+  { id: 'dane', label: tk('Drużyny i terminarz') },
+  { id: 'ustawienia', label: tk('Ustawienia') },
 ]
 
 export function Admin() {
@@ -31,7 +32,7 @@ export function Admin() {
       <div className="page">
         <BackBar fallback="panel" />
         <header className="bar">
-          <h1>Pierwsze uruchomienie</h1>
+          <h1>{t('Pierwsze uruchomienie')}</h1>
         </header>
         <FirstSetup />
       </div>
@@ -41,12 +42,12 @@ export function Admin() {
     <div className="page">
       <BackBar fallback="panel" />
       <header className="bar">
-        <h1>Sędzia główny</h1>
+        <h1>{t('Sędzia główny')}</h1>
       </header>
-      <PinGate label="Panel sędziego głównego">
-        <nav className="tabs tabs-admin" aria-label="Panel">
-          {TABS.map((t) => (
-            <button key={t.id} className={tab === t.id ? 'active' : ''} onClick={() => setTab(t.id)}>{t.label}</button>
+      <PinGate label={t('Panel sędziego głównego')}>
+        <nav className="tabs tabs-admin" aria-label={t('Panel')}>
+          {TABS.map((x) => (
+            <button key={x.id} className={tab === x.id ? 'active' : ''} onClick={() => setTab(x.id)}>{t(x.label)}</button>
           ))}
         </nav>
         {tab === 'boiska' && <Courts state={state} />}
@@ -66,9 +67,9 @@ function Courts({ state }: { state: State }) {
   return (
     <>
       <div className="stats">
-        <span><b>{live}</b> na żywo</span>
-        <span><b>{done}</b> / {state.matches.length} zakończonych</span>
-        <span><b>{state.teams.length}</b> drużyn</span>
+        <span><b>{live}</b> {t('na żywo')}</span>
+        <span><b>{done}</b> / {state.matches.length} {t('zakończonych')}</span>
+        <span>{t('Drużyny:')} <b>{state.teams.length}</b></span>
       </div>
       <section className="courts">
         {Array.from({ length: state.tournament.courts }, (_, i) => (
@@ -87,7 +88,7 @@ function Matches({ state }: { state: State }) {
   const query = q.trim().toLowerCase()
   const list = state.matches
     .filter((m) => filter === 'all' || m.status === filter)
-    .filter((m) => !query || `${side(m, 'a')} ${side(m, 'b')} boisko ${courtLabel(m.court)}`.toLowerCase().includes(query))
+    .filter((m) => !query || `${side(m, 'a')} ${side(m, 'b')} ${t('boisko')} ${courtLabel(m.court)}`.toLowerCase().includes(query))
     .sort((a, b) => a.start.localeCompare(b.start) || a.court - b.court)
   const current = editing ? state.matches.find((m) => m.id === editing) : undefined
 
@@ -96,14 +97,14 @@ function Matches({ state }: { state: State }) {
   return (
     <>
       <div className="filters">
-        <input id="admin-search" type="search" placeholder="Szukaj drużyny lub boiska" value={q} onChange={(e) => setQ(e.target.value)} />
+        <input id="admin-search" type="search" placeholder={t('Szukaj drużyny lub boiska')} value={q} onChange={(e) => setQ(e.target.value)} />
         <div className="chips">
-          {([['live', 'Na żywo'], ['scheduled', 'Zaplanowane'], ['finished', 'Zakończone'], ['all', 'Wszystkie']] as const).map(([id, label]) => (
-            <button key={id} className={`chip ${filter === id ? 'active' : ''}`} onClick={() => setFilter(id)}>{label}</button>
+          {([['live', tk('Na żywo')], ['scheduled', tk('Zaplanowane')], ['finished', tk('Zakończone')], ['all', tk('Wszystkie')]] as const).map(([id, label]) => (
+            <button key={id} className={`chip ${filter === id ? 'active' : ''}`} onClick={() => setFilter(id)}>{t(label)}</button>
           ))}
         </div>
       </div>
-      <p className="muted small">Kliknij mecz, żeby wpisać lub poprawić wynik.</p>
+      <p className="muted small">{t('Kliknij mecz, żeby wpisać lub poprawić wynik.')}</p>
       <MatchList state={state} matches={list} onPick={(m) => setEditing(m.id)} />
     </>
   )
@@ -117,16 +118,15 @@ function MatchEditor({ state, match, onClose }: { state: State; match: Match; on
   }
   return (
     <section className="editor">
-      <button className="back" onClick={onClose}>← Lista meczów</button>
+      <button className="back" onClick={onClose}>{t('← Lista meczów')}</button>
       <h2>{side(match, 'a')} – {side(match, 'b')}</h2>
-      <p className="muted">Boisko {courtLabel(match.court)} · {formatDay(match.start)} {formatTime(match.start)}</p>
-      <ResultForm state={state} match={match} submitLabel="Zapisz jako zakończony" onSubmit={(sets) => save('finished', sets)}>
-        <button type="button" className="btn" onClick={() => save('live', match.status === 'live' ? match.sets : [])}>Oznacz jako trwający</button>
-        <button type="button" className="btn btn-danger" onClick={() => save('scheduled')}>Wyczyść wynik</button>
+      <p className="muted">{t('Boisko {n}', { n: courtLabel(match.court) })} · {formatDay(match.start)} {formatTime(match.start)}</p>
+      <ResultForm state={state} match={match} submitLabel={t('Zapisz jako zakończony')} onSubmit={(sets) => save('finished', sets)}>
+        <button type="button" className="btn" onClick={() => save('live', match.status === 'live' ? match.sets : [])}>{t('Oznacz jako trwający')}</button>
+        <button type="button" className="btn btn-danger" onClick={() => save('scheduled')}>{t('Wyczyść wynik')}</button>
       </ResultForm>
       <p className="muted small">
-        „Oznacz jako trwający”: na stronie pojawi się „Mecz trwa, wynik po meczu”. Przydaje się na boiskach,
-        gdzie nikt nie liczy punktów na telefonie.
+        {t('„Oznacz jako trwający”: na stronie pojawi się „Mecz trwa, wynik po meczu”. Przydaje się na boiskach, gdzie nikt nie liczy punktów na telefonie.')}
       </p>
     </section>
   )
@@ -144,24 +144,24 @@ function QuickResults({ state }: { state: State }) {
     .filter((m) => m.status !== 'finished' && m.teamA && m.teamB)
     .sort((a, b) => (a.status === 'live' ? 0 : 1) - (b.status === 'live' ? 0 : 1) || a.start.localeCompare(b.start) || a.court - b.court)
   const list = waiting.filter((m) =>
-    !query || `${side(m, 'a')} ${side(m, 'b')} boisko ${courtLabel(m.court)} b${courtLabel(m.court)}`.toLowerCase().includes(query))
+    !query || `${side(m, 'a')} ${side(m, 'b')} ${t('boisko')} ${courtLabel(m.court)} b${courtLabel(m.court)}`.toLowerCase().includes(query))
   const match = current ? state.matches.find((m) => m.id === current) : undefined
 
   if (match) {
     return (
       <section className="editor">
-        <button className="back" onClick={() => setCurrent(null)}>← Wybierz inny mecz</button>
+        <button className="back" onClick={() => setCurrent(null)}>{t('← Wybierz inny mecz')}</button>
         <h2>{side(match, 'a')} – {side(match, 'b')}</h2>
-        <p className="muted">Boisko {courtLabel(match.court)} · {formatTime(match.start)} · {categoryName(match.categoryId)} · {stageName(match)}</p>
+        <p className="muted">{t('Boisko {n}', { n: courtLabel(match.court) })} · {formatTime(match.start)} · {categoryName(match.categoryId)} · {stageName(match)}</p>
         <ResultForm
           key={match.id}
           state={state}
           match={match}
-          submitLabel="Zapisz i następny mecz"
+          submitLabel={t('Zapisz i następny mecz')}
           onSubmit={(sets) => {
             store.updateMatch(match.id, (m) => ({ ...m, status: 'finished', sets }))
-            const t = sets.map((x) => `${x.a}:${x.b}`).join(', ')
-            setSaved(`Zapisano: ${side(match, 'a')} – ${side(match, 'b')} (${t})`)
+            const score = sets.map((x) => `${x.a}:${x.b}`).join(', ')
+            setSaved(`${t('Zapisano:')} ${side(match, 'a')} – ${side(match, 'b')} (${score})`)
             const next = list.filter((m) => m.id !== match.id)[0]
             setCurrent(next?.id ?? null)
           }}
@@ -178,14 +178,14 @@ function QuickResults({ state }: { state: State }) {
           id="quick-search"
           type="search"
           autoFocus
-          placeholder="Wpisz drużynę albo numer boiska, Enter wybiera pierwszy mecz"
+          placeholder={t('Wpisz drużynę albo numer boiska, Enter wybiera pierwszy mecz')}
           value={q}
           onChange={(e) => setQ(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter' && list[0]) setCurrent(list[0].id) }}
         />
       </div>
       {saved && <p className="ok">{saved}</p>}
-      <p className="muted small">Mecze czekające na wynik: {waiting.length}. Kliknij mecz, wpisz sety z kartki i zapisz.</p>
+      <p className="muted small">{t('Mecze czekające na wynik: {n}. Kliknij mecz, wpisz sety z kartki i zapisz.', { n: waiting.length })}</p>
       <MatchList state={state} matches={list.slice(0, 30)} onPick={(m) => setCurrent(m.id)} />
     </>
   )
@@ -201,11 +201,11 @@ function Data({ state }: { state: State }) {
       <ResetPanel state={state} />
 
       <section className="panel">
-        <h2>Eksport do Excela</h2>
-        <p className="muted">Wszystkie mecze z wynikami w pliku CSV, który otwiera się w Excelu.</p>
+        <h2>{t('Eksport do Excela')}</h2>
+        <p className="muted">{t('Wszystkie mecze z wynikami w pliku CSV, który otwiera się w Excelu.')}</p>
         <div className="actions">
-          <button className="btn" onClick={() => download('wyniki.csv', csv)}>Pobierz CSV</button>
-          <button className="btn" onClick={() => navigator.clipboard?.writeText(csv).then(() => setMsg('Skopiowano wyniki do schowka.'), () => setMsg('Nie udało się skopiować.'))}>Kopiuj do schowka</button>
+          <button className="btn" onClick={() => download(`${t('wyniki')}.csv`, csv)}>{t('Pobierz CSV')}</button>
+          <button className="btn" onClick={() => navigator.clipboard?.writeText(csv).then(() => setMsg(t('Skopiowano wyniki do schowka.')), () => setMsg(t('Nie udało się skopiować.')))}>{t('Kopiuj do schowka')}</button>
         </div>
         {msg && <p className="ok">{msg}</p>}
       </section>
@@ -218,14 +218,14 @@ function exportCsv(state: State): string {
   const team = new Map(state.teams.map((t) => [t.id, t.name]))
   const cat = new Map(state.categories.map((c) => [c.id, c.name]))
   const grp = new Map(state.groups.map((g) => [g.id, g.name]))
-  const rows = [['Data', 'Godzina', 'Boisko', 'Kategoria', 'Grupa', 'Drużyna A', 'Drużyna B', 'Sety A', 'Sety B', 'Wyniki setów', 'Status']]
-  const statusName = { scheduled: 'zaplanowany', live: 'trwa', finished: 'zakończony' }
+  const rows = [[t('Data'), t('Godzina'), t('Boisko'), t('Kategoria'), t('Grupa'), t('Drużyna A'), t('Drużyna B'), t('Sety A'), t('Sety B'), t('Wyniki setów'), t('Status')]]
+  const statusName = { scheduled: t('zaplanowany'), live: t('trwa'), finished: t('zakończony') }
   for (const m of [...state.matches].sort((a, b) => a.start.localeCompare(b.start) || a.court - b.court)) {
-    const t = tally(state.tournament.rules, m.sets)
+    const score = tally(state.tournament.rules, m.sets)
     rows.push([
       m.start.slice(0, 10), formatTime(m.start), courtLabel(m.court), cat.get(m.categoryId) ?? '', grp.get(m.groupId) ?? '',
       team.get(m.teamA) ?? '', team.get(m.teamB) ?? '',
-      m.status === 'scheduled' ? '' : String(t.setsA), m.status === 'scheduled' ? '' : String(t.setsB),
+      m.status === 'scheduled' ? '' : String(score.setsA), m.status === 'scheduled' ? '' : String(score.setsB),
       m.sets.map((s) => `${s.a}:${s.b}`).join(' '), statusName[m.status],
     ])
   }
@@ -243,50 +243,50 @@ function download(name: string, content: string) {
 }
 
 function Settings({ state }: { state: State }) {
-  const t = state.tournament
-  const r = t.rules
+  const tour = state.tournament
+  const r = tour.rules
   const update = (patch: Partial<State['tournament']>) => store.updateTournament(patch)
   const rules = (patch: Partial<typeof r>) => update({ rules: { ...r, ...patch } })
   const num = (v: string, min = 0) => Math.max(min, Number(v) || 0)
   return (
     <div className="data">
       <section className="panel">
-        <h2>Turniej</h2>
+        <h2>{t('Turniej')}</h2>
         <div className="form-grid">
-          <label>Nazwa<input id="set-name" value={t.name} onChange={(e) => update({ name: e.target.value })} /></label>
-          <label>Podtytuł<input id="set-subtitle" value={t.subtitle} onChange={(e) => update({ subtitle: e.target.value })} /></label>
-          <label>Liczba boisk<input id="set-courts" type="number" min={1} value={t.courts} onChange={(e) => update({ courts: num(e.target.value, 1) })} /></label>
+          <label>{t('Nazwa')}<input id="set-name" value={tour.name} onChange={(e) => update({ name: e.target.value })} /></label>
+          <label>{t('Podtytuł')}<input id="set-subtitle" value={tour.subtitle} onChange={(e) => update({ subtitle: e.target.value })} /></label>
+          <label>{t('Liczba boisk')}<input id="set-courts" type="number" min={1} value={tour.courts} onChange={(e) => update({ courts: num(e.target.value, 1) })} /></label>
         </div>
       </section>
       {/* Changing the admin PIN is switched off while the organisers test the app, so nobody locks the others out. */}
       {ALLOW_PIN_CHANGE && <PinSettings />}
       <section className="panel">
-        <h2>Zasady meczu</h2>
+        <h2>{t('Zasady meczu')}</h2>
         <div className="form-grid">
           {r.scoring === 'score' ? (
-            <label>Remis możliwy
+            <label>{t('Remis możliwy')}
               <select id="set-draws" value={r.draws ? 'tak' : 'nie'} onChange={(e) => rules({ draws: e.target.value === 'tak' })}>
-                <option value="tak">Tak</option>
-                <option value="nie">Nie (dogrywka / karne)</option>
+                <option value="tak">{t('Tak')}</option>
+                <option value="nie">{t('Nie (dogrywka / karne)')}</option>
               </select>
             </label>
           ) : (<>
-          <label>System setów
+          <label>{t('System setów')}
             <select id="set-mode" value={r.setsMode} onChange={(e) => rules({ setsMode: e.target.value as typeof r.setsMode })}>
-              <option value="bestOf">Do wygranych setów (np. 2 z 3)</option>
-              <option value="fixed">Stała liczba setów (możliwy remis)</option>
+              <option value="bestOf">{t('Do wygranych setów (np. 2 z 3)')}</option>
+              <option value="fixed">{t('Stała liczba setów (możliwy remis)')}</option>
             </select>
           </label>
-          <label>Liczba setów<input id="set-sets" type="number" min={1} value={r.sets} onChange={(e) => rules({ sets: num(e.target.value, 1) })} /></label>
-          <label>Set do (pkt)<input id="set-points" type="number" min={1} value={r.setPoints} onChange={(e) => rules({ setPoints: num(e.target.value, 1) })} /></label>
-          <label>Decydujący set do (pkt)<input id="set-tiebreak" type="number" min={1} value={r.lastSetPoints} disabled={r.setsMode === 'fixed'} onChange={(e) => rules({ lastSetPoints: num(e.target.value, 1) })} /></label>
-          <label>Przewaga do wygrania seta<input id="set-winby" type="number" min={1} value={r.winBy} onChange={(e) => rules({ winBy: num(e.target.value, 1) })} /></label>
+          <label>{t('Liczba setów')}<input id="set-sets" type="number" min={1} value={r.sets} onChange={(e) => rules({ sets: num(e.target.value, 1) })} /></label>
+          <label>{t('Set do (pkt)')}<input id="set-points" type="number" min={1} value={r.setPoints} onChange={(e) => rules({ setPoints: num(e.target.value, 1) })} /></label>
+          <label>{t('Decydujący set do (pkt)')}<input id="set-tiebreak" type="number" min={1} value={r.lastSetPoints} disabled={r.setsMode === 'fixed'} onChange={(e) => rules({ lastSetPoints: num(e.target.value, 1) })} /></label>
+          <label>{t('Przewaga do wygrania seta')}<input id="set-winby" type="number" min={1} value={r.winBy} onChange={(e) => rules({ winBy: num(e.target.value, 1) })} /></label>
           </>)}
-          <label>Pkt w tabeli za wygraną<input id="set-pwin" type="number" value={r.pointsWin} onChange={(e) => rules({ pointsWin: num(e.target.value) })} /></label>
-          <label>Pkt za remis<input id="set-pdraw" type="number" value={r.pointsDraw} onChange={(e) => rules({ pointsDraw: num(e.target.value) })} /></label>
-          <label>Pkt za przegraną<input id="set-ploss" type="number" value={r.pointsLoss} onChange={(e) => rules({ pointsLoss: num(e.target.value) })} /></label>
+          <label>{t('Pkt w tabeli za wygraną')}<input id="set-pwin" type="number" value={r.pointsWin} onChange={(e) => rules({ pointsWin: num(e.target.value) })} /></label>
+          <label>{t('Pkt za remis')}<input id="set-pdraw" type="number" value={r.pointsDraw} onChange={(e) => rules({ pointsDraw: num(e.target.value) })} /></label>
+          <label>{t('Pkt za przegraną')}<input id="set-ploss" type="number" value={r.pointsLoss} onChange={(e) => rules({ pointsLoss: num(e.target.value) })} /></label>
         </div>
-        <p className="muted small">Zasady do potwierdzenia z organizatorem. Zmiana od razu przelicza wszystkie tabele.</p>
+        <p className="muted small">{t('Zasady do potwierdzenia z organizatorem. Zmiana od razu przelicza wszystkie tabele.')}</p>
       </section>
     </div>
   )
@@ -301,16 +301,16 @@ export function AdminPinForm({ onSave, saveLabel }: { onSave: (pin: string) => P
       className="data"
       onSubmit={async (e) => {
         e.preventDefault()
-        setMsg('Zapisuję…')
+        setMsg(t('Zapisuję…'))
         try {
           await onSave(pin)
-          setMsg('Zapisano.')
+          setMsg(t('Zapisano.'))
         } catch {
-          setMsg('Nie udało się zapisać. Sprawdź internet.')
+          setMsg(t('Nie udało się zapisać. Sprawdź internet.'))
         }
       }}
     >
-      <label>PIN sędziego głównego (co najmniej 4 cyfry)
+      <label>{t('PIN sędziego głównego (co najmniej 4 cyfry)')}
         <input id="pin-admin" inputMode="numeric" autoComplete="off" value={pin} onChange={(e) => setPin(e.target.value)} />
       </label>
       <div className="actions">
@@ -330,13 +330,12 @@ const ALLOW_PIN_CHANGE = false
 export function PinSettings() {
   return (
     <section className="panel">
-      <h2>PIN sędziego głównego (panel organizatora)</h2>
+      <h2>{t('PIN sędziego głównego (panel organizatora)')}</h2>
       <p className="muted">
-        Otwiera ten panel i wszystkie boiska. Po zmianie stary PIN przestaje działać na wszystkich telefonach. Klucze
-        sędziów boisk się nie zmieniają. To nie jest hasło do konta.
+        {t('Otwiera ten panel i wszystkie boiska. Po zmianie stary PIN przestaje działać na wszystkich telefonach. Klucze sędziów boisk się nie zmieniają. To nie jest hasło do konta.')}
       </p>
       <AdminPinForm
-        saveLabel="Zmień PIN"
+        saveLabel={t('Zmień PIN')}
         onSave={async (adminPin) => {
           const pins = await store.getPins()
           if (!pins) throw new Error('no pins')
@@ -373,13 +372,12 @@ export async function setupTournament(adminPin: string) {
 function FirstSetup() {
   return (
     <section className="panel">
-      <h2>Ustaw PIN i utwórz turniej</h2>
+      <h2>{t('Ustaw PIN i utwórz turniej')}</h2>
       <p className="muted">
-        Baza jest pusta. Ustaw PIN sędziego głównego. Klucze dla każdego boiska wygenerują się same, znajdziesz je
-        w zakładce „Klucze boisk”. Potem w panelu organizatora rozlosujesz zespoły do grup.
+        {t('Baza jest pusta. Ustaw PIN sędziego głównego. Klucze dla każdego boiska wygenerują się same, znajdziesz je w zakładce „Klucze boisk”. Potem w panelu organizatora rozlosujesz zespoły do grup.')}
       </p>
       <AdminPinForm
-        saveLabel="Utwórz turniej"
+        saveLabel={t('Utwórz turniej')}
         onSave={async (adminPin) => {
           await setupTournament(adminPin)
           location.hash = 'panel'
@@ -408,39 +406,38 @@ function CourtKeys({ state }: { state: State }) {
   }
   const base = tournamentUrl()
 
-  if (!loaded) return <p className="muted">Wczytuję klucze…</p>
-  if (!pins) return <p className="error">Nie udało się wczytać kluczy. Sprawdź internet i zaloguj się ponownie PIN-em.</p>
+  if (!loaded) return <p className="muted">{t('Wczytuję klucze…')}</p>
+  if (!pins) return <p className="error">{t('Nie udało się wczytać kluczy. Sprawdź internet i zaloguj się ponownie PIN-em.')}</p>
   return (
     <div className="data">
       <section className="panel">
-        <h2>Klucze boisk</h2>
+        <h2>{t('Klucze boisk')}</h2>
         <p className="muted">
-          Każde boisko ma swój klucz. Podaj go osobie, która liczy punkty na tym boisku. Z kluczem do boiska 3 można
-          prowadzić tylko mecze na boisku 3. Zakończonego meczu nie zmieni nikt poza Tobą.
+          {t('Każde boisko ma swój klucz. Podaj go osobie, która liczy punkty na tym boisku. Z kluczem do boiska 3 można prowadzić tylko mecze na boisku 3. Zakończonego meczu nie zmieni nikt poza Tobą.')}
         </p>
         <div className="actions">
-          <a className="btn btn-primary" href="#kartki">Kartki z kodami QR do wydruku</a>
-          {missing && <button className="btn" onClick={() => save([])}>Wygeneruj brakujące klucze</button>}
+          <a className="btn btn-primary" href="#kartki">{t('Kartki z kodami QR do wydruku')}</a>
+          {missing && <button className="btn" onClick={() => save([])}>{t('Wygeneruj brakujące klucze')}</button>}
         </div>
       </section>
       <ul className="keys">
         {Array.from({ length: count }, (_, i) => i + 1).map((c) => (
           <li key={c}>
-            <span className="keys-court">Boisko {courtLabel(c)}</span>
+            <span className="keys-court">{t('Boisko {n}', { n: courtLabel(c) })}</span>
             <span className="keys-key">{pins.courts[String(c)] ?? '—'}</span>
             <span className="keys-link muted small">{base}#boisko-{c}</span>
             {renewing === c ? (
               <span className="actions">
-                <button className="btn btn-danger" onClick={() => save([c])}>Tak, nowy klucz</button>
-                <button className="btn" onClick={() => setRenewing(null)}>Anuluj</button>
+                <button className="btn btn-danger" onClick={() => save([c])}>{t('Tak, nowy klucz')}</button>
+                <button className="btn" onClick={() => setRenewing(null)}>{t('Anuluj')}</button>
               </span>
             ) : (
-              <button className="btn" onClick={() => setRenewing(c)}>Nowy klucz</button>
+              <button className="btn" onClick={() => setRenewing(c)}>{t('Nowy klucz')}</button>
             )}
           </li>
         ))}
       </ul>
-      <p className="muted small">„Nowy klucz” wylogowuje telefon, który używał starego klucza do tego boiska.</p>
+      <p className="muted small">{t('„Nowy klucz” wylogowuje telefon, który używał starego klucza do tego boiska.')}</p>
     </div>
   )
 }
@@ -452,9 +449,9 @@ export function PrintCards() {
     <div className="page">
       <BackBar fallback="panel-wiecej" />
       <header className="bar no-print">
-        <h1>Kartki dla boisk</h1>
+        <h1>{t('Kartki dla boisk')}</h1>
       </header>
-      <PinGate label="Kartki z kluczami">
+      <PinGate label={t('Kartki z kluczami')}>
         <Cards count={state.tournament.courts} name={state.tournament.name} />
       </PinGate>
     </div>
@@ -475,17 +472,17 @@ function Cards({ count, name }: { count: number; name: string }) {
   return (
     <>
       <div className="actions no-print">
-        <button className="btn btn-primary" onClick={() => window.print()}>Drukuj</button>
-        <p className="muted small">Wytnij kartki i przyklej przy boiskach. Klucz możesz też zakleić i podać tylko sędziemu.</p>
+        <button className="btn btn-primary" onClick={() => window.print()}>{t('Drukuj')}</button>
+        <p className="muted small">{t('Wytnij kartki i przyklej przy boiskach. Klucz możesz też zakleić i podać tylko sędziemu.')}</p>
       </div>
       <div className="cards">
         {Array.from({ length: count }, (_, i) => i + 1).map((c) => (
           <article key={c} className="card">
             <p className="card-title">{name}</p>
-            <h2>Boisko {courtLabel(c)}</h2>
+            <h2>{t('Boisko {n}', { n: courtLabel(c) })}</h2>
             <div className="card-qr" dangerouslySetInnerHTML={{ __html: qr[c] ?? '' }} />
-            <p>Zeskanuj telefonem, żeby liczyć punkty</p>
-            <p className="card-key">Klucz: <b>{pins?.courts[String(c)] ?? '····'}</b></p>
+            <p>{t('Zeskanuj telefonem, żeby liczyć punkty')}</p>
+            <p className="card-key">{t('Klucz:')} <b>{pins?.courts[String(c)] ?? '····'}</b></p>
           </article>
         ))}
       </div>
@@ -505,26 +502,26 @@ export function ResetPanel({ state }: { state: State }) {
     setConfirm(false)
     const cleared = resetResults(state)
     await store.replace(IS_ALBATROS ? restoreTimetable(cleared) : replanTimetable(cleared))
-    setMsg('Wyzerowano wszystkie wyniki i przywrócono godziny z terminarza.')
+    setMsg(t('Wyzerowano wszystkie wyniki i przywrócono godziny z terminarza.'))
   }
   return (
     <section className="panel">
-      <h2>Grupy i wyniki</h2>
+      <h2>{t('Grupy i wyniki')}</h2>
       <p className="muted">
-        Grupy są ustalone według listy organizatora (dwójki: 4 grupy po 7, trójki: 5 grup po 6), bez losowania.
-        Tu możesz wyzerować wszystkie wyniki, np. po meczach próbnych. Godziny meczów wrócą do terminarza
-        (piątek od 15:30, sobota od 9:30).
+        {IS_ALBATROS
+          ? t('Grupy są ustalone według listy organizatora (dwójki: 4 grupy po 7, trójki: 5 grup po 6), bez losowania. Tu możesz wyzerować wszystkie wyniki, np. po meczach próbnych. Godziny meczów wrócą do terminarza (piątek od 15:30, sobota od 9:30).')
+          : t('Tu możesz wyzerować wszystkie wyniki, np. po meczach próbnych. Grupy zostają, a godziny meczów wrócą do terminarza.')}
       </p>
       {confirm ? (
         <div className="notice">
-          <p>Wyzerować wszystkie wyniki ({played} meczów) i przywrócić godziny z terminarza? Grupy zostaną.</p>
+          <p>{t('Wyzerować wszystkie wyniki (meczów: {n}) i przywrócić godziny z terminarza? Grupy zostaną.', { n: played })}</p>
           <div className="actions">
-            <button className="btn btn-danger" onClick={reset}>Tak, wyzeruj</button>
-            <button className="btn" onClick={() => setConfirm(false)}>Anuluj</button>
+            <button className="btn btn-danger" onClick={reset}>{t('Tak, wyzeruj')}</button>
+            <button className="btn" onClick={() => setConfirm(false)}>{t('Anuluj')}</button>
           </div>
         </div>
       ) : (
-        <button className="btn btn-danger" disabled={!played} onClick={() => setConfirm(true)}>Wyzeruj wszystkie wyniki</button>
+        <button className="btn btn-danger" disabled={!played} onClick={() => setConfirm(true)}>{t('Wyzeruj wszystkie wyniki')}</button>
       )}
       {msg && <p className="ok">{msg}</p>}
     </section>
