@@ -21,6 +21,14 @@ const token = (await (await fetch('https://oauth2.googleapis.com/token', {
 })).json()).access_token
 if (!token) { console.log('::warning::No access token for the service account.'); process.exit(0) }
 
+// The management API may be switched off in a new project: try to switch it on (needs the
+// Service Usage Admin role; without it the database is created once in the Firebase console).
+const enable = await fetch(`https://serviceusage.googleapis.com/v1/projects/${PROJECT}/services/firebasedatabase.googleapis.com:enable`, {
+  method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: '{}',
+})
+console.log(`Enable firebasedatabase.googleapis.com: ${enable.status}`)
+if (enable.ok) await new Promise((r) => setTimeout(r, 20000))
+
 const base = `https://firebasedatabase.googleapis.com/v1beta/projects/${PROJECT}/locations/${LOCATION}/instances`
 const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
 const existing = await fetch(`${base}/${ID}`, { headers })
