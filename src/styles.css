@@ -986,3 +986,4 @@ a.court-link:hover { color: var(--accent); }
 .account-who div { display: grid; }
 .account-list { display: grid; gap: 12px; margin-top: 16px; }
 .account-t h3 { margin: 0 0 8px; }
+.account-pass { margin-top: 16px; }

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { ALBATROS_ALIAS, BRAND, IS_PLATFORM_HOST } from '../config'
 import {
-  accountError, createAccount, LOGIN_PATTERN, signInAccount, signOutAccount, useAccount, type Account,
+  accountError, changePassword, createAccount, LOGIN_PATTERN, signInAccount, signOutAccount, useAccount, type Account,
 } from '../store/accounts'
 
 /** Address of one of the account's tournaments (Albatros CUP is "main" in the database). */
@@ -116,6 +116,64 @@ function MyTournaments({ account }: { account: Account }) {
         ))}
         <a className="btn btn-lg" href="#nowy-turniej">+ Załóż nowy turniej</a>
       </section>
+      <ChangePassword />
     </>
+  )
+}
+
+/** Change the account's password: the current one, then the new one twice. */
+function ChangePassword() {
+  const [open, setOpen] = useState(false)
+  const [current, setCurrent] = useState('')
+  const [next, setNext] = useState('')
+  const [next2, setNext2] = useState('')
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
+  const [busy, setBusy] = useState(false)
+  const ready = current.length > 0 && next.length >= 6 && next === next2 && next !== current
+
+  if (!open) {
+    return (
+      <section className="panel account-pass">
+        <button className="btn" onClick={() => { setOpen(true); setMsg(null) }}>Zmień hasło</button>
+        {msg?.ok && <p className="ok">{msg.text}</p>}
+      </section>
+    )
+  }
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!ready) return
+    setBusy(true)
+    try {
+      await changePassword(current, next)
+      setCurrent(''); setNext(''); setNext2('')
+      setOpen(false)
+      setMsg({ ok: true, text: 'Hasło zmienione. Od teraz loguj się nowym hasłem.' })
+    } catch (err) {
+      const code = (err as { code?: string }).code
+      setMsg({ ok: false, text: code === 'auth/invalid-credential' || code === 'auth/wrong-password' ? 'Obecne hasło jest nieprawidłowe.' : accountError(err) })
+    } finally {
+      setBusy(false)
+    }
+  }
+  return (
+    <form className="panel account-form account-pass" onSubmit={submit}>
+      <h2>Zmień hasło</h2>
+      <label>Obecne hasło
+        <input type="password" value={current} onChange={(e) => setCurrent(e.target.value)} autoComplete="current-password" />
+      </label>
+      <label>Nowe hasło
+        <input type="password" value={next} onChange={(e) => setNext(e.target.value)} autoComplete="new-password" />
+        <span className="muted small">Co najmniej 6 znaków.</span>
+      </label>
+      <label>Powtórz nowe hasło
+        <input type="password" value={next2} onChange={(e) => setNext2(e.target.value)} autoComplete="new-password" />
+        {next2 && next !== next2 && <span className="error small">Hasła się różnią.</span>}
+      </label>
+      {msg && !msg.ok && <p className="error">{msg.text}</p>}
+      <div className="actions">
+        <button className="btn btn-primary" type="submit" disabled={!ready || busy}>{busy ? 'Zapisuję…' : 'Zapisz nowe hasło'}</button>
+        <button className="btn" type="button" onClick={() => setOpen(false)}>Anuluj</button>
+      </div>
+    </form>
   )
 }

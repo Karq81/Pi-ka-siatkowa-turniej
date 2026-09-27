@@ -1,6 +1,6 @@
 import {
-  createUserWithEmailAndPassword, onAuthStateChanged, signInAnonymously, signInWithEmailAndPassword, signOut,
-  updateProfile,
+  createUserWithEmailAndPassword, EmailAuthProvider, onAuthStateChanged, reauthenticateWithCredential, signInAnonymously,
+  signInWithEmailAndPassword, signOut, updatePassword, updateProfile,
 } from 'firebase/auth'
 import { arrayUnion, doc, onSnapshot, setDoc, updateDoc, type Unsubscribe } from 'firebase/firestore'
 import { useSyncExternalStore } from 'react'
@@ -93,6 +93,7 @@ export function currentAccount(): Account | null {
 const MESSAGES: Record<string, string> = {
   'auth/invalid-credential': 'Zły login albo hasło.',
   'auth/wrong-password': 'Zły login albo hasło.',
+  'auth/requires-recent-login': 'Zaloguj się ponownie i spróbuj jeszcze raz.',
   'auth/user-not-found': 'Nie ma takiego konta.',
   'auth/invalid-email': 'Nieprawidłowy login.',
   'auth/email-already-in-use': 'Ten login jest już zajęty.',
@@ -124,6 +125,14 @@ export async function createAccount(login: string, password: string, name: strin
   await setDoc(doc(db, 'accounts', cred.user.uid), {
     login: login.trim().toLowerCase(), name, tournaments: [], createdAt: Date.now(),
   })
+}
+
+/** New password for the signed-in account; the current one confirms it is the owner. */
+export async function changePassword(current: string, next: string) {
+  const user = firebaseHandles!.auth.currentUser
+  if (!user?.email) throw { code: 'auth/invalid-credential' }
+  await reauthenticateWithCredential(user, EmailAuthProvider.credential(user.email, current))
+  await updatePassword(user, next)
 }
 
 export async function signOutAccount() {
