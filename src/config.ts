@@ -32,4 +32,24 @@ export const firebaseConfig: FirebaseOptions | null = env.VITE_FIREBASE_API_KEY
     ? PRODUCTION_FIREBASE
     : null
 
-export const TOURNAMENT_ID: string = env.VITE_TOURNAMENT_ID || 'main'
+/** A tournament set up through "Załóż turniej" is opened as `?t=its-address`. */
+function tournamentFromUrl(): string | null {
+  if (typeof location === 'undefined') return null
+  const t = new URLSearchParams(location.search).get('t')
+  return t && TOURNAMENT_SLUG.test(t) ? t : null
+}
+
+/** Allowed tournament addresses: lowercase letters, digits and hyphens. */
+export const TOURNAMENT_SLUG = /^[a-z0-9](?:[a-z0-9-]{1,38}[a-z0-9])$/
+
+const urlTournament = tournamentFromUrl()
+
+export const TOURNAMENT_ID: string = urlTournament ?? (env.VITE_TOURNAMENT_ID || 'main')
+
+/** The site's own tournament (Albatros CUP), with its invitation, fixed groups and second stage. */
+export const IS_ALBATROS = urlTournament === null
+
+/** Base of this tournament's links, e.g. https://…/?t=halowka-mielno (no hash). */
+export function tournamentUrl(): string {
+  return `${location.origin}${location.pathname}${urlTournament ? `?t=${urlTournament}` : ''}`
+}

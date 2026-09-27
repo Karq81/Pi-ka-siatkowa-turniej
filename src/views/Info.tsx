@@ -2,11 +2,27 @@ import QRCode from 'qrcode'
 import { useEffect, useState, type ReactNode } from 'react'
 import logo from '../assets/logo-opty-mielno.png'
 import { info } from '../content/info'
-import { useStore } from '../store/store'
+import { IS_ALBATROS, tournamentUrl } from '../config'
+import { useStore, useSync } from '../store/store'
 import { MyTeams } from './Competition'
 
 /** The tournament banner with the logo and the section tabs, on top of every public page. */
 export function InfoHero({ nav }: { nav: ReactNode }) {
+  const state = useStore()
+  if (!IS_ALBATROS) {
+    return (
+      <header className="info-hero">
+        <div className="info-hero-inner">
+          <div>
+            <p className="eyebrow">Wyniki na żywo</p>
+            <h1>{state.tournament.name}</h1>
+            {state.tournament.subtitle && <p className="info-when">{state.tournament.subtitle}</p>}
+          </div>
+        </div>
+        {nav}
+      </header>
+    )
+  }
   return (
     <header className="info-hero">
       <div className="info-hero-inner">
@@ -22,8 +38,55 @@ export function InfoHero({ nav }: { nav: ReactNode }) {
   )
 }
 
-/** Start page for families and teams: key facts, schedule, costs and a QR code to live results. */
+/** Start page: Albatros CUP's invitation, or the short start page of a tournament set up on the site. */
 export function Info() {
+  return IS_ALBATROS ? <AlbatrosInfo /> : <TournamentStart />
+}
+
+/** A tournament set up through "Załóż turniej": the fan's teams, the share link and the QR code. */
+function TournamentStart() {
+  const state = useStore()
+  const sync = useSync()
+  const qr = useQr(`${tournamentUrl()}#grupy`)
+  if (sync.empty) {
+    return (
+      <div className="info">
+        <section className="panel">
+          <h2>Nie ma jeszcze takiego turnieju</h2>
+          <p>Sprawdź adres albo poproś organizatora o link. Organizator może go założyć na stronie <a href="#nowy-turniej">Załóż turniej</a>.</p>
+        </section>
+      </div>
+    )
+  }
+  return (
+    <div className="info">
+      {state.teams.length > 0 && <MyTeams state={state} />}
+      <section className="info-live">
+        <div className="info-live-text">
+          <h2>Grupy, mecze i wyniki</h2>
+          <p>
+            Grupy, kto z kim i o której gra, tabele i wyniki na żywo, na bieżąco w trakcie turnieju. Zeskanuj kod
+            albo wyślij link rodzicom i trenerom.
+          </p>
+          <ShareLink title={state.tournament.name} text={`${state.tournament.name} – grupy, mecze i wyniki na żywo:`} />
+        </div>
+        <div className="info-qr" aria-label="Kod QR do wyników" dangerouslySetInnerHTML={{ __html: qr }} />
+      </section>
+      {state.groups.length === 0 && <p className="muted">Organizator jeszcze nie rozlosował grup.</p>}
+    </div>
+  )
+}
+
+function useQr(url: string): string {
+  const [qr, setQr] = useState('')
+  useEffect(() => {
+    QRCode.toString(url, { type: 'svg', margin: 0, errorCorrectionLevel: 'M' }).then(setQr)
+  }, [url])
+  return qr
+}
+
+/** Albatros CUP start page for families and teams: key facts, schedule, costs and a QR code to live results. */
+function AlbatrosInfo() {
   const state = useStore()
   // Team counts follow the entered team list; the announcement's numbers are the fallback.
   const teamsIn = (name: string) => {
@@ -31,12 +94,8 @@ export function Info() {
     const n = cat ? state.teams.filter((t) => t.categoryId === cat.id).length : 0
     return n || info.categories.find((c) => c.name === name)?.teams || 0
   }
-  const resultsUrl = `${location.origin}${location.pathname}#grupy`
-  const [qr, setQr] = useState('')
+  const qr = useQr(`${tournamentUrl()}#grupy`)
   const [copied, setCopied] = useState(false)
-  useEffect(() => {
-    QRCode.toString(resultsUrl, { type: 'svg', margin: 0, errorCorrectionLevel: 'M' }).then(setQr)
-  }, [resultsUrl])
 
   const copyAccount = () => {
     navigator.clipboard?.writeText(info.payment.account.replace(/\s/g, '')).then(
@@ -56,7 +115,7 @@ export function Info() {
             Grupy, kto z kim i o której gra, tabele i wyniki na żywo zobaczysz w telefonie, na bieżąco w trakcie
             turnieju. Zeskanuj kod albo wyślij link rodzicom i trenerom.
           </p>
-          <ShareLink />
+          <ShareLink title={info.name} text={`${info.name} ${info.datesShort}, Mielno – grupy, mecze i wyniki na żywo:`} />
         </div>
         <div className="info-qr" aria-label="Kod QR do wyników" dangerouslySetInnerHTML={{ __html: qr }} />
       </section>
@@ -146,13 +205,12 @@ export function Info() {
  * Share the fans' link through the phone's share sheet (WhatsApp, Messenger, SMS…).
  * Browsers without one copy the link instead.
  */
-function ShareLink() {
-  const url = `${location.origin}${location.pathname}`
-  const text = `${info.name} ${info.datesShort}, Mielno – grupy, mecze i wyniki na żywo:`
+function ShareLink({ title, text }: { title: string; text: string }) {
+  const url = tournamentUrl()
   const [copied, setCopied] = useState(false)
   const share = () => {
     if (typeof navigator.share === 'function') {
-      navigator.share({ title: info.name, text, url }).catch(() => {})
+      navigator.share({ title, text, url }).catch(() => {})
       return
     }
     navigator.clipboard?.writeText(url).then(

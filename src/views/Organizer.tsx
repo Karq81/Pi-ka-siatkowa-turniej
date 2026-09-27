@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { DEFAULT_SCHEDULE } from '../logic/demo'
+import { scheduleOf } from '../logic/newTournament'
 import { clubOf } from '../logic/draw'
 import { retimeSchedule } from '../logic/schedule'
 import { store, useSession, useStore, useSync } from '../store/store'
@@ -7,6 +7,8 @@ import { AdminPinForm, ResetPanel, setupTournament } from './Admin'
 import type { Category, State } from '../types'
 import { courtLabel, formatDay, formatTime, PinGate, useLookups } from '../ui'
 import { CourtList } from './Court'
+import { Setup } from './Setup'
+import { IS_ALBATROS } from '../config'
 import { Competition } from './Competition'
 
 const TABS = [
@@ -24,6 +26,7 @@ const TABS = [
 export function Organizer({ route }: { route: string }) {
   const state = useStore()
   const tab = TABS.some((t) => t.route === route) ? route : 'panel'
+  const tabs = IS_ALBATROS ? TABS : TABS.map((t) => (t.route === 'panel' ? { ...t, label: '1. Zespoły i losowanie' } : t))
   return (
     <div className="page">
       <header className="org-head">
@@ -32,12 +35,12 @@ export function Organizer({ route }: { route: string }) {
           <h1>{state.tournament.name}</h1>
         </div>
         <nav className="tabs" aria-label="Panel organizatora">
-          {TABS.map((t) => (
+          {tabs.map((t) => (
             <a key={t.route} href={`#${t.route}`} className={tab === t.route ? 'active' : ''}>{t.label}</a>
           ))}
         </nav>
       </header>
-      {tab === 'panel' && <TeamsAndDraw state={state} />}
+      {tab === 'panel' && (IS_ALBATROS ? <TeamsAndDraw state={state} /> : <Setup state={state} />)}
       {tab === 'panel-grupy' && (
         state.groups.length ? <Competition state={state} route="grupy" /> : <Empty />
       )}
@@ -107,12 +110,13 @@ function TeamsAndDraw({ state }: { state: State }) {
  * to be played (the next round keeps its time), so it also works during the tournament.
  */
 function MatchInterval({ state }: { state: State }) {
-  const current = state.tournament.slotMinutes ?? DEFAULT_SCHEDULE.slotMinutes
+  const plan = scheduleOf(state.tournament)
+  const current = plan.slotMinutes
   const [minutes, setMinutes] = useState(current)
   const [msg, setMsg] = useState('')
   const next = [...new Set(state.matches.filter((m) => m.status === 'scheduled').map((m) => m.start))].sort()[0]
   const save = async () => {
-    const matches = retimeSchedule(state.matches, { slotMinutes: minutes, dayEnd: DEFAULT_SCHEDULE.dayEnd, dayStart: DEFAULT_SCHEDULE.dayStart })
+    const matches = retimeSchedule(state.matches, { slotMinutes: minutes, dayEnd: plan.dayEnd, dayStart: plan.dayStart })
     await store.replace({ ...state, tournament: { ...state.tournament, slotMinutes: minutes }, matches })
     const last = matches.map((m) => m.start).sort().at(-1)
     setMsg(`Zapisano: mecz co ${minutes} min. Ostatni mecz: ${last ? `${formatDay(last)} ${formatTime(last)}` : '–'}.`)
@@ -123,7 +127,7 @@ function MatchInterval({ state }: { state: State }) {
       <p className="muted">
         Teraz: <b>mecz co {current} minut</b> na każdym boisku (mecz + przerwa). Zmiana przelicza godziny wszystkich
         meczów, które się jeszcze nie zaczęły{next ? `, od najbliższej rundy (${formatDay(next)} ${formatTime(next)}), która zostaje o swojej godzinie` : ''}.
-        Rozegrane mecze się nie zmieniają. Po {DEFAULT_SCHEDULE.dayEnd} gry przechodzą na następny dzień od {DEFAULT_SCHEDULE.dayStart}.
+        Rozegrane mecze się nie zmieniają. Po {plan.dayEnd} gry przechodzą na następny dzień od {plan.dayStart}.
       </p>
       <PinGate label="Zmiana godzin meczów (sędzia główny)">
         <div className="form-row">
@@ -166,7 +170,7 @@ function CategoryTeams({ state, category }: { state: State; category: Category }
 }
 
 /** The fixed groups of one category, read-only. */
-function CategoryGroups({ state, category }: { state: State; category: Category }) {
+export function CategoryGroups({ state, category }: { state: State; category: Category }) {
   const { teamName } = useLookups(state)
   const groups = state.groups.filter((g) => g.categoryId === category.id)
   return (

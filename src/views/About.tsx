@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import logo from '../assets/logo-opty-mielno.png'
+import { tournamentUrl } from '../config'
 import { useStore } from '../store/store'
 
 /**
@@ -13,7 +14,7 @@ export function About() {
   const teams = state.teams.length || 58
   const courts = state.tournament.courts || 9
   const matches = state.matches.length || 159
-  const live = `${location.origin}${location.pathname}#na-zywo`
+  const live = `${tournamentUrl()}#na-zywo`
 
   return (
     <div className="ab">
@@ -33,8 +34,8 @@ export function About() {
               <li>Wynik na stronie kilka sekund po ostatniej piłce</li>
             </ul>
             <div className="ab-cta">
-              <a className="ab-btn primary" href={live}>Zobacz turniej na żywo</a>
-              <a className="ab-btn ghost" href="#grupy">Grupy i terminarz</a>
+              <a className="ab-btn primary" href="#nowy-turniej">Załóż turniej za darmo</a>
+              <a className="ab-btn ghost" href={live}>Zobacz turniej na żywo</a>
             </div>
           </div>
           <PhonePreview />
@@ -158,9 +159,12 @@ export function About() {
             <h2>Stworzone w Mielnie, dla klubów siatkarskich</h2>
             <p>
               SiatkaLive powstał na potrzeby turnieju Albatros CUP organizowanego przez UKS Opty Mielno. Chcesz
-              takiej strony dla swojego turnieju? Zobacz, jak działa na żywo.
+              takiej strony dla swojego turnieju? Załóż go w kilka minut, za darmo.
             </p>
-            <a className="ab-btn primary" href={live}>Zobacz turniej na żywo</a>
+            <div className="ab-cta">
+              <a className="ab-btn primary" href="#nowy-turniej">Załóż turniej</a>
+              <a className="ab-btn ghost" href={live}>Zobacz turniej na żywo</a>
+            </div>
           </div>
         </div>
       </section>

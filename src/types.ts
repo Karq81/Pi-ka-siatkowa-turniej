@@ -24,6 +24,12 @@ export interface Tournament {
   slotMinutes?: number
   /** Names shown for courts 1, 2, 3… (e.g. "A" for court 1); the number when missing. */
   courtNames?: string[]
+  /** First match (ISO local date-time); Albatros CUP uses its fixed timetable when missing. */
+  start?: string
+  /** Last match of a day starts no later than this (HH:MM); later matches move to the next morning. */
+  dayEnd?: string
+  /** First match on the following days (HH:MM). */
+  dayStart?: string
 }
 
 export interface Category {

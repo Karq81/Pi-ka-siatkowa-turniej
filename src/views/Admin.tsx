@@ -1,6 +1,8 @@
 import QRCode from 'qrcode'
 import { useEffect, useState } from 'react'
+import { IS_ALBATROS, tournamentUrl } from '../config'
 import { initialState, restoreTimetable } from '../logic/demo'
+import { replanTimetable } from '../logic/newTournament'
 import { resetResults } from '../logic/draw'
 import { tally } from '../logic/scoring'
 import { store, useStore, useSync } from '../store/store'
@@ -334,14 +336,15 @@ function PinSettings() {
  * keys and saves the qualified teams (not drawn yet).
  */
 export async function setupTournament(adminPin: string) {
-  const pins = { adminPin, courts: courtKeys(10, { adminPin, courts: {} }) }
+  const pins = { adminPin, courts: courtKeys(Math.max(10, store.get().tournament.courts), { adminPin, courts: {} }) }
   try {
     await store.setPins(pins)
   } catch (e) {
     // Keys already set by an interrupted earlier setup: continue if the admin PIN matches.
     if (!(await store.login(adminPin))) throw e
   }
-  await store.replace(initialState())
+  // Albatros CUP: its fixed groups and timetable; a new tournament: its settings, no teams yet.
+  await store.replace(IS_ALBATROS ? initialState() : store.get())
 }
 
 /** Shown once, when the online database has no tournament yet. */
@@ -381,7 +384,7 @@ function CourtKeys({ state }: { state: State }) {
     setPins(next)
     setRenewing(null)
   }
-  const base = `${location.origin}${location.pathname}`
+  const base = tournamentUrl()
 
   if (!loaded) return <p className="muted">Wczytuję klucze…</p>
   if (!pins) return <p className="error">Nie udało się wczytać kluczy. Sprawdź internet i zaloguj się ponownie PIN-em.</p>
@@ -439,7 +442,7 @@ export function PrintCards() {
 function Cards({ count, name }: { count: number; name: string }) {
   const [pins, setPins] = useState<Pins | null>(null)
   const [qr, setQr] = useState<Record<number, string>>({})
-  const base = `${location.origin}${location.pathname}`
+  const base = tournamentUrl()
   useEffect(() => {
     store.getPins().then(setPins)
     Promise.all(
@@ -478,7 +481,8 @@ export function ResetPanel({ state }: { state: State }) {
   const played = state.matches.filter((m) => m.status !== 'scheduled').length
   const reset = async () => {
     setConfirm(false)
-    await store.replace(restoreTimetable(resetResults(state)))
+    const cleared = resetResults(state)
+    await store.replace(IS_ALBATROS ? restoreTimetable(cleared) : replanTimetable(cleared))
     setMsg('Wyzerowano wszystkie wyniki i przywrócono godziny z terminarza.')
   }
   return (

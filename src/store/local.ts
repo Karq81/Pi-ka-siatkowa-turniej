@@ -1,9 +1,7 @@
-import { initialState } from '../logic/demo'
 import { applyMatchUpdate } from '../logic/knockout'
 import type { Pins, Session, State } from '../types'
 import type { Store, SyncInfo } from './types'
 
-const KEY = 'siatkalive:v6'
 const PINS_KEY = 'siatkalive:pins'
 const ROLE_KEY = 'siatkalive:role'
 
@@ -25,8 +23,10 @@ function write(key: string, value: unknown, storage: () => Storage = () => local
 }
 
 /** Browser-only store: syncs tabs on one device. Used when Firebase is not configured. */
-export function createLocalStore(): Store {
-  let state = read<State>(KEY) ?? initialState()
+export function createLocalStore(tournamentId: string, initial: State): Store {
+  // Albatros CUP keeps its original key, so data already on this device stays.
+  const KEY = tournamentId === 'main' ? 'siatkalive:v6' : `siatkalive:v6:${tournamentId}`
+  let state = read<State>(KEY) ?? initial
   // Demo keys: admin 1234, court N → 100N (e.g. court 3 → 1003).
   const demoPins: Pins = {
     adminPin: '1234',
@@ -94,6 +94,9 @@ export function createLocalStore(): Store {
       pins = next
       write(PINS_KEY, next)
       if (session?.role === 'admin') saveSession({ role: 'admin' })
+    },
+    async tournamentExists() {
+      return false
     },
     clearError() {},
   }

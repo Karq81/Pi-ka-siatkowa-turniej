@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { STAGE2 } from '../content/stage2'
+import { IS_ALBATROS } from '../config'
 import { clubOf } from '../logic/draw'
 import { bracketView, groupFinished, tierForGroupPlace } from '../logic/knockout'
 import { useFavorites, toggleFavorite, setFavorites } from '../favorites'
@@ -202,7 +203,7 @@ function GroupView({ state, groupId }: { state: State; groupId: string }) {
             )
           })}
         </ol>
-        <p className="legend muted small">M: mecze · małe punkty · <b>Pkt</b> · {STAGE2[group.categoryId]?.legend ?? '2 pierwsze miejsca grają o miejsca 1–8'}</p>
+        <p className="legend muted small">M: mecze · małe punkty · <b>Pkt</b>{STAGE2[group.categoryId] ? ` · ${STAGE2[group.categoryId].legend}` : IS_ALBATROS ? ' · 2 pierwsze miejsca grają o miejsca 1–8' : ''}</p>
       </section>
 
       <h3 className="list-title">Mecze grupy</h3>

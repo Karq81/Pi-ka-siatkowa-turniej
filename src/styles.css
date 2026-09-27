@@ -947,3 +947,21 @@ a.court-link:hover { color: var(--accent); }
   .ab-final-inner { flex-direction: column; text-align: center; }
   .ab-final-inner h2 { text-align: center; }
 }
+
+/* ── Załóż turniej (#nowy-turniej) and a new tournament's setup ── */
+.new-t-form { display: grid; gap: 14px; max-width: 720px; }
+.new-t-form label { display: grid; gap: 4px; font-weight: 600; }
+.new-t-form input, .new-t-form select, .new-t-form textarea, .setup-cat textarea { font: inherit; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); width: 100%; box-sizing: border-box; }
+.new-t-form .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+.new-t-address { display: flex; align-items: center; gap: 4px; }
+.new-t-address input { flex: 1; min-width: 0; }
+.setup-cats { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 16px; }
+.setup-cat { display: grid; gap: 10px; }
+.setup-cat h3 { margin: 0; }
+.setup-cat label { display: grid; gap: 4px; }
+.setup-cat .form-row { display: flex; align-items: end; justify-content: space-between; gap: 12px; }
+.setup-cat .form-row input { width: 80px; }
+.setup-links ul { display: grid; gap: 10px; }
+.setup-links li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 12px; align-items: center; }
+.setup-links li .muted { grid-column: 1 / -1; }
+.setup-links li a { overflow-wrap: anywhere; font-weight: 600; }

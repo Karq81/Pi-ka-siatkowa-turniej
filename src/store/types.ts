@@ -36,5 +36,7 @@ export interface Store {
   getPins(): Promise<Pins | null>
   /** Admin: save keys. The first call on an empty online database sets them up. */
   setPins(pins: Pins): Promise<void>
+  /** Whether a tournament with this address is already saved (for "Załóż turniej"). */
+  tournamentExists(id: string): Promise<boolean>
   clearError(): void
 }

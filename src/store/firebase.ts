@@ -4,7 +4,6 @@ import {
   collection, connectFirestoreEmulator, doc, FieldPath, getDoc, getFirestore, initializeFirestore, onSnapshot, persistentLocalCache,
   persistentMultipleTabManager, setDoc, updateDoc, writeBatch, type Firestore,
 } from 'firebase/firestore'
-import { initialState } from '../logic/demo'
 import { applyMatchUpdate } from '../logic/knockout'
 import type { Match, Pins, Session, State } from '../types'
 import type { Store, SyncInfo } from './types'
@@ -36,7 +35,7 @@ interface CourtSheet {
   matches: Record<string, Match>
 }
 
-export function createFirebaseStore(config: FirebaseOptions, tournamentId: string): Store {
+export function createFirebaseStore(config: FirebaseOptions, tournamentId: string, initial: State): Store {
   const app = initializeApp(config)
   const auth = getAuth(app)
   let db: Firestore
@@ -60,8 +59,9 @@ export function createFirebaseStore(config: FirebaseOptions, tournamentId: strin
   const sheetRef = (court: number) => doc(matchesRef, `${SHEET_PREFIX}${court}`)
   const roleKey = `siatkalive:role:${tournamentId}`
 
-  // Until the tournament is saved, show the qualified teams, so the organiser can draw right away.
-  let state: State = initialState()
+  // Until the tournament is saved, show what it will start with (Albatros CUP: its fixed groups;
+  // a new tournament: the settings from "Załóż turniej").
+  let state: State = initial
   let sync: SyncInfo = { mode: 'online', connected: false, pending: false, empty: false, error: null }
   let session: Session | null = null
   try { session = JSON.parse(localStorage.getItem(roleKey) ?? 'null') as Session | null } catch { /* no storage */ }
@@ -202,6 +202,10 @@ export function createFirebaseStore(config: FirebaseOptions, tournamentId: strin
       await setDoc(doc(tRef, 'private', 'pins'), pins)
       // Sessions are tied to the key they used; log this device in again with the new admin PIN.
       if (!(await login(pins.adminPin))) saveSession(null)
+    },
+    async tournamentExists(id) {
+      const snap = await getDoc(doc(db, 'tournaments', id))
+      return snap.exists()
     },
     clearError() { setSync({ error: null }) },
   }
