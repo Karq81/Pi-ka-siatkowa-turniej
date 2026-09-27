@@ -3,6 +3,7 @@ import { ALBATROS_ALIAS, TOURNAMENT_SLUG } from '../config'
 import { MAX_COURTS, saveDraft, slugify } from '../logic/newTournament'
 import { describeSets, SPORTS, sportById, sportRules } from '../logic/sports'
 import { store } from '../store/store'
+import { useAccount } from '../store/accounts'
 
 const GROUPS = [...new Set(SPORTS.map((s) => s.group))]
 
@@ -12,6 +13,7 @@ const GROUPS = [...new Set(SPORTS.map((s) => s.group))]
  * which saves the tournament in the database.
  */
 export function NewTournament() {
+  const account = useAccount()
   const [name, setName] = useState('')
   const [slug, setSlug] = useState('')
   const [slugEdited, setSlugEdited] = useState(false)
@@ -73,6 +75,14 @@ export function NewTournament() {
           <h1>Załóż turniej</h1>
         </div>
       </header>
+      {account.status === 'signed-out' && (
+        <p className="notice-inline">
+          <a href="#konto">Zaloguj się albo załóż konto</a>, żeby turniej zapisał się na Twoim koncie i był zawsze pod ręką.
+        </p>
+      )}
+      {account.status === 'signed-in' && (
+        <p className="muted">Turniej zapisze się na koncie <b>{account.account.name || account.account.login}</b>. <a href="#konto">Moje konto</a></p>
+      )}
       <form className="panel new-t-form" onSubmit={submit}>
         <label>Dyscyplina
           <select value={sportId} onChange={(e) => pickSport(e.target.value)}>

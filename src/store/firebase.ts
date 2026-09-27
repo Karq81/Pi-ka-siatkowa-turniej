@@ -1,5 +1,5 @@
 import { initializeApp, type FirebaseOptions } from 'firebase/app'
-import { connectAuthEmulator, getAuth, onAuthStateChanged, signInAnonymously, type User } from 'firebase/auth'
+import { connectAuthEmulator, getAuth, signInAnonymously, type Auth } from 'firebase/auth'
 import {
   collection, connectFirestoreEmulator, doc, FieldPath, getDoc, getFirestore, initializeFirestore, onSnapshot, persistentLocalCache,
   persistentMultipleTabManager, setDoc, updateDoc, writeBatch, type Firestore,
@@ -24,6 +24,9 @@ import type { Store, SyncInfo } from './types'
 
 
 const LOGIN_TIMEOUT_MS = 15000
+
+/** The Firebase app's auth and database, for organiser accounts (see accounts.ts). */
+export let firebaseHandles: { auth: Auth; db: Firestore } | null = null
 
 /** Court sheet documents are named court-1, court-2, … */
 const SHEET_PREFIX = 'court-'
@@ -54,6 +57,8 @@ export function createFirebaseStore(config: FirebaseOptions, tournamentId: strin
     connectFirestoreEmulator(db, '127.0.0.1', 8080)
   }
 
+  firebaseHandles = { auth, db }
+
   const tRef = doc(db, 'tournaments', tournamentId)
   const matchesRef = collection(tRef, 'matches')
   const sheetRef = (court: number) => doc(matchesRef, `${SHEET_PREFIX}${court}`)
@@ -80,10 +85,16 @@ export function createFirebaseStore(config: FirebaseOptions, tournamentId: strin
     setSync({ error: msg })
   }
 
-  const user = new Promise<User>((resolve) => {
-    onAuthStateChanged(auth, (u) => { if (u) resolve(u) })
-  })
-  signInAnonymously(auth).catch(fail('Logowanie'))
+  // Every device is signed in: with an organiser account if it logged in to one on this
+  // device, otherwise anonymously. Sessions (PIN logins) belong to whoever is signed in.
+  const ready = auth.authStateReady()
+    .then(() => (auth.currentUser ? undefined : signInAnonymously(auth).then(() => undefined)))
+    .catch(fail('Logowanie'))
+  const currentUser = async () => {
+    await ready
+    if (!auth.currentUser) await signInAnonymously(auth)
+    return auth.currentUser!
+  }
 
   onSnapshot(tRef, { includeMetadataChanges: true }, (snap) => {
     const data = snap.data() as Omit<State, 'matches'> | undefined
@@ -113,7 +124,7 @@ export function createFirebaseStore(config: FirebaseOptions, tournamentId: strin
     Promise.race([p, new Promise<never>((_, rej) => setTimeout(() => rej({ code: 'timeout' }), LOGIN_TIMEOUT_MS))])
 
   async function login(pin: string, court?: number): Promise<boolean> {
-    const u = await user
+    const u = await currentUser()
     const ref = doc(tRef, 'sessions', u.uid)
     // The rules accept the session only if the key matches; try admin first so the
     // chief referee's PIN also opens every court panel.

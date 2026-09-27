@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import logo from '../assets/logo-opty-mielno.png'
 import { BRAND, tournamentUrl } from '../config'
 import { useStore } from '../store/store'
+import { useAccount } from '../store/accounts'
 
 /**
  * "O systemie" — a presentation page for SportLiveArena aimed at other organisers, laid out like a
@@ -11,6 +12,7 @@ import { useStore } from '../store/store'
  */
 export function About() {
   const state = useStore()
+  const account = useAccount()
   const teams = state.teams.length || 58
   const courts = state.tournament.courts || 9
   const matches = state.matches.length || 159
@@ -18,6 +20,12 @@ export function About() {
 
   return (
     <div className="ab">
+      <nav className="ab-top">
+        <div className="ab-wrap ab-top-inner">
+          <b className="ab-brand">{BRAND}</b>
+          <a className="ab-btn ghost ab-login" href="#konto">{account.status === 'signed-in' ? 'Moje konto' : 'Zaloguj się'}</a>
+        </div>
+      </nav>
       <header className="ab-hero">
         <div className="ab-wrap ab-hero-grid">
           <div>

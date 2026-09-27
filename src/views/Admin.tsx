@@ -1,6 +1,7 @@
 import QRCode from 'qrcode'
 import { useEffect, useState } from 'react'
-import { IS_ALBATROS, tournamentUrl } from '../config'
+import { IS_ALBATROS, TOURNAMENT_ID, tournamentUrl } from '../config'
+import { addTournamentToAccount } from '../store/accounts'
 import { initialState, restoreTimetable } from '../logic/demo'
 import { replanTimetable } from '../logic/newTournament'
 import { resetResults } from '../logic/draw'
@@ -354,6 +355,8 @@ export async function setupTournament(adminPin: string) {
   }
   // Albatros CUP: its fixed groups and timetable; a new tournament: its settings, no teams yet.
   await store.replace(IS_ALBATROS ? initialState() : store.get())
+  // A signed-in organiser keeps the tournament (and its PIN) on their account.
+  await addTournamentToAccount({ id: TOURNAMENT_ID, name: store.get().tournament.name, pin: adminPin }).catch(() => {})
 }
 
 /** Shown once, when the online database has no tournament yet. */

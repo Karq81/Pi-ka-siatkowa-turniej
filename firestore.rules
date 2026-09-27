@@ -6,6 +6,12 @@ rules_version = '2';
 // with the keys stored in private/pins.
 service cloud.firestore {
   match /databases/{database}/documents {
+    // Organiser accounts: login, name and the account's tournaments with their PINs,
+    // visible only to the account itself.
+    match /accounts/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+
     match /tournaments/{t} {
       function pins() {
         return get(/databases/$(database)/documents/tournaments/$(t)/private/pins).data;

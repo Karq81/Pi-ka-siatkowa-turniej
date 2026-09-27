@@ -118,4 +118,12 @@ describe('firestore rules', () => {
     await assertSucceeds(setDoc(doc(as('x'), `tournaments/new/private/pins`), { adminPin: '1111', courts: { '1': '2345' } }))
     await assertFails(setDoc(doc(as('x'), `tournaments/new2/private/pins`), { adminPin: '1', courts: {} }))
   })
+
+  it('keeps an organiser account private to its owner', async () => {
+    await assertSucceeds(setDoc(doc(as('owner'), 'accounts/owner'), { login: 'x', tournaments: [{ id: 'main', pin: '1234' }] }))
+    await assertSucceeds(getDoc(doc(as('owner'), 'accounts/owner')))
+    await assertFails(getDoc(doc(as('other'), 'accounts/owner')))
+    await assertFails(getDoc(doc(as(null), 'accounts/owner')))
+    await assertFails(setDoc(doc(as('other'), 'accounts/owner'), { login: 'y' }))
+  })
 })

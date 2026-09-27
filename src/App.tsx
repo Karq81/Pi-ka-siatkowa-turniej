@@ -1,6 +1,7 @@
 import { About } from './views/About'
 import { IS_LANDING } from './config'
 import { NewTournament } from './views/NewTournament'
+import { AccountPage } from './views/Account'
 import { Admin, PrintCards } from './views/Admin'
 import { Court, CourtPicker } from './views/Court'
 import { Public } from './views/Public'
@@ -18,7 +19,7 @@ import { SyncBanner, useRoute } from './ui'
  * result entry, corrections) keep the normal phone layout with big buttons.
  */
 const DESKTOP_LIKE_WIDTH = 640
-const PHONE_LAYOUT = /^(boisko-\d+|wynik-\d+|korekta-.+|sedzia|kartki|o-systemie|nowy-turniej)$/
+const PHONE_LAYOUT = /^(boisko-\d+|wynik-\d+|korekta-.+|sedzia|kartki|o-systemie|nowy-turniej|konto)$/
 
 function isPhone() {
   const touch = matchMedia('(pointer: coarse)').matches
@@ -81,5 +82,6 @@ function Screen() {
   if (route === 'tv') return <Tv />
   if (route === 'o-systemie' || (IS_LANDING && route === '')) return <About />
   if (route === 'nowy-turniej') return <NewTournament />
+  if (route === 'konto') return <AccountPage />
   return <Public route={route} />
 }
