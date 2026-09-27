@@ -1,0 +1,39 @@
+# Builds the site and publishes it on Firebase Hosting (sportlivearena.com), together with
+# the Firestore access rules, on every push to the production branch.
+# Needs the repository secret FIREBASE_SERVICE_ACCOUNT: the JSON key of a Google Cloud
+# service account of the project with the roles Firebase Admin, API Keys Viewer and
+# Service Usage Consumer. Without the secret the deploy step is skipped.
+name: Firebase deploy
+
+on:
+  push:
+    branches: [claude/volleyball-tournament-online-lzfmrb]
+  workflow_dispatch:
+
+concurrency:
+  group: firebase-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+      - name: Deploy to Firebase Hosting and Firestore rules
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          if [ -z "$FIREBASE_SERVICE_ACCOUNT" ]; then
+            echo "::warning::FIREBASE_SERVICE_ACCOUNT is not set, skipping the deploy."
+            exit 0
+          fi
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/sa.json"
+          export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/sa.json"
+          npx firebase deploy --only hosting,firestore:rules --project turniej-siatkowki-faf22 --non-interactive
