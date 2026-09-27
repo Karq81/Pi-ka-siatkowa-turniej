@@ -968,3 +968,5 @@ a.court-link:hover { color: var(--accent); }
 .setup-links li a { overflow-wrap: anywhere; font-weight: 600; }
 .new-t-form label.check { display: flex; align-items: center; gap: 10px; font-weight: 600; }
 .new-t-form label.check input { width: auto; }
+.sport-note { background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
+.sport-note p { margin: 0 0 4px; }

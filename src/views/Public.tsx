@@ -278,7 +278,7 @@ export function GroupTable({ state, groupId, title = true }: { state: State; gro
             <tr>
               <th>#</th><th className="left">Drużyna</th><th title="Mecze">M</th><th title="Wygrane">W</th>
               {draws && <th title="Remisy">R</th>}<th title="Przegrane">P</th><th title="Punkty">Pkt</th>{multi && <th title="Sety">Sety</th>}
-              <th title={score ? 'Zdobyte i stracone' : 'Stosunek małych punktów'}>{score ? unit[0].toUpperCase() + unit.slice(1) : 'Małe pkt'}</th>
+              <th title={score ? 'Zdobyte i stracone' : `Stosunek: ${unit}`}>{unit === 'małe punkty' ? 'Małe pkt' : unit[0].toUpperCase() + unit.slice(1)}</th>
             </tr>
           </thead>
           <tbody>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { canAddPoint, isMatchDecided, isScore, scoreUnit, setTarget, setWinner, tally } from '../logic/scoring'
+import { canAddPoint, isMatchDecided, isScore, scoreUnit, setCap, setTarget, setWinner, tally } from '../logic/scoring'
 import { courtBoard } from '../logic/courtBoard'
 import { setNextOnCourt } from '../logic/schedule'
 import { canScore } from '../logic/pins'
@@ -285,7 +285,7 @@ function LiveScoring({ state, match, meta, onFinish }: { state: State; match: Ma
           ? `Wynik na żywo (${scoreUnit(rules)})`
           : rules.sets > 1
             ? `Set ${idx + 1} · do ${setTarget(rules, idx)} · sety ${t.setsA}:${t.setsB}`
-            : `Do ${setTarget(rules, idx)} pkt · przewaga ${rules.winBy}`}
+            : `Do ${setTarget(rules, idx)}${rules.unit === 'gemy' ? ' gemów' : ' pkt'} · przewaga ${rules.winBy}${setCap(rules, idx) ? ` · maks. ${setCap(rules, idx)}` : ''}`}
       </p>
       <div className="pads">
         {(['a', 'b'] as const).map((s) => (

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { isMatchDecided, isScore, resultProblem, scoreUnit, setProblem, setTarget, tally } from '../logic/scoring'
+import { isMatchDecided, isScore, resultProblem, scoreUnit, setCap, setProblem, setTarget, tally } from '../logic/scoring'
+import { describeSets } from '../logic/sports'
 import type { Match, SetScore, State } from '../types'
 import { useLookups } from '../ui'
 
@@ -29,8 +30,8 @@ export function ResultForm({ state, match, submitLabel, onSubmit, children }: {
   const { side } = useLookups(state)
   const rules = state.tournament.rules
   const score = isScore(rules)
-  // Goals and points can have three digits (basketball); set points two.
-  const digits = score ? 3 : 2
+  // Goals and points can have three digits (basketball); set points two; games in tennis one.
+  const digitsFor = (i: number) => (score ? 3 : Math.max(setTarget(rules, i), setCap(rules, i) ?? 0) < 10 ? 1 : 2)
   const [fields, setFields] = useState<Field[]>(() => toFields(match.sets, rules.sets))
   const inputs = useRef<(HTMLInputElement | null)[]>([])
   const sets = parseFields(fields)
@@ -48,6 +49,7 @@ export function ResultForm({ state, match, submitLabel, onSubmit, children }: {
     if (el) { el.focus(); el.select() }
   }
   const change = (setIdx: number, s: 'a' | 'b', raw: string, index: number) => {
+    const digits = digitsFor(setIdx)
     const v = raw.replace(/\D/g, '').slice(0, digits)
     setFields((f) => f.map((x, j) => (j === setIdx ? { ...x, [s]: v } : x)))
     if (v.length === digits) focus(index + 1)
@@ -126,8 +128,8 @@ export function ResultForm({ state, match, submitLabel, onSubmit, children }: {
       <p className="muted small">
         {score
           ? <>Enter przechodzi dalej, a na końcu zapisuje. {rules.draws ? 'Remis jest możliwy.' : 'Remisów nie ma: wpisz wynik po dogrywce lub karnych.'}</>
-          : <>Dwie cyfry przeskakują do następnego pola. Enter przechodzi dalej, a na końcu zapisuje.
-            Zasady: sety do {rules.setPoints}{rules.setsMode === 'bestOf' && rules.sets > 1 ? `, decydujący do ${rules.lastSetPoints}` : ''}, przewaga {rules.winBy}.</>}
+          : <>Pełny wynik seta przeskakuje do następnego pola. Enter przechodzi dalej, a na końcu zapisuje.
+            Zasady: {describeSets(rules)}.</>}
       </p>
     </form>
   )

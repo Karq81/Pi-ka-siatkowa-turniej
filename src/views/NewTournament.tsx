@@ -1,14 +1,10 @@
 import { useState } from 'react'
 import { TOURNAMENT_SLUG } from '../config'
-import { MAX_COURTS, saveDraft, slugify, type TournamentDraft } from '../logic/newTournament'
-import { SPORTS, sportById } from '../logic/sports'
+import { MAX_COURTS, saveDraft, slugify } from '../logic/newTournament'
+import { describeSets, SPORTS, sportById, sportRules } from '../logic/sports'
 import { store } from '../store/store'
 
-const FORMATS: { value: TournamentDraft['format']; label: string }[] = [
-  { value: 'one', label: 'Jeden set' },
-  { value: 'bo3', label: 'Do 2 wygranych setów' },
-  { value: 'bo5', label: 'Do 3 wygranych setów' },
-]
+const GROUPS = [...new Set(SPORTS.map((s) => s.group))]
 
 /**
  * "Załóż turniej" (#nowy-turniej): name, address, date, courts and rules. The settings
@@ -26,17 +22,16 @@ export function NewTournament() {
   const [slotMinutes, setSlotMinutes] = useState(SPORTS[0].slot)
   const [sportId, setSportId] = useState(SPORTS[0].id)
   const sport = sportById(sportId)
-  const [format, setFormat] = useState<TournamentDraft['format']>(sport.format ?? 'bo3')
-  const [setPoints, setSetPoints] = useState(sport.setPoints ?? 25)
-  const [draws, setDraws] = useState(sport.draws ?? true)
+  const [format, setFormat] = useState(sport.formats[0].id)
+  const [setPoints, setSetPoints] = useState(25)
   const pickSport = (id: string) => {
     const next = sportById(id)
     setSportId(id)
-    setFormat(next.format ?? 'bo3')
-    setSetPoints(next.setPoints ?? 25)
-    setDraws(next.draws ?? true)
+    setFormat(next.formats[0].id)
     setSlotMinutes(next.slot)
   }
+  const rules = sportRules(sport, format, setPoints)
+  const score = rules.scoring === 'score'
   const [categories, setCategories] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -65,7 +60,7 @@ export function NewTournament() {
     }
     saveDraft(address, {
       name: name.trim(), start: `${date}T${time}`, courts, slotMinutes, dayEnd,
-      categories: cats.length ? cats : ['Turniej'], sport: sportId, format, setPoints, draws,
+      categories: cats.length ? cats : ['Turniej'], sport: sportId, format, setPoints: sport.custom ? setPoints : undefined,
     })
     location.href = `${location.pathname}?t=${address}#panel`
   }
@@ -81,9 +76,34 @@ export function NewTournament() {
       <form className="panel new-t-form" onSubmit={submit}>
         <label>Dyscyplina
           <select value={sportId} onChange={(e) => pickSport(e.target.value)}>
-            {SPORTS.map((sp) => <option key={sp.id} value={sp.id}>{sp.label}</option>)}
+            {GROUPS.map((g) => (
+              <optgroup key={g} label={g}>
+                {SPORTS.filter((sp) => sp.group === g).map((sp) => <option key={sp.id} value={sp.id}>{sp.label}</option>)}
+              </optgroup>
+            ))}
           </select>
         </label>
+        <div className="form-row">
+          <label>Format meczu
+            <select value={format} onChange={(e) => setFormat(e.target.value)}>
+              {sport.formats.map((f) => <option key={f.id} value={f.id}>{f.label}</option>)}
+            </select>
+          </label>
+          {sport.custom && !score && (
+            <label>Set do punktów
+              <input type="number" min={3} max={99} value={setPoints}
+                onChange={(e) => setSetPoints(Math.max(3, Math.min(99, Number(e.target.value) || 25)))} />
+            </label>
+          )}
+        </div>
+        <div className="sport-note">
+          <p>{sport.note}</p>
+          <p className="muted small">
+            {score ? `Wynik: ${rules.unit}${rules.draws ? ', remis możliwy' : ', bez remisów'}.` : `Zasady: ${describeSets(rules)}.`}
+            {' '}Tabela: wygrana {sport.table[0]} pkt{rules.draws || rules.setsMode === 'fixed' && rules.sets % 2 === 0 ? `, remis ${sport.table[1]} pkt` : ''}, porażka {sport.table[2]} pkt.
+            {' '}Uczestnicy: {sport.entrants}.
+          </p>
+        </div>
         <label>Nazwa turnieju
           <input value={name} onChange={(e) => setName(e.target.value)} placeholder="np. Halówka Mielno 2027" required />
         </label>
@@ -115,28 +135,6 @@ export function NewTournament() {
               onChange={(e) => setSlotMinutes(Math.max(5, Math.min(120, Number(e.target.value) || 5)))} />
           </label>
         </div>
-        {sport.scoring === 'sets' ? (
-          <div className="form-row">
-            <label>Mecz
-              <select value={format} onChange={(e) => setFormat(e.target.value as TournamentDraft['format'])}>
-                {FORMATS.map((f) => <option key={f.value} value={f.value}>{f.label}</option>)}
-              </select>
-            </label>
-            <label>Set do punktów
-              <input type="number" min={5} max={50} value={setPoints}
-                onChange={(e) => setSetPoints(Math.max(5, Math.min(50, Number(e.target.value) || 25)))} />
-            </label>
-          </div>
-        ) : (
-          <label className="check">
-            <input type="checkbox" checked={draws} onChange={(e) => setDraws(e.target.checked)} />
-            Remis możliwy w fazie grupowej
-          </label>
-        )}
-        <p className="muted small">
-          Tabela: wygrana {sport.table[0]} pkt{sport.scoring === 'score' && draws ? `, remis ${sport.table[1]} pkt` : ''}, porażka {sport.table[2]} pkt.
-          {sport.scoring === 'score' ? ` Wynik: ${sport.unit}.` : ''}
-        </p>
         <label>Kategorie (każda w osobnej linii lub po przecinku)
           <textarea rows={3} value={categories} onChange={(e) => setCategories(e.target.value)}
             placeholder={'np. Dziewczęta U12\nChłopcy U12'} />

@@ -7,7 +7,7 @@ export function isScore(rules: Rules): boolean {
 
 /** What the small numbers in the table count: "małe punkty", or the score's unit ("bramki"). */
 export function scoreUnit(rules: Rules): string {
-  return isScore(rules) ? rules.unit ?? 'bramki' : 'małe punkty'
+  return isScore(rules) ? rules.unit ?? 'bramki' : rules.unit === 'gemy' ? 'gemy' : 'małe punkty'
 }
 
 /** Target points for set number `index` (0-based). */
@@ -16,10 +16,22 @@ export function setTarget(rules: Rules, index: number): number {
   return deciding ? rules.lastSetPoints : rules.setPoints
 }
 
+function isDeciding(rules: Rules, index: number): boolean {
+  return rules.setsMode === 'bestOf' && index === rules.sets - 1
+}
+
+/** Points at which a set ends whatever the lead (tie-break or cap), if any. */
+export function setCap(rules: Rules, index: number): number | undefined {
+  return isDeciding(rules, index) && rules.lastSetPoints !== rules.setPoints ? rules.lastSetCap : rules.cap
+}
+
 /** Winner of a single set, or null while it is still in play. */
 export function setWinner(rules: Rules, index: number, s: SetScore): 'a' | 'b' | null {
   if (isScore(rules)) return s.a > s.b ? 'a' : s.b > s.a ? 'b' : null
   const target = setTarget(rules, index)
+  const cap = setCap(rules, index)
+  if (cap && s.a >= cap && s.a > s.b) return 'a'
+  if (cap && s.b >= cap && s.b > s.a) return 'b'
   if (s.a >= target && s.a - s.b >= rules.winBy) return 'a'
   if (s.b >= target && s.b - s.a >= rules.winBy) return 'b'
   return null
@@ -34,6 +46,9 @@ export function setProblem(rules: Rules, index: number, s: SetScore): 'unfinishe
   const target = setTarget(rules, index)
   const hi = Math.max(s.a, s.b)
   const diff = Math.abs(s.a - s.b)
+  const cap = setCap(rules, index)
+  // Nobody scores past the cap (7:6 in tennis), and at the cap one point decides.
+  if (cap && (hi > cap || (hi === cap && diff === 0))) return 'impossible'
   // Past the target the set ends the moment someone leads by winBy, so a bigger lead is impossible.
   if (hi > target && diff > rules.winBy) return 'impossible'
   return setWinner(rules, index, s) ? null : 'unfinished'
@@ -148,12 +163,14 @@ export function standings(
     b.setsWon += t.setsB; b.setsLost += t.setsA
     a.pointsWon += t.pointsA; a.pointsLost += t.pointsB
     b.pointsWon += t.pointsB; b.pointsLost += t.pointsA
+    // Volleyball: a 3:2 (or 2:1) win gives one point less to the winner and one to the loser.
+    const split = rules.tieBreakSplit && rules.setsMode === 'bestOf' && t.setsA + t.setsB === rules.sets ? 1 : 0
     if (t.setsA > t.setsB) {
       a.won++; b.lost++
-      a.tablePoints += rules.pointsWin; b.tablePoints += rules.pointsLoss
+      a.tablePoints += rules.pointsWin - split; b.tablePoints += rules.pointsLoss + split
     } else if (t.setsB > t.setsA) {
       b.won++; a.lost++
-      b.tablePoints += rules.pointsWin; a.tablePoints += rules.pointsLoss
+      b.tablePoints += rules.pointsWin - split; a.tablePoints += rules.pointsLoss + split
     } else {
       a.drawn++; b.drawn++
       a.tablePoints += rules.pointsDraw; b.tablePoints += rules.pointsDraw

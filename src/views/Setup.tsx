@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { tournamentUrl } from '../config'
 import { clubOf, drawCategory } from '../logic/draw'
 import { parseTeamList, scheduleOf } from '../logic/newTournament'
+import { SPORTS } from '../logic/sports'
 import { store, useSync } from '../store/store'
 import type { Category, State } from '../types'
 import { formatDay, formatTime, PinGate } from '../ui'
@@ -61,6 +62,12 @@ export function Setup({ state }: { state: State }) {
   )
 }
 
+/** "Zespoły", "Zawodnicy", "Pary"… for the tournament's discipline. */
+function entrantsLabel(state: State): string {
+  const e = SPORTS.find((s) => s.label === state.tournament.rules.sport)?.entrants ?? 'drużyny'
+  return { 'drużyny': 'Zespoły', zawodnicy: 'Zawodnicy', pary: 'Pary', 'zawodnicy lub pary': 'Zawodnicy lub pary' }[e]
+}
+
 /** One category: its team list and the draw into groups. */
 function CategorySetup({ state, category }: { state: State; category: Category }) {
   const current = state.teams.filter((t) => t.categoryId === category.id)
@@ -89,11 +96,11 @@ function CategorySetup({ state, category }: { state: State; category: Category }
     <section className="panel setup-cat">
       <h3>{category.name}</h3>
       <label>
-        Zespoły, każdy w osobnej linii. Klub przed dwukropkiem, np. <i>UKS Orzeł: Orzeł 1</i>
+        {entrantsLabel(state)}: jedna pozycja w linii. Klub przed dwukropkiem, np. <i>UKS Orzeł: Orzeł 1</i>
         <textarea rows={Math.max(6, Math.min(16, teams.length + 2))} value={text} onChange={(e) => setText(e.target.value)} />
       </label>
       <div className="form-row">
-        <span className="muted">{teams.length} zespołów</span>
+        <span className="muted">Na liście: {teams.length}</span>
         <label>Liczba grup
           <input type="number" min={1} max={12} value={groups}
             onChange={(e) => setGroups(Math.max(1, Math.min(12, Number(e.target.value) || 1)))} />

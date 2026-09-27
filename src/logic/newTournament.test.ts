@@ -4,7 +4,7 @@ import { blankState, parseTeamList, replanTimetable, scheduleOf, slugify } from 
 
 const draft = {
   name: 'Halówka Mielno 2027', start: '2027-01-16T09:00', courts: 3, slotMinutes: 20, dayEnd: '17:00',
-  categories: ['Dziewczęta', 'Chłopcy'], format: 'bo3' as const, setPoints: 25,
+  categories: ['Dziewczęta', 'Chłopcy'],
 }
 
 describe('new tournament', () => {

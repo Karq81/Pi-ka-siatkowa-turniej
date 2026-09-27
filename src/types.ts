@@ -24,6 +24,15 @@ export interface Rules {
   unit?: string
   /** The sport, for labels ("Piłka nożna"). */
   sport?: string
+  /**
+   * A set also ends when someone reaches this many points, whatever the lead: tennis and
+   * padel 7 (tie-break at 6:6, so 7:6), badminton 30 (30:29).
+   */
+  cap?: number
+  /** The same for a deciding set of its own length (e.g. none for a super tie-break to 10). */
+  lastSetCap?: number
+  /** Volleyball: a match won in the deciding set gives the winner one point less and the loser one more (3:2 → 2 and 1 points). */
+  tieBreakSplit?: boolean
 }
 
 export interface Tournament {

@@ -12,13 +12,11 @@ export interface TournamentDraft {
   slotMinutes: number
   dayEnd: string
   categories: string[]
-  /** Discipline (see SPORTS); volleyball when missing. */
+  /** Discipline and match format (see SPORTS); volleyball's first format when missing. */
   sport?: string
-  /** Set sports: one set / best of 3 / best of 5, and the set points. */
-  format: 'one' | 'bo3' | 'bo5'
-  setPoints: number
-  /** Score sports: whether a match may end level. */
-  draws?: boolean
+  format?: string
+  /** "Inna dyscyplina: wynik w setach": points per set. */
+  setPoints?: number
 }
 
 export const MAX_COURTS = 20
@@ -66,7 +64,7 @@ export function blankState(draft: TournamentDraft): State {
       name: draft.name,
       subtitle,
       courts: draft.courts,
-      rules: sportRules(sportById(draft.sport), { format: draft.format, setPoints: draft.setPoints, draws: draft.draws }),
+      rules: sportRules(sportById(draft.sport), draft.format, draft.setPoints),
       slotMinutes: draft.slotMinutes,
       start: draft.start,
       dayEnd: draft.dayEnd,
@@ -82,7 +80,7 @@ export function blankState(draft: TournamentDraft): State {
 /** Shown until the organiser's settings arrive (e.g. the tournament opened on another device). */
 export const EMPTY_DRAFT: TournamentDraft = {
   name: 'Nowy turniej', start: '', courts: 4, slotMinutes: 20, dayEnd: '18:00',
-  categories: ['Kategoria 1'], format: 'bo3', setPoints: 25,
+  categories: ['Kategoria 1'],
 }
 
 /** How a tournament's matches are laid out in time. */
