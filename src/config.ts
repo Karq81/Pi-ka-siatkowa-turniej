@@ -19,6 +19,7 @@ const PRODUCTION_FIREBASE = {
   authDomain: 'turniej-siatkowki-faf22.firebaseapp.com',
   projectId: 'turniej-siatkowki-faf22',
   appId: '1:871220726534:web:1197e4ca0b443b99e32c87',
+  databaseURL: 'https://turniej-siatkowki-faf22-default-rtdb.europe-west1.firebasedatabase.app',
 }
 
 export const firebaseConfig: FirebaseOptions | null = env.VITE_FIREBASE_API_KEY
@@ -27,6 +28,7 @@ export const firebaseConfig: FirebaseOptions | null = env.VITE_FIREBASE_API_KEY
       authDomain: env.VITE_FIREBASE_AUTH_DOMAIN,
       projectId: env.VITE_FIREBASE_PROJECT_ID,
       appId: env.VITE_FIREBASE_APP_ID,
+      databaseURL: env.VITE_FIREBASE_DATABASE_URL || undefined,
     }
   : env.MODE === 'production'
     ? PRODUCTION_FIREBASE

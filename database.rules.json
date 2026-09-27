@@ -1,0 +1,44 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+
+    "pins": {
+      "$t": {
+        ".read": false,
+        ".write": "auth != null && (!data.exists() || (root.child('sessions/' + $t + '/' + auth.uid + '/role').val() === 'admin' && root.child('sessions/' + $t + '/' + auth.uid + '/pin').val() === data.child('admin').val()))",
+        ".validate": "newData.child('admin').isString() && newData.child('admin').val().length >= 4 && newData.hasChildren(['admin', 'courts'])"
+      }
+    },
+
+    "sessions": {
+      "$t": {
+        "$uid": {
+          ".read": "auth != null && auth.uid === $uid",
+          ".write": "auth != null && auth.uid === $uid",
+          ".validate": "(newData.child('role').val() === 'admin' && newData.child('pin').val() === root.child('pins/' + $t + '/admin').val()) || (newData.child('role').val() === 'court' && newData.child('court').isNumber() && newData.child('pin').val() === root.child('pins/' + $t + '/courts/' + newData.child('court').val()).val())"
+        }
+      }
+    },
+
+    "live": {
+      "$t": {
+        ".read": true,
+        ".write": "auth != null && root.child('sessions/' + $t + '/' + auth.uid + '/role').val() === 'admin' && root.child('sessions/' + $t + '/' + auth.uid + '/pin').val() === root.child('pins/' + $t + '/admin').val()",
+        "$court": {
+          ".write": "auth != null && ((root.child('sessions/' + $t + '/' + auth.uid + '/role').val() === 'admin' && root.child('sessions/' + $t + '/' + auth.uid + '/pin').val() === root.child('pins/' + $t + '/admin').val()) || (root.child('sessions/' + $t + '/' + auth.uid + '/role').val() === 'court' && root.child('sessions/' + $t + '/' + auth.uid + '/court').val() + '' === $court && root.child('sessions/' + $t + '/' + auth.uid + '/pin').val() === root.child('pins/' + $t + '/courts/' + $court).val()))",
+          "$match": {
+            ".validate": "newData.hasChildren(['sets', 'at']) && newData.child('at').isNumber()",
+            "sets": {
+              "$i": {
+                ".validate": "newData.hasChildren(['a', 'b']) && newData.child('a').isNumber() && newData.child('b').isNumber() && newData.child('a').val() >= 0 && newData.child('b').val() >= 0 && newData.child('a').val() < 1000 && newData.child('b').val() < 1000"
+              }
+            },
+            "at": { ".validate": true },
+            "$other": { ".validate": false }
+          }
+        }
+      }
+    }
+  }
+}

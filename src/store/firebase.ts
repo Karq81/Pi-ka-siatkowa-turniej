@@ -9,6 +9,7 @@ import { applyMatchUpdate } from '../logic/knockout'
 import { dayKey } from '../logic/usage'
 import type { Match, Pins, Session, State } from '../types'
 import type { Store, SyncInfo } from './types'
+import { backups, backupScore, dropBackup, openLive, type LiveChannel, type LiveEntry } from './live'
 
 /*
  * Firestore layout (see firestore.rules):
@@ -22,7 +23,18 @@ import type { Store, SyncInfo } from './types'
  *                                   update only that court's sheet).
  *   tournaments/{t}/private/pins    admin PIN and one key per court, readable only by the admin
  *   tournaments/{t}/sessions/{uid}  a device's role (and court), granted by the rules when the key matches
+ *
+ * Points of a match in progress go to the Realtime Database instead (see live.ts): fans get
+ * every point for a few bytes. Firestore gets the start, every finished set, the result and
+ * any correction, so it always holds the match's state up to its last complete set. Without
+ * the Realtime Database (not set up, no session there) everything goes to Firestore.
  */
+
+/** A hidden page stops following the tournament after this long (and resumes when shown). */
+const PAUSE_HIDDEN_MS = 2 * 60 * 1000
+
+/** How far phones' clocks may differ when a Firestore change and a live score are compared. */
+const CLOCK_SLACK_MS = 60 * 1000
 
 
 const LOGIN_TIMEOUT_MS = 15000
@@ -112,24 +124,71 @@ export function createFirebaseStore(config: FirebaseOptions, tournamentId: strin
     setDoc(doc(tRef, 'usage', dayKey()), { views: increment(1) }, { merge: true }).catch(() => {})
   }
 
-  if (listen) onSnapshot(tRef, { includeMetadataChanges: true }, (snap) => {
-    const data = snap.data() as Omit<State, 'matches'> | undefined
-    if (data) state = { ...state, ...data, matches: state.matches }
-    if (snap.exists() && !snap.metadata.fromCache) countVisit()
-    setSync({ empty: !snap.exists() && !snap.metadata.fromCache, connected: !snap.metadata.fromCache })
-  }, fail(tk('Odczyt turnieju')))
+  // Live scores (Realtime Database) of matches in progress. They win over Firestore for the
+  // set being played; Firestore wins once it has a later set or a clearly newer change
+  // (phones' clocks differ, so only a large difference counts).
+  let liveScores = new Map<string, LiveEntry>()
+  const newer = (m: Match, e: LiveEntry) => e.sets.length > m.sets.length
+    || (e.sets.length === m.sets.length && e.at + CLOCK_SLACK_MS >= (m.updatedAt ?? 0))
+  const withLive = (matches: Match[]) => matches.map((m) => {
+    const e = liveScores.get(m.id)
+    return m.status === 'live' && e && newer(m, e) ? { ...m, sets: e.sets } : m
+  })
+  const liveReady: Promise<LiveChannel | null> = listen
+    ? openLive(app, tournamentId, !!import.meta.env.VITE_USE_EMULATOR).catch(() => null)
+    : Promise.resolve(null)
+  let live: LiveChannel | null = null
 
   // Documents in `matches` that are not court sheets (the old one-document-per-match layout).
   let legacy: string[] = []
-  if (listen) onSnapshot(matchesRef, { includeMetadataChanges: true }, (snap) => {
-    const sheets = snap.docs.filter((d) => d.id.startsWith(SHEET_PREFIX))
-    legacy = snap.docs.filter((d) => !d.id.startsWith(SHEET_PREFIX)).map((d) => d.id)
-    const matches = sheets.length
-      ? sheets.flatMap((d) => Object.values((d.data() as CourtSheet).matches ?? {}))
-      : snap.docs.map((d) => d.data() as Match)
-    state = { ...state, matches }
-    setSync({ pending: snap.metadata.hasPendingWrites, connected: !snap.metadata.fromCache })
-  }, fail(tk('Odczyt meczów')))
+  let sheetsLoaded = false
+  let stops: (() => void)[] = []
+  const follow = () => {
+    if (stops.length) return
+    stops.push(onSnapshot(tRef, { includeMetadataChanges: true }, (snap) => {
+      const data = snap.data() as Omit<State, 'matches'> | undefined
+      if (data) state = { ...state, ...data, matches: state.matches }
+      if (snap.exists() && !snap.metadata.fromCache) countVisit()
+      setSync({ empty: !snap.exists() && !snap.metadata.fromCache, connected: !snap.metadata.fromCache })
+    }, fail(tk('Odczyt turnieju'))))
+    stops.push(onSnapshot(matchesRef, { includeMetadataChanges: true }, (snap) => {
+      const sheets = snap.docs.filter((d) => d.id.startsWith(SHEET_PREFIX))
+      legacy = snap.docs.filter((d) => !d.id.startsWith(SHEET_PREFIX)).map((d) => d.id)
+      const matches = sheets.length
+        ? sheets.flatMap((d) => Object.values((d.data() as CourtSheet).matches ?? {}))
+        : snap.docs.map((d) => d.data() as Match)
+      state = { ...state, matches: withLive(matches) }
+      sheetsLoaded = true
+      setSync({ pending: snap.metadata.hasPendingWrites, connected: !snap.metadata.fromCache })
+    }, fail(tk('Odczyt meczów'))))
+    if (live) {
+      stops.push(live.follow((map) => {
+        liveScores = map
+        state = { ...state, matches: withLive(state.matches) }
+        notify()
+      }))
+    }
+  }
+  const unfollow = () => { stops.forEach((stop) => stop()); stops = [] }
+
+  if (listen) {
+    follow()
+    void liveReady.then((ch) => {
+      if (!ch) return
+      live = ch
+      // Start following the live scores too (if the page is not paused right now).
+      if (stops.length) { unfollow(); follow() }
+      void resumeLiveSession()
+    })
+    // A phone left on the page in a pocket stops costing reads; back on screen it catches up
+    // (Firestore sends only what changed meanwhile).
+    let pauseTimer: ReturnType<typeof setTimeout> | undefined
+    document.addEventListener('visibilitychange', () => {
+      clearTimeout(pauseTimer)
+      if (document.hidden) pauseTimer = setTimeout(unfollow, PAUSE_HIDDEN_MS)
+      else follow()
+    })
+  }
 
   const saveSession = (s: Session | null) => {
     session = s
@@ -150,6 +209,7 @@ export function createFirebaseStore(config: FirebaseOptions, tournamentId: strin
       try {
         await withTimeout(setDoc(ref, { ...candidate, pin }))
         saveSession(candidate)
+        void liveSignIn(candidate, pin)
         return true
       } catch (e) {
         if ((e as { code?: string }).code === 'timeout') {
@@ -161,12 +221,71 @@ export function createFirebaseStore(config: FirebaseOptions, tournamentId: strin
     return false
   }
 
+  const readPins = async () => {
+    try {
+      return ((await getDoc(doc(tRef, 'private', 'pins'))).data() as Pins | undefined) ?? null
+    } catch {
+      return null
+    }
+  }
+
+  /** The same key opens this device's session in the Realtime Database, for live scores. */
+  async function liveSignIn(s: Session, pin: string) {
+    const ch = await liveReady
+    const uid = auth.currentUser?.uid
+    if (!ch || !uid) return
+    const court = s.role === 'court' ? s.court : undefined
+    if (await ch.signIn(uid, s.role, pin, court)) { void restoreBackups(); return }
+    // Tournaments set up before the live scores: the chief referee copies the keys there.
+    if (s.role === 'admin') {
+      const pins = await readPins()
+      if (pins && await ch.copyPins(pins) && await ch.signIn(uid, s.role, pin, court)) void restoreBackups()
+    }
+  }
+
+  /** After a reload: the device's session, with its key, is in Firestore. */
+  async function resumeLiveSession() {
+    if (!session) return
+    try {
+      const u = await currentUser()
+      const saved = (await getDoc(doc(tRef, 'sessions', u.uid))).data() as { pin?: string } | undefined
+      if (saved?.pin) await liveSignIn(session, saved.pin)
+    } catch { /* no session: nothing to resume */ }
+  }
+
+  /** Points typed on this phone that never reached the database (page reloaded offline). */
+  async function restoreBackups() {
+    for (let i = 0; i < 20 && !sheetsLoaded; i++) await new Promise((r) => setTimeout(r, 500))
+    for (const [id, e] of backups(tournamentId)) {
+      const m = state.matches.find((x) => x.id === id)
+      if (!m || m.status !== 'live') { dropBackup(tournamentId, id); continue }
+      // The backup and the live score both come from this phone, so their times compare.
+      const sent = liveScores.get(id)
+      const same = JSON.stringify(e.sets) === JSON.stringify(m.sets)
+      if (!same && e.sets.length >= m.sets.length && (!sent || e.at >= sent.at)) store.updateMatch(id, (x) => ({ ...x, sets: e.sets }))
+    }
+  }
+
+  /** Writes whole matches into their courts' Firestore sheets. */
+  const writeSheets = (changed: Match[]) => {
+    // Each changed match replaces its own entry in its court's sheet; other matches on
+    // the sheet (maybe written by another phone at the same time) are left alone.
+    const b = writeBatch(db)
+    const byCourt = new Map<number, Match[]>()
+    for (const m of changed) byCourt.set(m.court, [...(byCourt.get(m.court) ?? []), m])
+    for (const [court, ms] of byCourt) {
+      const [first, ...more] = ms.flatMap((m) => [new FieldPath('matches', m.id), m])
+      b.update(sheetRef(court), first as FieldPath, more[0], ...more.slice(1))
+    }
+    b.commit().catch(fail(tk('Zapis wyniku')))
+  }
+
   const stripMatches = (s: State) => {
     const { matches: _ignored, ...rest } = s
     return rest
   }
 
-  return {
+  const store: Store = {
     get: () => state,
     sync: () => sync,
     subscribe(fn) {
@@ -177,24 +296,38 @@ export function createFirebaseStore(config: FirebaseOptions, tournamentId: strin
     login,
     logout: () => saveSession(null),
     updateMatch(id, update) {
+      const before = state.matches.find((m) => m.id === id)
       // Also fills in knockout teams that follow from this result, in one atomic write.
       const changed = applyMatchUpdate(state, id, update)
-      if (!changed.length) return
+      if (!changed.length || !before) return
       // Shown at once, so the next quick tap (+1, +1…) builds on this one instead of on the
       // state before it; the database snapshot then confirms the same values.
       const byId = new Map(changed.map((m) => [m.id, m]))
       state = { ...state, matches: state.matches.map((m) => byId.get(m.id) ?? m) }
       notify()
-      // Each changed match replaces its own entry in its court's sheet; other matches on
-      // the sheet (maybe written by another phone at the same time) are left alone.
-      const b = writeBatch(db)
-      const byCourt = new Map<number, Match[]>()
-      for (const m of changed) byCourt.set(m.court, [...(byCourt.get(m.court) ?? []), m])
-      for (const [court, ms] of byCourt) {
-        const [first, ...more] = ms.flatMap((m) => [new FieldPath('matches', m.id), m])
-        b.update(sheetRef(court), first as FieldPath, more[0], ...more.slice(1))
+      const m = changed[0]
+      const entry = { sets: m.sets, at: m.updatedAt }
+      // A point in the set being played: only the live score changes.
+      const point = changed.length === 1 && before.status === 'live' && m.status === 'live'
+        && m.sets.length > 0 && m.sets.length === before.sets.length && m.court === before.court
+      if (point && live?.canWrite()) {
+        liveScores.set(id, entry)
+        backupScore(tournamentId, id, entry)
+        live.write(m.court, id, entry, () => writeSheets([m]))
+        return
       }
-      b.commit().catch(fail(tk('Zapis wyniku')))
+      writeSheets(changed)
+      for (const c of changed) {
+        if (c.status === 'live' && live?.canWrite()) {
+          const e = { sets: c.sets, at: c.updatedAt }
+          liveScores.set(c.id, e)
+          live.write(c.court, c.id, e, () => {})
+        } else if (c.status !== 'live') {
+          liveScores.delete(c.id)
+          dropBackup(tournamentId, c.id)
+          live?.clear(c.court, c.id)
+        }
+      }
     },
     async replace(next) {
       const ops: ((b: ReturnType<typeof writeBatch>) => void)[] = []
@@ -207,6 +340,8 @@ export function createFirebaseStore(config: FirebaseOptions, tournamentId: strin
         const sheet: CourtSheet = { court, status: 'scheduled', matches }
         ops.push((b) => b.set(sheetRef(court), sheet))
       }
+      // New timetable or cleared results: live scores of the old one must not come back.
+      live?.clearAll()
       try {
         await setDoc(tRef, stripMatches(next))
         for (let i = 0; i < ops.length; i += 400) {
@@ -223,15 +358,16 @@ export function createFirebaseStore(config: FirebaseOptions, tournamentId: strin
       notify()
       updateDoc(tRef, { tournament: state.tournament }).catch(fail(tk('Zapis ustawień')))
     },
-    async getPins() {
-      try {
-        const snap = await getDoc(doc(tRef, 'private', 'pins'))
-        return (snap.data() as Pins | undefined) ?? null
-      } catch {
-        return null
-      }
-    },
+    getPins: readPins,
     async setPins(pins) {
+      // The live scores' copy of the keys changes first, while the old admin PIN still opens it.
+      // (Not connected: the keys are copied later, when the chief referee logs in.)
+      const ch = await liveReady
+      if (ch?.connected()) {
+        const old = await readPins()
+        if (old && session?.role === 'admin') await liveSignIn({ role: 'admin' }, old.adminPin)
+        await ch.copyPins(pins)
+      }
       await setDoc(doc(tRef, 'private', 'pins'), pins)
       // Sessions are tied to the key they used; log this device in again with the new admin PIN.
       if (!(await login(pins.adminPin))) saveSession(null)
@@ -242,4 +378,5 @@ export function createFirebaseStore(config: FirebaseOptions, tournamentId: strin
     },
     clearError() { setSync({ error: null }) },
   }
+  return store
 }

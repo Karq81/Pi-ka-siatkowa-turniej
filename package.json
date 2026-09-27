@@ -10,8 +10,8 @@
     "preview": "vite preview",
     "test": "vitest run src",
     "typecheck": "tsc -b",
-    "test:rules": "firebase emulators:exec --only firestore --project demo-siatkalive \"vitest run tests\"",
-    "dev:emulator": "firebase emulators:exec --only firestore,auth --project demo-siatkalive \"vite --mode emulator\""
+    "test:rules": "firebase emulators:exec --only firestore,database --project demo-siatkalive \"vitest run tests --no-file-parallelism\"",
+    "dev:emulator": "firebase emulators:exec --only firestore,auth,database --project demo-siatkalive \"vite --mode emulator\""
   },
   "dependencies": {
     "firebase": "^12.19.0",
