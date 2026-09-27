@@ -2,7 +2,11 @@ import {
   createUserWithEmailAndPassword, EmailAuthProvider, onAuthStateChanged, reauthenticateWithCredential, signInAnonymously,
   signInWithEmailAndPassword, signOut, updatePassword, updateProfile,
 } from 'firebase/auth'
-import { arrayUnion, doc, onSnapshot, setDoc, updateDoc, type Unsubscribe } from 'firebase/firestore'
+import {
+  arrayUnion, collection, doc, documentId, getDoc, getDocs, increment, limit, onSnapshot, orderBy, query, setDoc, updateDoc, where,
+  type Unsubscribe,
+} from 'firebase/firestore'
+import { dayKey } from '../logic/usage'
 import { useSyncExternalStore } from 'react'
 import { TOURNAMENT_ID } from '../config'
 import { firebaseHandles } from './firebase'
@@ -38,6 +42,8 @@ export interface Account extends AccountProfile {
   uid: string
   /** False until the account's details have been read from the database. */
   loaded?: boolean
+  /** Prepaid visits over the free daily allowance (added by the administrator or a payment). */
+  credits?: number
   login: string
   tournaments: AccountTournament[]
 }
@@ -183,5 +189,44 @@ export async function addTournamentToAccount(entry: AccountTournament) {
     await updateDoc(ref, { tournaments: arrayUnion(entry) })
   } catch {
     await setDoc(ref, { login: account.login, name: account.name, tournaments: [entry] }, { merge: true })
+  }
+}
+
+/** Visits of one tournament: today and each of the last days (newest first). */
+export interface TournamentUsage {
+  today: number
+  days: { day: string; views: number }[]
+}
+
+/** Database id of an account's tournament ("main" is Albatros CUP). */
+export async function loadUsage(ids: string[], days = 7): Promise<Record<string, TournamentUsage>> {
+  if (!firebaseHandles) return {}
+  const { db } = firebaseHandles
+  const today = dayKey()
+  const from = dayKey(new Date(Date.now() - (days - 1) * 86_400_000))
+  const entries = await Promise.all(ids.map(async (id) => {
+    try {
+      // Documents are named by date, so the last days are those from `from` on (newest first below).
+      const snap = await getDocs(query(collection(db, 'tournaments', id, 'usage'), where(documentId(), '>=', from), orderBy(documentId()), limit(days)))
+      const list = snap.docs.map((d) => ({ day: d.id, views: (d.data().views as number) ?? 0 })).reverse()
+      return [id, { today: list.find((d) => d.day === today)?.views ?? 0, days: list }] as const
+    } catch {
+      return [id, { today: 0, days: [] }] as const
+    }
+  }))
+  return Object.fromEntries(entries)
+}
+
+/** Counts one visit of the service's front page and returns the total. */
+export async function countSiteVisit(): Promise<number | null> {
+  if (!firebaseHandles) return null
+  const ref = doc(firebaseHandles.db, 'stats', 'site')
+  try {
+    await setDoc(ref, { visits: increment(1) }, { merge: true })
+  } catch { /* offline or blocked: still show the total */ }
+  try {
+    return ((await getDoc(ref)).data()?.visits as number | undefined) ?? null
+  } catch {
+    return null
   }
 }

@@ -1,10 +1,11 @@
 import { initializeApp, type FirebaseOptions } from 'firebase/app'
 import { connectAuthEmulator, getAuth, signInAnonymously, type Auth } from 'firebase/auth'
 import {
-  collection, connectFirestoreEmulator, doc, FieldPath, getDoc, getFirestore, initializeFirestore, onSnapshot, persistentLocalCache,
+  collection, connectFirestoreEmulator, doc, FieldPath, getDoc, getFirestore, increment, initializeFirestore, onSnapshot, persistentLocalCache,
   persistentMultipleTabManager, setDoc, updateDoc, writeBatch, type Firestore,
 } from 'firebase/firestore'
 import { applyMatchUpdate } from '../logic/knockout'
+import { dayKey } from '../logic/usage'
 import type { Match, Pins, Session, State } from '../types'
 import type { Store, SyncInfo } from './types'
 
@@ -100,9 +101,20 @@ export function createFirebaseStore(config: FirebaseOptions, tournamentId: strin
     return auth.currentUser!
   }
 
+  // One visit of this tournament's pages, for the organiser's usage counter. Counted once the
+  // tournament is known to exist: a refused write would restart the write stream, and the
+  // SDK would then send other pending counters twice.
+  let visitCounted = false
+  const countVisit = () => {
+    if (visitCounted) return
+    visitCounted = true
+    setDoc(doc(tRef, 'usage', dayKey()), { views: increment(1) }, { merge: true }).catch(() => {})
+  }
+
   if (listen) onSnapshot(tRef, { includeMetadataChanges: true }, (snap) => {
     const data = snap.data() as Omit<State, 'matches'> | undefined
     if (data) state = { ...state, ...data, matches: state.matches }
+    if (snap.exists() && !snap.metadata.fromCache) countVisit()
     setSync({ empty: !snap.exists() && !snap.metadata.fromCache, connected: !snap.metadata.fromCache })
   }, fail('Odczyt turnieju'))
 

@@ -19,7 +19,7 @@ import { SyncBanner, useRoute } from './ui'
  * result entry, corrections) keep the normal phone layout with big buttons.
  */
 const DESKTOP_LIKE_WIDTH = 640
-const PHONE_LAYOUT = /^(boisko-\d+|wynik-\d+|korekta-.+|sedzia|kartki|o-systemie|nowy-turniej|konto|rejestracja|moje-turnieje)$/
+const PHONE_LAYOUT = /^(boisko-\d+|wynik-\d+|korekta-.+|sedzia|kartki|o-systemie|nowy-turniej|konto|rejestracja|moje-turnieje|kredyty)$/
 
 function isPhone() {
   const touch = matchMedia('(pointer: coarse)').matches
@@ -57,7 +57,7 @@ function useScrollTop(route: string) {
 }
 
 /** The service's own pages; on the front-page address these are the only screens. */
-const PLATFORM_ROUTES = ['o-systemie', 'nowy-turniej', 'konto', 'rejestracja', 'moje-turnieje']
+const PLATFORM_ROUTES = ['o-systemie', 'nowy-turniej', 'konto', 'rejestracja', 'moje-turnieje', 'kredyty']
 
 export function App() {
   const route = useRoute()
@@ -88,6 +88,6 @@ function Screen({ route }: { route: string }) {
   if (route === 'tv') return <Tv />
   if (route === 'o-systemie') return <About />
   if (route === 'nowy-turniej') return <NewTournament />
-  if (route === 'konto' || route === 'rejestracja' || route === 'moje-turnieje') return <AccountPage key={route} view={route} />
+  if (route === 'konto' || route === 'rejestracja' || route === 'moje-turnieje' || route === 'kredyty') return <AccountPage key={route} view={route} />
   return <Public route={route} />
 }

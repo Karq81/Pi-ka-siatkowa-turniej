@@ -8,8 +8,20 @@ service cloud.firestore {
   match /databases/{database}/documents {
     // Organiser accounts: login, name and the account's tournaments with their PINs,
     // visible only to the account itself.
+    // Credits (prepaid visits) are added only by the administrator or the payment system.
     match /accounts/{uid} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow create: if request.auth != null && request.auth.uid == uid && !('credits' in request.resource.data);
+      allow update: if request.auth != null && request.auth.uid == uid
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['credits']);
+    }
+
+    // Visit counter of the service's front page: anyone adds exactly one visit.
+    match /stats/{d} {
+      allow read: if true;
+      allow create: if request.resource.data.keys().hasOnly(['visits']) && request.resource.data.visits == 1;
+      allow update: if request.resource.data.keys().hasOnly(['visits'])
+        && request.resource.data.visits == resource.data.visits + 1;
     }
 
     match /tournaments/{t} {
@@ -51,6 +63,16 @@ service cloud.firestore {
           // Any referee's result may fill in the teams of a knockout match that has not started.
           || ((isAnyCourt()) && resource.data.status == 'scheduled'
               && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['teamA', 'teamB', 'updatedAt']));
+      }
+
+      // Daily visit counters of a tournament (usage/2026-10-24 = { views }): every opening of
+      // the tournament's pages adds exactly one.
+      match /usage/{day} {
+        allow read: if true;
+        allow create: if exists(/databases/$(database)/documents/tournaments/$(t))
+          && request.resource.data.keys().hasOnly(['views']) && request.resource.data.views == 1;
+        allow update: if request.resource.data.keys().hasOnly(['views'])
+          && request.resource.data.views == resource.data.views + 1;
       }
 
       match /private/{d} {

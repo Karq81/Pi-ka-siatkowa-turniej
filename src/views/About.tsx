@@ -1,7 +1,7 @@
-import type { ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { BRAND } from '../config'
 import { SPORTS } from '../logic/sports'
-import { useAccount } from '../store/accounts'
+import { countSiteVisit, useAccount } from '../store/accounts'
 import { PlatformNav } from './Platform'
 
 /**
@@ -12,6 +12,7 @@ export function About() {
   const account = useAccount()
   const start = account.status === 'signed-in' ? '#nowy-turniej' : '#rejestracja'
   const disciplines = SPORTS.filter((s) => !s.custom)
+  const visits = useSiteVisits()
 
   return (
     <div className="ab">
@@ -37,6 +38,9 @@ export function About() {
               <a className="ab-btn primary" href={start}>Załóż turniej za darmo</a>
               <a className="ab-btn light" href="#jak-to-dziala">Jak to działa?</a>
             </div>
+            {visits !== null && (
+              <p className="ab-visits"><span className="ab-dot" /> Odwiedzin strony: <b>{visits.toLocaleString('pl-PL')}</b></p>
+            )}
           </div>
           <HeroArt />
         </div>
@@ -158,6 +162,19 @@ export function About() {
       </footer>
     </div>
   )
+}
+
+/** Counts this visit once per page load and returns the total, or null when unknown. */
+let visitCount: Promise<number | null> | null = null
+function useSiteVisits(): number | null {
+  const [visits, setVisits] = useState<number | null>(null)
+  useEffect(() => {
+    visitCount ??= countSiteVisit()
+    let live = true
+    visitCount.then((v) => { if (live) setVisits(v) })
+    return () => { live = false }
+  }, [])
+  return visits
 }
 
 /**

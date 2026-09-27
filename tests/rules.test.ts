@@ -1,6 +1,6 @@
 // Firestore security rules tests. Run with: npm run test:rules (starts the Firebase emulator).
 import { assertFails, assertSucceeds, initializeTestEnvironment, type RulesTestEnvironment } from '@firebase/rules-unit-testing'
-import { deleteDoc, doc, FieldPath, getDoc, setDoc, updateDoc } from 'firebase/firestore'
+import { deleteDoc, doc, FieldPath, getDoc, increment, setDoc, updateDoc } from 'firebase/firestore'
 import { readFileSync } from 'node:fs'
 import { afterAll, beforeAll, beforeEach, describe, it } from 'vitest'
 
@@ -125,5 +125,23 @@ describe('firestore rules', () => {
     await assertFails(getDoc(doc(as('other'), 'accounts/owner')))
     await assertFails(getDoc(doc(as(null), 'accounts/owner')))
     await assertFails(setDoc(doc(as('other'), 'accounts/owner'), { login: 'y' }))
+  })
+
+  it('lets an account change its details but never its credits', async () => {
+    await assertFails(setDoc(doc(as('acc'), 'accounts/acc'), { login: 'x', credits: 1000 }))
+    await assertSucceeds(setDoc(doc(as('acc'), 'accounts/acc'), { login: 'x', name: 'Klub' }))
+    await assertSucceeds(updateDoc(doc(as('acc'), 'accounts/acc'), { phone: '600' }))
+    await assertFails(updateDoc(doc(as('acc'), 'accounts/acc'), { credits: 5000 }))
+  })
+
+  it('counts visits one at a time', async () => {
+    await assertSucceeds(setDoc(doc(as(null), 'stats/site'), { visits: increment(1) }, { merge: true }))
+    await assertSucceeds(setDoc(doc(as(null), 'stats/site'), { visits: increment(1) }, { merge: true }))
+    await assertFails(setDoc(doc(as(null), 'stats/site'), { visits: increment(50) }, { merge: true }))
+    await assertFails(setDoc(doc(as(null), 'stats/site'), { visits: 0 }))
+    await assertSucceeds(setDoc(doc(as(null), `${T}/usage/2026-10-24`), { views: increment(1) }, { merge: true }))
+    await assertFails(setDoc(doc(as(null), `${T}/usage/2026-10-24`), { views: increment(-1) }, { merge: true }))
+    // No counters for tournaments that do not exist.
+    await assertFails(setDoc(doc(as(null), 'tournaments/nope/usage/2026-10-24'), { views: increment(1) }, { merge: true }))
   })
 })

@@ -1,10 +1,13 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ALBATROS_ALIAS, IS_PLATFORM_HOST } from '../config'
 import {
-  accountError, changePassword, createAccount, LOGIN_PATTERN, saveProfile, signInAccount, useAccount, type Account,
-  type AccountProfile,
+  accountError, changePassword, createAccount, loadUsage, LOGIN_PATTERN, saveProfile, signInAccount, useAccount, type Account,
+  type AccountProfile, type TournamentUsage,
 } from '../store/accounts'
 import { PlatformNav, Wordmark } from './Platform'
+import {
+  FREE_VIEWS_PER_DAY, PACKAGES, firebaseCostPln, formatPln, freeUsedPercent, pricePln, READS_PER_VIEW,
+} from '../logic/usage'
 
 /** Address of one of the account's tournaments (Albatros CUP is "main" in the database). */
 function tournamentLink(id: string, hash = ''): string {
@@ -17,7 +20,7 @@ function tournamentLink(id: string, hash = ''): string {
  * next to a short pitch. Signed in: "Moje turnieje" (#moje-turnieje) or the account's
  * details and password (#konto).
  */
-export function AccountPage({ view }: { view: 'konto' | 'rejestracja' | 'moje-turnieje' }) {
+export function AccountPage({ view }: { view: 'konto' | 'rejestracja' | 'moje-turnieje' | 'kredyty' }) {
   const register = view === 'rejestracja'
   const account = useAccount()
   return (
@@ -42,6 +45,7 @@ export function AccountPage({ view }: { view: 'konto' | 'rejestracja' | 'moje-tu
         )}
         {account.status === 'signed-in' && (view === 'konto'
           ? <Profile key={`${account.account.uid}-${account.account.loaded ? 1 : 0}`} account={account.account} />
+          : view === 'kredyty' ? <Credits account={account.account} />
           : <MyTournaments account={account.account} />)}
       </main>
     </div>
@@ -111,6 +115,7 @@ function SignIn({ initial }: { initial: 'in' | 'new' }) {
 }
 
 function MyTournaments({ account }: { account: Account }) {
+  const usage = useUsage(account)
   return (
     <>
       <header className="acc-head">
@@ -121,6 +126,7 @@ function MyTournaments({ account }: { account: Account }) {
         </div>
         <a className="btn btn-primary btn-lg" href="#nowy-turniej">+ Załóż nowy turniej</a>
       </header>
+      <UsageSummary account={account} usage={usage} />
       <section className="account-list">
         <h2>Moje turnieje</h2>
         {account.tournaments.length === 0 && (
@@ -135,6 +141,7 @@ function MyTournaments({ account }: { account: Account }) {
                 <a className="btn" href={tournamentLink(t.id)}>Strona dla kibiców</a>
               </div>
               <p className="muted small">PIN sędziego głównego: <b>{t.pin}</b>. Po wejściu z tego konta nie trzeba go wpisywać.</p>
+              {usage && <TournamentChart usage={usage[t.id]} />}
             </article>
           ))}
         </div>
@@ -266,5 +273,128 @@ function ChangePassword() {
         <button className="btn" type="button" onClick={() => setOpen(false)}>Anuluj</button>
       </div>
     </form>
+  )
+}
+
+/** Visits of the account's tournaments, read once when the page opens (and on "Odśwież"). */
+function useUsage(account: Account): Record<string, TournamentUsage> | null {
+  const [usage, setUsage] = useState<Record<string, TournamentUsage> | null>(null)
+  const ids = account.tournaments.map((t) => t.id).join(',')
+  useEffect(() => {
+    let live = true
+    loadUsage(ids ? ids.split(',') : []).then((u) => { if (live) setUsage(u) })
+    return () => { live = false }
+  }, [ids])
+  return usage
+}
+
+/** Today's visits against the free daily allowance, and the account's credits. */
+function UsageSummary({ account, usage }: { account: Account; usage: Record<string, TournamentUsage> | null }) {
+  const today = usage ? Object.values(usage).reduce((n, u) => n + u.today, 0) : 0
+  const pct = freeUsedPercent(today)
+  const over = Math.max(0, today - FREE_VIEWS_PER_DAY)
+  const credits = account.credits ?? 0
+  const level = pct >= 100 ? 'over' : pct >= 80 ? 'warn' : 'ok'
+  return (
+    <section className="usage">
+      <div className="panel usage-card">
+        <p className="eyebrow">Zużycie dzisiaj</p>
+        <div className="usage-big"><b>{usage ? `${pct}%` : '…'}</b><span className="muted">darmowego limitu</span></div>
+        <div className={`usage-bar ${level}`} role="progressbar" aria-valuenow={Math.min(pct, 100)} aria-valuemin={0} aria-valuemax={100}>
+          <span style={{ width: `${Math.min(pct, 100)}%` }} />
+        </div>
+        <p className="muted small">
+          {today.toLocaleString('pl-PL')} z {FREE_VIEWS_PER_DAY.toLocaleString('pl-PL')} darmowych wejść kibiców na dziś.
+          {over > 0 && <> Ponad limit: <b>{over.toLocaleString('pl-PL')}</b> wejść (z kredytów).</>} Limit odnawia się o północy.
+        </p>
+      </div>
+      <div className="panel usage-card">
+        <p className="eyebrow">Kredyty</p>
+        <div className="usage-big"><b>{credits.toLocaleString('pl-PL')}</b><span className="muted">wejść na zapas</span></div>
+        <p className="muted small">Używane dopiero po wyczerpaniu dziennego darmowego limitu. Nie przepadają.</p>
+        <a className="btn btn-primary" href="#kredyty">Doładuj kredyty</a>
+      </div>
+      <div className="panel usage-card">
+        <p className="eyebrow">Szacunkowy koszt dzisiaj</p>
+        <div className="usage-big"><b>{formatPln(pricePln(over))}</b><span className="muted">za wejścia ponad limit</span></div>
+        <p className="muted small">
+          Koszt bazy Google Firebase za dzisiejszy ruch: ok. {formatPln(firebaseCostPln(today))}
+          {' '}(ok. {READS_PER_VIEW} odczytów bazy na jedno wejście).
+        </p>
+      </div>
+    </section>
+  )
+}
+
+/** Visits per day for the last week, as small bars. */
+function TournamentChart({ usage }: { usage: TournamentUsage | undefined }) {
+  if (!usage || usage.days.length === 0) return <p className="muted small">Wejścia: jeszcze nikt nie otwierał strony turnieju.</p>
+  const days = [...usage.days].reverse()
+  const max = Math.max(...days.map((d) => d.views), 1)
+  return (
+    <div className="t-usage">
+      <p className="small"><b>Dziś: {usage.today.toLocaleString('pl-PL')} wejść</b> · {freeUsedPercent(usage.today)}% dziennego limitu</p>
+      <div className="t-bars" aria-label="Wejścia w ostatnich dniach">
+        {days.map((d) => (
+          <div key={d.day} className="t-bar" title={`${d.day}: ${d.views} wejść`}>
+            <span style={{ height: `${Math.max(4, d.views * 100 / max)}%` }} />
+            <small>{d.day.slice(8)}.{d.day.slice(5, 7)}</small>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/** "Kredyty" (#kredyty): balance, packages and a cost calculator. Online payment comes next. */
+export function Credits({ account }: { account: Account }) {
+  const [views, setViews] = useState(3000)
+  const [days, setDays] = useState(2)
+  const perDayOver = Math.max(0, views - FREE_VIEWS_PER_DAY)
+  const total = perDayOver * days
+  return (
+    <>
+      <header className="acc-head">
+        <div>
+          <p className="eyebrow">Kredyty</p>
+          <h1>Masz {(account.credits ?? 0).toLocaleString('pl-PL')} wejść na zapas</h1>
+          <span className="muted">Każdego dnia pierwsze {FREE_VIEWS_PER_DAY.toLocaleString('pl-PL')} wejść kibiców jest za darmo. Kredyty pokrywają ruch ponad ten limit.</span>
+        </div>
+      </header>
+      <section className="credit-packs">
+        {PACKAGES.map((p, i) => (
+          <article key={p.views} className={`panel credit-pack ${i === 1 ? 'popular' : ''}`}>
+            {i === 1 && <span className="credit-badge">Najczęściej wybierany</span>}
+            <h3>{p.views.toLocaleString('pl-PL')} wejść</h3>
+            <p className="credit-price">{p.pln} zł</p>
+            <p className="muted small">{(p.pln * 1000 / p.views).toFixed(2).replace('.', ',')} zł za 1000 wejść</p>
+            <button className="btn btn-primary" disabled title="Płatności online wkrótce">Doładuj</button>
+          </article>
+        ))}
+      </section>
+      <p className="notice-inline">
+        Płatności online (BLIK, karta) uruchomimy wkrótce. Do tego czasu kredyty doładowuje administrator serwisu po
+        przelewie.
+      </p>
+      <section className="panel credit-calc">
+        <h2>Ile to będzie kosztować?</h2>
+        <div className="form-row">
+          <label>Wejść kibiców dziennie
+            <input type="number" min={0} step={500} value={views} onChange={(e) => setViews(Math.max(0, Number(e.target.value) || 0))} />
+          </label>
+          <label>Dni turnieju
+            <input type="number" min={1} max={30} value={days} onChange={(e) => setDays(Math.max(1, Math.min(30, Number(e.target.value) || 1)))} />
+          </label>
+        </div>
+        <p>
+          Ponad darmowy limit: <b>{total.toLocaleString('pl-PL')}</b> wejść → szacunkowo <b>{formatPln(pricePln(total))}</b>.
+          {total === 0 && ' Taki turniej mieści się w darmowym limicie.'}
+        </p>
+        <p className="muted small">
+          Dla porównania: turniej na 60 drużyn z rodzicami to zwykle 2–5 tys. wejść dziennie. Koszt bazy Google za ten
+          ruch: ok. {formatPln(firebaseCostPln(views * days))}.
+        </p>
+      </section>
+    </>
   )
 }
