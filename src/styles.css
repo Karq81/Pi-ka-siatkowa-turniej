@@ -1095,3 +1095,24 @@ a.court-link:hover { color: var(--accent); }
 .ai-box label { display: grid; gap: 4px; font-weight: 600; }
 .ai-box textarea { font: inherit; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); }
 .ai-notes { margin: 0; padding: 10px 12px; border-radius: 8px; background: color-mix(in srgb, var(--accent) 8%, var(--surface)); }
+/* AI assistant teaser on "Załóż turniej" */
+.ai-hero { display: grid; grid-template-columns: minmax(0, 360px) minmax(0, 1fr); gap: clamp(16px, 4vw, 48px); align-items: center; padding: clamp(18px, 3vw, 32px); margin-bottom: 20px; border-radius: 20px; border: 2px solid color-mix(in srgb, var(--accent) 40%, var(--line)); background: radial-gradient(ellipse at 0% 0%, color-mix(in srgb, #6a2cff 14%, transparent), transparent 60%), linear-gradient(120deg, color-mix(in srgb, var(--accent) 10%, var(--surface)), var(--surface)); }
+.ai-art { width: 100%; height: auto; }
+.ai-hero-badge { display: inline-block; margin: 0 0 8px; padding: 4px 12px; border-radius: 999px; background: #f5c518; color: #0e1b2c; font-weight: 800; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; }
+.ai-hero-text h2 { font-family: var(--display); font-size: clamp(1.9rem, 4vw, 2.8rem); line-height: 1.05; margin: 0 0 10px; }
+.ai-hero-text p { margin: 0 0 8px; font-size: 1.05rem; }
+.ai-hero-text ul { margin: 0 0 18px; padding-left: 0; list-style: none; display: grid; gap: 4px; }
+.ai-hero-text li::before { content: '✓ '; color: var(--ok); font-weight: 800; }
+.ai-cta { font: inherit; font-size: 1.3rem; font-weight: 800; padding: 16px 30px; border: 0; border-radius: 999px; cursor: pointer; color: #fff; background: linear-gradient(90deg, #3d7bff, #6a2cff); animation: ai-pulse 1.8s ease-in-out infinite; }
+.ai-cta:hover { filter: brightness(1.1); }
+@keyframes ai-pulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 #6a2cff66; }
+  50% { transform: scale(1.05); box-shadow: 0 0 0 14px #6a2cff00; }
+}
+.ai-hero-note { margin-top: 10px !important; font-size: 0.9rem !important; color: var(--muted); }
+.ai-spark { transform-box: fill-box; transform-origin: center; animation: ai-twinkle 1.6s ease-in-out infinite; }
+.ai-spark.s2 { animation-delay: .5s; }
+.ai-spark.s3 { animation-delay: 1s; }
+@keyframes ai-twinkle { 0%, 100% { transform: scale(0.7); opacity: 0.6; } 50% { transform: scale(1.15); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .ai-cta, .ai-spark { animation: none; } }
+@media (max-width: 760px) { .ai-hero { grid-template-columns: minmax(0, 1fr); } .ai-art { max-width: 320px; justify-self: center; } }
