@@ -1,3 +1,4 @@
+import { StreamPlayer } from './Stream'
 import { LangPicker } from './LangPicker'
 import { t } from '../i18n'
 import QRCode from 'qrcode'
@@ -63,6 +64,7 @@ function TournamentStart() {
   }
   return (
     <div className="info">
+      <StreamPlayer link={state.tournament.stream} title={t('Transmisja na żywo')} />
       {state.teams.length > 0 && <MyTeams state={state} />}
       <section className="info-live">
         <div className="info-live-text">

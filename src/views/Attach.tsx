@@ -34,3 +34,21 @@ export function AttachedList({ files, onRemove }: { files: File[]; onRemove: (i:
     </ul>
   )
 }
+
+/**
+ * A hint to photograph lists on paper: on a computer, to sign in on the phone and take the
+ * photo there; on a phone, to use the camera button.
+ */
+export function PhotoTip({ where }: { where: 'assistant' | 'teams' }) {
+  const phone = typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches
+  return (
+    <p className="photo-tip">
+      <span aria-hidden="true">💡</span>{' '}
+      {phone
+        ? t('Masz listę zawodników na kartce albo inny dokument (regulamin, terminarz)? Naciśnij „Zrób zdjęcie”, a asystent sam go odczyta.')
+        : where === 'assistant'
+          ? t('Lista zawodników jest na kartce? Zaloguj się na to samo konto w telefonie, otwórz „Załóż turniej” i zrób zdjęcie listy lub innych dokumentów. Asystent sam je odczyta.')
+          : t('Lista zawodników jest na kartce? Otwórz ten panel w telefonie (zaloguj się na to samo konto) i zrób zdjęcie listy. Asystent sam ją przepisze.')}
+    </p>
+  )
+}

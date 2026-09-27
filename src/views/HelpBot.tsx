@@ -6,7 +6,7 @@ const SUGGESTIONS: Record<string, string[]> = {
   start: [tk('Jak założyć turniej?'), tk('Ile to kosztuje?'), tk('Jak kibice zobaczą wyniki?')],
   account: [tk('Jak założyć turniej?'), tk('Jak zmienić hasło?'), tk('Czym są kredyty?')],
   new: [tk('Co napisać asystentowi?'), tk('Czy mogę dodać zdjęcie listy drużyn?'), tk('Co to jest format meczu?')],
-  panel: [tk('Co mam teraz zrobić?'), tk('Jak dodać drużyny ze zdjęcia?'), tk('Jak sędziowie wpisują wyniki?')],
+  panel: [tk('Co mam teraz zrobić?'), tk('Jak dodać drużyny ze zdjęcia?'), tk('Jak sędziowie wpisują wyniki?'), tk('Jak pokazać transmisję wideo?')],
 }
 
 const LIMIT = 30

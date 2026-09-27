@@ -50,6 +50,10 @@ export interface Tournament {
   dayEnd?: string
   /** First match on the following days (HH:MM). */
   dayStart?: string
+  /** Live video of the whole tournament: a YouTube, Facebook or Twitch link. */
+  stream?: string
+  /** Live video of single courts: court number → link. */
+  courtStreams?: Record<string, string>
 }
 
 export interface Category {

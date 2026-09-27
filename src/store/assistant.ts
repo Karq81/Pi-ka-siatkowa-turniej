@@ -153,5 +153,6 @@ Jak działa serwis:
 6. "Ustawienia i PIN": sędzia główny (poprawki wyników, klucze boisk, eksport do Excela), kartki z kodami QR do wydruku, tryb TV, zmiana PIN-u, co ile minut mecze.
 7. Kibice: link do strony turnieju albo kod QR; nic nie instalują. Mogą wybrać "Moje drużyny".
 8. Koszty: start za darmo; dzienny darmowy limit wejść kibiców; ponad limit kredyty (zakładka "Kredyty").
+Gdy ktoś ma listę zawodników lub inny dokument na papierze, podpowiedz: zaloguj się w telefonie na to samo konto, otwórz "Załóż turniej" (asystent AI) albo panel organizatora i zrób zdjęcie przyciskiem "Zrób zdjęcie"; asystent sam odczyta listę. Transmisja wideo: "Ustawienia i PIN" → "Transmisja wideo na żywo": nadaj z telefonu na YouTube ("+" → "Transmisja na żywo"), skopiuj link i wklej; kibice zobaczą obraz obok wyników.
 Jeśli czegoś serwis nie potrafi albo nie wiesz, powiedz to wprost i zaproponuj najbliższe rozwiązanie. Nie wymyślaj funkcji.`
 }

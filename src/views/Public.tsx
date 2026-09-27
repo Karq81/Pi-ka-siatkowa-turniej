@@ -1,3 +1,4 @@
+import { StreamPlayer } from './Stream'
 import { LangPicker } from './LangPicker'
 import { t, tk } from '../i18n'
 import { useState } from 'react'
@@ -109,7 +110,7 @@ export function CourtCard({ state, court, big = false, referee = false }: { stat
       <header>
         {referee || big
           ? <span className="court-no">{t('Boisko {n}', { n: courtLabel(court) })}</span>
-          : <a className="court-no court-link" href={`#kolejka-${court}`}>{t('Boisko {n}', { n: courtLabel(court) })} ›</a>}
+          : <a className="court-no court-link" href={`#kolejka-${court}`}>{t('Boisko {n}', { n: courtLabel(court) })}{state.tournament.courtStreams?.[String(court)] && <span title={t('Transmisja na żywo')}> 📺</span>} ›</a>}
         {live && <StatusPill status="live" />}
         {finished && <StatusPill status="finished" />}
         {board.mode === 'next' && <span className="pill pill-next">{t('Następne')}<span className="pill-long"> {t('spotkanie')}</span> · {formatTime(current.start)}</span>}
@@ -169,7 +170,8 @@ function CourtPage({ state, court }: { state: State; court: number }) {
   const first = onCourt[0]
   return (
     <div className="court-page">
-      <h2>Boisko {courtLabel(court)} <span className="muted">· {categoryName(first.categoryId)} · {stageName(first)}</span></h2>
+      <h2>{t('Boisko {n}', { n: courtLabel(court) })} <span className="muted">· {categoryName(first.categoryId)} · {stageName(first)}</span></h2>
+      <StreamPlayer link={state.tournament.courtStreams?.[String(court)]} title={t('Transmisja z boiska {n}', { n: courtLabel(court) })} />
       <CourtCard state={state} court={court} big />
       <CourtQueue state={state} court={court} skip={board.match?.id} />
       {played.length > 0 && (
@@ -190,6 +192,7 @@ function LiveCourts({ state }: { state: State }) {
     .slice(0, 8)
   return (
     <>
+      <StreamPlayer link={state.tournament.stream} title={t('Transmisja na żywo')} />
       <NextMatch state={state} />
       <h2>{t('Boiska')}</h2>
       <section className="courts">

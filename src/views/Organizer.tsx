@@ -1,3 +1,4 @@
+import { StreamSettings } from './Stream'
 import { t, tk, tp } from '../i18n'
 import { useState } from 'react'
 import { scheduleOf } from '../logic/newTournament'
@@ -60,6 +61,7 @@ export function Organizer({ route }: { route: string }) {
       )}
       {tab === 'panel-wiecej' && <More />}
       {/* Albatros CUP keeps its PIN 1234 (the organisers agreed on it); other tournaments can change theirs. */}
+      {tab === 'panel-wiecej' && <PinGate label={t('Transmisja wideo (sędzia główny)')}><StreamSettings state={state} /></PinGate>}
       {tab === 'panel-wiecej' && !IS_ALBATROS && <PinGate label={t('Zmiana PIN-u (sędzia główny)')}><PinSettings /></PinGate>}
     </div>
   )

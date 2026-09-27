@@ -1,4 +1,4 @@
-import { AttachButtons } from './Attach'
+import { AttachButtons, PhotoTip } from './Attach'
 import { t, tk } from '../i18n'
 import { useState } from 'react'
 import { tournamentUrl } from '../config'
@@ -131,6 +131,7 @@ function CategorySetup({ state, category }: { state: State; category: Category }
       </div>
       <p className="muted small">{t('Zrób zdjęcie kartki z listą, dodaj plik (PDF, CSV) albo napisz, czego potrzebujesz, i kliknij „Uporządkuj z AI”. Sprawdź listę przed losowaniem.')}</p>
       {aiError && <p className="error">{aiError}</p>}
+      {!teams.length && <PhotoTip where="teams" />}
       <div className="form-row">
         <span className="muted">{t('Na liście:')} {teams.length}</span>
         <label>{t('Liczba grup')}

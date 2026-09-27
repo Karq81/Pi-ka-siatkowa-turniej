@@ -1,4 +1,4 @@
-import { AttachButtons, AttachedList } from './Attach'
+import { AttachButtons, AttachedList, PhotoTip } from './Attach'
 import { t } from '../i18n'
 import { useState } from 'react'
 
@@ -61,6 +61,7 @@ export function Assistant({ signedIn, onDraft }: { signedIn: boolean; onDraft: (
             <li>{t('rozpozna dyscyplinę i zasady meczu,')}</li>
             <li>{t('wpisze datę, godzinę, liczbę boisk i kategorie,')}</li>
             <li>{t('przepisze wszystkie drużyny i grupy,')}</li>
+            <li>{t('odczyta zdjęcie kartki z listą zawodników,')}</li>
             <li>{t('powie, czego brakuje, żebyś mógł to uzupełnić.')}</li>
           </ul>
           <button className="ai-cta" type="button" onClick={() => setOpen(true)}>✨ {t('Użyj asystenta AI')}</button>
@@ -81,6 +82,7 @@ export function Assistant({ signedIn, onDraft }: { signedIn: boolean; onDraft: (
         <span className="muted small">{t('Zdjęcie kartki, PDF albo CSV z listą drużyn.')}</span>
       </div>
       <AttachedList files={files} onRemove={(i) => setFiles((f) => f.filter((_, j) => j !== i))} />
+      <PhotoTip where="assistant" />
       {error && <p className="error">{error}</p>}
       {notes && <p className="ai-notes"><b>{t('Asystent:')}</b> {notes} {t('Sprawdź formularz poniżej i popraw, co trzeba.')}</p>}
       <div className="actions">
