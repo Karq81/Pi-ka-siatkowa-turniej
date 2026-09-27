@@ -47,8 +47,9 @@ jobs:
           if [ -z "$FIREBASE_SERVICE_ACCOUNT" ]; then exit 0; fi
           printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/sa.json"
           export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/sa.json"
-          # Needs the Realtime Database to exist (Firebase console → Realtime Database →
-          # Create database, location Belgium). Until then the site keeps live scores in Firestore.
+          # The Realtime Database (free default instance, Belgium) is created on the first run.
+          # Until it exists the site keeps live scores in Firestore.
+          node scripts/create-rtdb.mjs turniej-siatkowki-faf22
           npx firebase deploy --only database --project turniej-siatkowki-faf22 --non-interactive \
             || echo "::warning::Realtime Database rules not deployed. Create the Realtime Database in the Firebase console (Belgium, europe-west1)."
       - name: Deploy the AI assistant (Cloud Functions)
