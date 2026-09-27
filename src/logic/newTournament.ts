@@ -1,4 +1,5 @@
-import type { Rules, State, Team, Tournament } from '../types'
+import type { State, Team, Tournament } from '../types'
+import { sportById, sportRules } from './sports'
 import { DEFAULT_SCHEDULE } from './demo'
 import { buildGroupSchedule, type ScheduleOptions } from './schedule'
 
@@ -11,9 +12,13 @@ export interface TournamentDraft {
   slotMinutes: number
   dayEnd: string
   categories: string[]
-  /** 1: one set; 2/3: best of 3 / best of 5 */
+  /** Discipline (see SPORTS); volleyball when missing. */
+  sport?: string
+  /** Set sports: one set / best of 3 / best of 5, and the set points. */
   format: 'one' | 'bo3' | 'bo5'
   setPoints: number
+  /** Score sports: whether a match may end level. */
+  draws?: boolean
 }
 
 export const MAX_COURTS = 20
@@ -47,21 +52,6 @@ export function slugify(name: string): string {
     .replace(/-+$/, '')
 }
 
-export function rulesFor(format: TournamentDraft['format'], setPoints: number): Rules {
-  const sets = format === 'one' ? 1 : format === 'bo3' ? 3 : 5
-  return {
-    setsMode: format === 'one' ? 'fixed' : 'bestOf',
-    sets,
-    setPoints,
-    // The deciding set is shorter in volleyball (15 when sets go to 25).
-    lastSetPoints: format === 'one' ? setPoints : Math.min(setPoints, 15),
-    winBy: 2,
-    pointsWin: format === 'one' ? 2 : 3,
-    pointsDraw: 1,
-    pointsLoss: format === 'one' ? 1 : 0,
-  }
-}
-
 /**
  * A new tournament as set up on "Załóż turniej": settings and categories, no teams yet.
  * Category ids start with "k" so they never pick up content written for Albatros CUP.
@@ -76,7 +66,7 @@ export function blankState(draft: TournamentDraft): State {
       name: draft.name,
       subtitle,
       courts: draft.courts,
-      rules: rulesFor(draft.format, draft.setPoints),
+      rules: sportRules(sportById(draft.sport), { format: draft.format, setPoints: draft.setPoints, draws: draft.draws }),
       slotMinutes: draft.slotMinutes,
       start: draft.start,
       dayEnd: draft.dayEnd,

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { isMatchDecided, resultProblem, setProblem, setTarget, tally } from '../logic/scoring'
+import { isMatchDecided, isScore, resultProblem, scoreUnit, setProblem, setTarget, tally } from '../logic/scoring'
 import type { Match, SetScore, State } from '../types'
 import { useLookups } from '../ui'
 
@@ -28,6 +28,9 @@ export function ResultForm({ state, match, submitLabel, onSubmit, children }: {
 }) {
   const { side } = useLookups(state)
   const rules = state.tournament.rules
+  const score = isScore(rules)
+  // Goals and points can have three digits (basketball); set points two.
+  const digits = score ? 3 : 2
   const [fields, setFields] = useState<Field[]>(() => toFields(match.sets, rules.sets))
   const inputs = useRef<(HTMLInputElement | null)[]>([])
   const sets = parseFields(fields)
@@ -45,9 +48,9 @@ export function ResultForm({ state, match, submitLabel, onSubmit, children }: {
     if (el) { el.focus(); el.select() }
   }
   const change = (setIdx: number, s: 'a' | 'b', raw: string, index: number) => {
-    const v = raw.replace(/\D/g, '').slice(0, 2)
+    const v = raw.replace(/\D/g, '').slice(0, digits)
     setFields((f) => f.map((x, j) => (j === setIdx ? { ...x, [s]: v } : x)))
-    if (v.length === 2) focus(index + 1)
+    if (v.length === digits) focus(index + 1)
   }
   const restEmpty = (index: number) =>
     fields.flatMap((f) => [f.a, f.b]).slice(index + 1).every((v) => v === '')
@@ -72,7 +75,9 @@ export function ResultForm({ state, match, submitLabel, onSubmit, children }: {
           const filled = f.a !== '' && f.b !== ''
           const p = filled ? setProblem(rules, i, { a: Number(f.a), b: Number(f.b) }) : null
           return [
-            <span key={`l${i}`} className="rf-label">Set {i + 1}<small>do {setTarget(rules, i)}</small></span>,
+            score
+              ? <span key={`l${i}`} className="rf-label">Wynik<small>{scoreUnit(rules)}</small></span>
+              : <span key={`l${i}`} className="rf-label">Set {i + 1}<small>do {setTarget(rules, i)}</small></span>,
             ...(['a', 'b'] as const).map((sd, k) => {
               const index = i * 2 + k
               return (
@@ -84,7 +89,7 @@ export function ResultForm({ state, match, submitLabel, onSubmit, children }: {
                   inputMode="numeric"
                   pattern="[0-9]*"
                   autoComplete="off"
-                  aria-label={`Set ${i + 1}, ${side(match, sd)}`}
+                  aria-label={score ? `Wynik, ${side(match, sd)}` : `Set ${i + 1}, ${side(match, sd)}`}
                   value={f[sd]}
                   onChange={(e) => change(i, sd, e.target.value, index)}
                   onFocus={(e) => e.target.select()}
@@ -103,13 +108,13 @@ export function ResultForm({ state, match, submitLabel, onSubmit, children }: {
               )
             }),
             <span key={`c${i}`} className={`rf-check ${!filled ? '' : p ? 'warn' : 'ok'}`}>
-              {!filled ? '' : p === 'impossible' ? 'niemożliwy wynik' : p === 'unfinished' ? 'set niedokończony' : '✓'}
+              {!filled ? '' : p === 'impossible' ? 'niemożliwy wynik' : p === 'unfinished' ? 'set niedokończony' : score && !rules.draws && f.a === f.b ? 'remis niemożliwy' : '✓'}
             </span>,
           ]
         })}
       </div>
       <p className="rf-total">
-        Wynik: <b>{t.setsA}:{t.setsB}</b>
+        Wynik: <b>{score ? `${sets[0]?.a ?? 0}:${sets[0]?.b ?? 0}` : `${t.setsA}:${t.setsB}`}</b>
         {sets.length > 0 && !decided && <span className="muted small"> · mecz jeszcze nierozstrzygnięty</span>}
       </p>
       {tried && problem && <p className="error" role="alert">{problem}</p>}
@@ -119,8 +124,10 @@ export function ResultForm({ state, match, submitLabel, onSubmit, children }: {
       </div>
       {!tried && problem && sets.length > 0 && <p className="muted small">{problem}</p>}
       <p className="muted small">
-        Dwie cyfry przeskakują do następnego pola. Enter przechodzi dalej, a na końcu zapisuje.
-        Zasady: sety do {rules.setPoints}{rules.setsMode === 'bestOf' && rules.sets > 1 ? `, decydujący do ${rules.lastSetPoints}` : ''}, przewaga {rules.winBy}.
+        {score
+          ? <>Enter przechodzi dalej, a na końcu zapisuje. {rules.draws ? 'Remis jest możliwy.' : 'Remisów nie ma: wpisz wynik po dogrywce lub karnych.'}</>
+          : <>Dwie cyfry przeskakują do następnego pola. Enter przechodzi dalej, a na końcu zapisuje.
+            Zasady: sety do {rules.setPoints}{rules.setsMode === 'bestOf' && rules.sets > 1 ? `, decydujący do ${rules.lastSetPoints}` : ''}, przewaga {rules.winBy}.</>}
       </p>
     </form>
   )

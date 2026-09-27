@@ -35,3 +35,22 @@ describe('new tournament', () => {
     expect(replanTimetable(moved).matches.map((m) => m.start)).toEqual(drawn.matches.map((m) => m.start))
   })
 })
+
+describe('score sports', () => {
+  it('counts goals, draws and goal difference', async () => {
+    const { sportRules, sportById } = await import('./sports')
+    const { resultProblem, standings, isMatchDecided } = await import('./scoring')
+    const football = sportRules(sportById('pilka-nozna'))
+    const basket = sportRules(sportById('koszykowka'))
+    expect(resultProblem(football, [{ a: 2, b: 2 }])).toBeNull()
+    expect(resultProblem(basket, [{ a: 80, b: 80 }])).toMatch(/Remis/)
+    expect(isMatchDecided(basket, [{ a: 81, b: 80 }])).toBe(true)
+    const group = { id: 'g', categoryId: 'k1', name: 'A', teamIds: ['x', 'y', 'z'] }
+    const m = (id: string, a: string, b: string, ga: number, gb: number) => ({
+      id, categoryId: 'k1', groupId: 'g', court: 1, start: '', teamA: a, teamB: b,
+      sets: [{ a: ga, b: gb }], status: 'finished' as const, updatedAt: 0,
+    })
+    const rows = standings(football, group, [m('1', 'x', 'y', 1, 1), m('2', 'x', 'z', 3, 0), m('3', 'y', 'z', 1, 0)], [])
+    expect(rows.map((r) => [r.teamId, r.tablePoints, r.drawn])).toEqual([['x', 4, 1], ['y', 4, 1], ['z', 0, 0]])
+  })
+})

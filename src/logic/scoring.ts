@@ -1,5 +1,15 @@
 import type { Group, Match, Rules, SetScore, Team } from '../types'
 
+/** One score per match (goals or points) instead of sets. */
+export function isScore(rules: Rules): boolean {
+  return rules.scoring === 'score'
+}
+
+/** What the small numbers in the table count: "małe punkty", or the score's unit ("bramki"). */
+export function scoreUnit(rules: Rules): string {
+  return isScore(rules) ? rules.unit ?? 'bramki' : 'małe punkty'
+}
+
 /** Target points for set number `index` (0-based). */
 export function setTarget(rules: Rules, index: number): number {
   const deciding = rules.setsMode === 'bestOf' && index === rules.sets - 1
@@ -8,6 +18,7 @@ export function setTarget(rules: Rules, index: number): number {
 
 /** Winner of a single set, or null while it is still in play. */
 export function setWinner(rules: Rules, index: number, s: SetScore): 'a' | 'b' | null {
+  if (isScore(rules)) return s.a > s.b ? 'a' : s.b > s.a ? 'b' : null
   const target = setTarget(rules, index)
   if (s.a >= target && s.a - s.b >= rules.winBy) return 'a'
   if (s.b >= target && s.b - s.a >= rules.winBy) return 'b'
@@ -19,6 +30,7 @@ export function setWinner(rules: Rules, index: number, s: SetScore): 'a' | 'b' |
  * 'impossible' (the set would have ended earlier, e.g. 18:12 when playing to 15).
  */
 export function setProblem(rules: Rules, index: number, s: SetScore): 'unfinished' | 'impossible' | null {
+  if (isScore(rules)) return null
   const target = setTarget(rules, index)
   const hi = Math.max(s.a, s.b)
   const diff = Math.abs(s.a - s.b)
@@ -29,11 +41,17 @@ export function setProblem(rules: Rules, index: number, s: SetScore): 'unfinishe
 
 /** Whether another point can be added to this set (false once the set is won). */
 export function canAddPoint(rules: Rules, index: number, s: SetScore): boolean {
+  if (isScore(rules)) return true
   return setWinner(rules, index, s) === null
 }
 
 /** Problem with a full result typed from a score sheet, or null when it is a valid finished match. */
 export function resultProblem(rules: Rules, sets: SetScore[]): string | null {
+  if (isScore(rules)) {
+    if (!sets.length) return 'Wpisz wynik meczu.'
+    if (!rules.draws && sets[0].a === sets[0].b) return 'Remis nie jest możliwy: wpisz wynik po dogrywce lub rzutach karnych.'
+    return null
+  }
   if (!sets.length) return 'Wpisz wynik co najmniej jednego seta.'
   for (let i = 0; i < sets.length; i++) {
     const p = setProblem(rules, i, sets[i])
@@ -65,11 +83,14 @@ export function tally(rules: Rules, sets: SetScore[]): MatchTally {
     if (w === 'b') t.setsB++
     if (w) t.completeSets++
   })
+  // A score (goals, points) is one complete "set", also when level.
+  if (isScore(rules) && sets.length) t.completeSets = 1
   return t
 }
 
 /** True once the match result is decided under the rules. */
 export function isMatchDecided(rules: Rules, sets: SetScore[]): boolean {
+  if (isScore(rules)) return sets.length > 0 && (!!rules.draws || sets[0].a !== sets[0].b)
   const t = tally(rules, sets)
   if (rules.setsMode === 'fixed') return t.completeSets >= rules.sets
   const need = Math.floor(rules.sets / 2) + 1
@@ -151,6 +172,17 @@ export function standings(
     return ySets - xSets
   }
 
+  if (isScore(rules)) {
+    // Goals and points: table points, goal difference, goals scored, head-to-head.
+    return [...rows.values()].sort(
+      (x, y) =>
+        y.tablePoints - x.tablePoints ||
+        (y.pointsWon - y.pointsLost) - (x.pointsWon - x.pointsLost) ||
+        y.pointsWon - x.pointsWon ||
+        headToHead(x.teamId, y.teamId) ||
+        name(x.teamId).localeCompare(name(y.teamId), 'pl'),
+    )
+  }
   return [...rows.values()].sort(
     (x, y) =>
       y.tablePoints - x.tablePoints ||

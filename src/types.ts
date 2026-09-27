@@ -13,6 +13,17 @@ export interface Rules {
   pointsWin: number
   pointsDraw: number
   pointsLoss: number
+  /**
+   * 'sets' (default: volleyball, badminton, table tennis…) or 'score': one score per match,
+   * goals or points (football, handball, basketball…), kept as the match's only "set".
+   */
+  scoring?: 'sets' | 'score'
+  /** Score mode: whether a match may end level. */
+  draws?: boolean
+  /** Score mode: what the score counts, e.g. "bramki" or "punkty". */
+  unit?: string
+  /** The sport, for labels ("Piłka nożna"). */
+  sport?: string
 }
 
 export interface Tournament {

@@ -8,7 +8,7 @@ import { BracketTree } from './BracketTree'
 import { isUnderway } from '../logic/courtBoard'
 import { CorrectButton } from './Correction'
 import { useSession } from '../store/store'
-import { formatRatio, standings, tally } from '../logic/scoring'
+import { formatRatio, isScore, scoreUnit, standings, tally } from '../logic/scoring'
 import type { Match, State, Team } from '../types'
 import { BackBar, courtLabel, formatDay, formatTime, StatusPill, useLookups, useNow } from '../ui'
 
@@ -174,7 +174,8 @@ function GroupView({ state, groupId }: { state: State; groupId: string }) {
     .slice(-3)
     .map((m) => {
       const t = tally(rules, m.sets)
-      return (m.teamA === id ? t.setsA > t.setsB : t.setsB > t.setsA) ? 'w' : 'l'
+      const [own, other] = m.teamA === id ? [t.setsA, t.setsB] : [t.setsB, t.setsA]
+      return own > other ? 'w' : own < other ? 'l' : 'd'
     })
 
   return (
@@ -193,17 +194,17 @@ function GroupView({ state, groupId }: { state: State; groupId: string }) {
                 <span className="pos">{i + 1}</span>
                 <TeamBadge team={t} />
                 <a className="name plain-link" href={`#druzyna-${r.teamId}`}>{t?.name}</a>
-                <span className="trend" aria-label={tr.length ? `Ostatnie mecze: ${tr.map((x) => (x === 'w' ? 'wygrana' : 'przegrana')).join(', ')}` : undefined}>
+                <span className="trend" aria-label={tr.length ? `Ostatnie mecze: ${tr.map((x) => (x === 'w' ? 'wygrana' : x === 'd' ? 'remis' : 'przegrana')).join(', ')}` : undefined}>
                   {tr.map((x, j) => <i key={j} className={x} />)}
                 </span>
                 <span className="stat" title="Mecze">{r.played}</span>
-                <span className="stat small-pts" title={`Małe punkty (stosunek ${formatRatio(r.pointsWon, r.pointsLost)})`}>{r.pointsWon}:{r.pointsLost}</span>
+                <span className="stat small-pts" title={isScore(rules) ? scoreUnit(rules) : `Małe punkty (stosunek ${formatRatio(r.pointsWon, r.pointsLost)})`}>{r.pointsWon}:{r.pointsLost}</span>
                 <b className="pts" title="Punkty">{r.tablePoints}</b>
               </li>
             )
           })}
         </ol>
-        <p className="legend muted small">M: mecze · małe punkty · <b>Pkt</b>{STAGE2[group.categoryId] ? ` · ${STAGE2[group.categoryId].legend}` : IS_ALBATROS ? ' · 2 pierwsze miejsca grają o miejsca 1–8' : ''}</p>
+        <p className="legend muted small">M: mecze · {scoreUnit(rules)} · <b>Pkt</b>{STAGE2[group.categoryId] ? ` · ${STAGE2[group.categoryId].legend}` : IS_ALBATROS ? ' · 2 pierwsze miejsca grają o miejsca 1–8' : ''}</p>
       </section>
 
       <h3 className="list-title">Mecze grupy</h3>

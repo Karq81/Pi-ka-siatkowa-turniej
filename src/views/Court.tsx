@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { canAddPoint, isMatchDecided, setTarget, setWinner, tally } from '../logic/scoring'
+import { canAddPoint, isMatchDecided, isScore, scoreUnit, setTarget, setWinner, tally } from '../logic/scoring'
 import { courtBoard } from '../logic/courtBoard'
 import { setNextOnCourt } from '../logic/schedule'
 import { canScore } from '../logic/pins'
@@ -213,7 +213,7 @@ function CourtPanel({ state, court, manualFirst }: { state: State; court: number
           disabled={!current.teamA || !current.teamB}
           onClick={() => store.updateMatch(current.id, (m) => ({ ...m, status: 'live', sets: [{ a: 0, b: 0 }] }))}
         >
-          {known ? 'Rozpocznij mecz i licz punkty' : 'Czekamy na wyniki poprzednich meczów'}
+          {known ? `Rozpocznij mecz i licz ${isScore(state.tournament.rules) ? scoreUnit(state.tournament.rules) : 'punkty'}` : 'Czekamy na wyniki poprzednich meczów'}
         </button>
         {manualLink}
         {next && <p className="muted small">Potem: {formatTime(next.start)} {side(next, 'a')} – {side(next, 'b')}</p>}
@@ -232,9 +232,9 @@ function CourtPanel({ state, court, manualFirst }: { state: State; court: number
           <span className="muted">vs</span>
           <span>{side(current, 'b')}</span>
         </h2>
-        <p>Sędzia główny oznaczył ten mecz jako trwający, bez liczenia punktów na żywo.</p>
+        <p>Sędzia główny oznaczył ten mecz jako trwający, bez liczenia wyniku na żywo.</p>
         <button className="btn btn-primary btn-lg" onClick={() => store.updateMatch(current.id, (m) => ({ ...m, sets: [{ a: 0, b: 0 }] }))}>
-          Licz punkty na żywo
+          Licz wynik na żywo
         </button>
         {manualLink}
       </section>
@@ -257,6 +257,7 @@ function LiveScoring({ state, match, meta, onFinish }: { state: State; match: Ma
   const winner = setWinner(rules, idx, set)
   const decided = isMatchDecided(rules, match.sets)
   const t = tally(rules, match.sets)
+  const score = isScore(rules)
 
   // Checked again inside the update, so a quick double tap cannot go past the end of a set.
   const change = (side: 'a' | 'b', delta: number) =>
@@ -280,16 +281,18 @@ function LiveScoring({ state, match, meta, onFinish }: { state: State; match: Ma
     <section className="scoring">
       <p className="muted center">{meta}</p>
       <p className="set-label">
-        {rules.sets > 1
-          ? `Set ${idx + 1} · do ${setTarget(rules, idx)} · sety ${t.setsA}:${t.setsB}`
-          : `Do ${setTarget(rules, idx)} pkt · przewaga ${rules.winBy}`}
+        {score
+          ? `Wynik na żywo (${scoreUnit(rules)})`
+          : rules.sets > 1
+            ? `Set ${idx + 1} · do ${setTarget(rules, idx)} · sety ${t.setsA}:${t.setsB}`
+            : `Do ${setTarget(rules, idx)} pkt · przewaga ${rules.winBy}`}
       </p>
       <div className="pads">
         {(['a', 'b'] as const).map((s) => (
-          <div key={s} className={`pad ${winner === s ? 'pad-won' : ''}`}>
+          <div key={s} className={`pad ${!score && winner === s ? 'pad-won' : ''}`}>
             <span className="pad-team">{side(match, s)}</span>
             <span className="pad-score">{set[s]}</span>
-            <button className="btn-plus" onClick={() => change(s, 1)} disabled={!!winner} aria-label={`Punkt dla ${side(match, s)}`}>
+            <button className="btn-plus" onClick={() => change(s, 1)} disabled={!canAddPoint(rules, idx, set)} aria-label={`Punkt dla ${side(match, s)}`}>
               +1
             </button>
             <button className="btn-minus" onClick={() => change(s, -1)} disabled={set[s] === 0}>
@@ -301,15 +304,18 @@ function LiveScoring({ state, match, meta, onFinish }: { state: State; match: Ma
       {idx > 0 && (
         <p className="muted center">Poprzednie sety: {match.sets.slice(0, -1).map((s) => `${s.a}:${s.b}`).join(', ')}</p>
       )}
-      {winner && !decided && (
+      {!score && winner && !decided && (
         <div className="notice">
           <p>Set {idx + 1} dla: <b>{side(match, winner)}</b> ({set.a}:{set.b})</p>
           <button className="btn btn-primary btn-lg" onClick={nextSet}>Zatwierdź seta, zacznij set {idx + 2}</button>
         </div>
       )}
+      {score && !decided && set.a === set.b && (set.a > 0) && (
+        <p className="muted center">Remis: bez remisów w tym turnieju, grajcie dogrywkę lub karne.</p>
+      )}
       {decided && (
         <div className="notice">
-          <p>Mecz rozstrzygnięty: <b>{t.setsA}:{t.setsB}</b></p>
+          <p>{score ? <>Koniec meczu? Wynik <b>{set.a}:{set.b}</b></> : <>Mecz rozstrzygnięty: <b>{t.setsA}:{t.setsB}</b></>}</p>
           <button className="btn btn-primary btn-lg" onClick={finish}>Zakończ mecz i wyślij wynik</button>
         </div>
       )}

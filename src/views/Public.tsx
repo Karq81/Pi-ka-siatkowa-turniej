@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { formatRatio, standings, tally } from '../logic/scoring'
+import { formatRatio, isScore, scoreUnit, standings, tally } from '../logic/scoring'
 import { useFavorites } from '../favorites'
 import { courtBoard, upcomingMatches } from '../logic/courtBoard'
 import { useStore } from '../store/store'
@@ -263,7 +263,11 @@ function CategoryChips({ state, value, onChange }: { state: State; value: string
 export function GroupTable({ state, groupId, title = true }: { state: State; groupId: string; title?: boolean }) {
   const { teamName } = useLookups(state)
   const group = state.groups.find((g) => g.id === groupId)!
-  const multi = state.tournament.rules.sets > 1
+  const rules = state.tournament.rules
+  const multi = rules.sets > 1
+  const score = isScore(rules)
+  const draws = score && !!rules.draws
+  const unit = scoreUnit(rules)
   const rows = standings(state.tournament.rules, group, state.matches, state.teams)
   return (
     <div className="table-card">
@@ -273,8 +277,8 @@ export function GroupTable({ state, groupId, title = true }: { state: State; gro
           <thead>
             <tr>
               <th>#</th><th className="left">Drużyna</th><th title="Mecze">M</th><th title="Wygrane">W</th>
-              <th title="Przegrane">P</th><th title="Punkty">Pkt</th>{multi && <th title="Sety">Sety</th>}
-              <th title="Stosunek małych punktów">Małe pkt</th>
+              {draws && <th title="Remisy">R</th>}<th title="Przegrane">P</th><th title="Punkty">Pkt</th>{multi && <th title="Sety">Sety</th>}
+              <th title={score ? 'Zdobyte i stracone' : 'Stosunek małych punktów'}>{score ? unit[0].toUpperCase() + unit.slice(1) : 'Małe pkt'}</th>
             </tr>
           </thead>
           <tbody>
@@ -282,7 +286,7 @@ export function GroupTable({ state, groupId, title = true }: { state: State; gro
               <tr key={r.teamId}>
                 <td className="pos">{i + 1}</td>
                 <td className="left">{teamName(r.teamId)}</td>
-                <td>{r.played}</td><td>{r.won}</td><td>{r.lost}</td>
+                <td>{r.played}</td><td>{r.won}</td>{draws && <td>{r.drawn}</td>}<td>{r.lost}</td>
                 <td className="pts">{r.tablePoints}</td>
                 {multi && <td>{r.setsWon}:{r.setsLost}</td>}
                 <td title={formatRatio(r.pointsWon, r.pointsLost)}>{r.pointsWon}:{r.pointsLost}</td>
@@ -306,7 +310,9 @@ function Tables({ state }: { state: State }) {
         ))}
       </section>
       <p className="muted small">
-        Kolejność: punkty, stosunek setów, stosunek małych punktów, bezpośredni mecz.
+        {isScore(state.tournament.rules)
+          ? `Kolejność: punkty, różnica (${scoreUnit(state.tournament.rules)}), więcej zdobytych, bezpośredni mecz.`
+          : 'Kolejność: punkty, stosunek setów, stosunek małych punktów, bezpośredni mecz.'}
       </p>
     </>
   )
