@@ -1,4 +1,8 @@
 /**
+ * Not used at the moment: the site's assistant runs on Gemini through Firebase AI Logic
+ * (src/store/assistant.ts). Kept as the Claude alternative; deployed only when the
+ * ANTHROPIC_API_KEY secret is set.
+ *
  * "Asystent AI" of "Załóż turniej": turns an organiser's description or pasted notes (team
  * lists, groups, dates) into a tournament draft. Called by the site at its own function URL
  * (see ASSISTANT_URL in src/config.ts). Only signed-in organiser accounts may use it, up to

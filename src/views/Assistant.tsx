@@ -1,9 +1,6 @@
 import { useState } from 'react'
-import { ASSISTANT_URL } from '../config'
-import { SPORTS } from '../logic/sports'
-import { accountIdToken } from '../store/accounts'
 
-/** What the assistant returns (see functions/index.js). */
+/** What the assistant returns (schema in logic/assistantPrompt.ts). */
 export interface AssistantDraft {
   name: string
   sport: string
@@ -37,21 +34,13 @@ export function Assistant({ signedIn, onDraft }: { signedIn: boolean; onDraft: (
     setError('')
     setNotes('')
     try {
-      const token = await accountIdToken()
-      if (!token) { setError('Zaloguj się na konto organizatora, żeby użyć asystenta.'); return }
-      const catalogue = SPORTS.map((s) => ({ id: s.id, label: s.label, formats: s.formats.map((f) => ({ id: f.id, label: f.label })) }))
-      const res = await fetch(ASSISTANT_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ text, catalogue }),
-      })
-      const body = await res.json().catch(() => ({}))
-      if (!res.ok || !body.draft) { setError(body.error ?? 'Asystent jest chwilowo niedostępny.'); return }
-      const draft = body.draft as AssistantDraft
+      // Loaded only when used: the AI part of Firebase is large.
+      const { askAssistant } = await import('../store/assistant')
+      const draft = await askAssistant(text)
       onDraft(draft)
       setNotes(draft.notes)
-    } catch {
-      setError('Asystent AI nie jest jeszcze włączony albo nie ma połączenia z internetem.')
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Asystent jest chwilowo niedostępny.')
     } finally {
       setBusy(false)
     }
@@ -83,7 +72,10 @@ export function Assistant({ signedIn, onDraft }: { signedIn: boolean; onDraft: (
         </button>
         <button className="btn" type="button" onClick={() => setOpen(false)}>Zamknij</button>
       </div>
-      <p className="muted small">Asystent wypełnia tylko formularz. Nic nie zapisze się, dopóki nie klikniesz „Dalej”.</p>
+      <p className="muted small">
+        Asystent wypełnia tylko formularz. Nic nie zapisze się, dopóki nie klikniesz „Dalej”. Asystent działa na Google
+        Gemini: wklejaj nazwy drużyn i ustawienia turnieju, bez telefonów, adresów i innych danych osobowych.
+      </p>
     </section>
   )
 }
