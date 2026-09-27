@@ -9,7 +9,7 @@ import { firebaseHandles } from './firebase'
  * Gemini directly, with no server of its own. It has to be switched on once in the Firebase
  * console (AI Logic → Get started → Gemini Developer API). Newest model first, then fallbacks.
  */
-const MODELS = ['gemini-3.6-flash', 'gemini-2.5-flash']
+const MODELS = ['gemini-3.8-flash', 'gemini-3.6-flash']
 
 export async function askAssistant(text: string): Promise<AssistantDraft> {
   if (!firebaseHandles) throw new Error('Asystent działa tylko na stronie z bazą danych.')
@@ -29,8 +29,8 @@ export async function askAssistant(text: string): Promise<AssistantDraft> {
     } catch (e) {
       lastError = e
       const msg = String((e as Error)?.message ?? e)
-      // Only an unknown model is worth retrying with the next one.
-      if (!/not found|404|not supported/i.test(msg)) break
+      // An unknown or overloaded model is worth retrying with the next one.
+      if (!/not found|404|not supported|high demand|overloaded|unavailable|500|503/i.test(msg)) break
     }
   }
   console.error('asystent', lastError)
