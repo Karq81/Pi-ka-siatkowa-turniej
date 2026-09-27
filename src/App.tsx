@@ -1,3 +1,4 @@
+import { About } from './views/About'
 import { Admin, PrintCards } from './views/Admin'
 import { Court, CourtPicker } from './views/Court'
 import { Public } from './views/Public'
@@ -15,7 +16,7 @@ import { SyncBanner, useRoute } from './ui'
  * result entry, corrections) keep the normal phone layout with big buttons.
  */
 const DESKTOP_LIKE_WIDTH = 640
-const PHONE_LAYOUT = /^(boisko-\d+|wynik-\d+|korekta-.+|sedzia|kartki)$/
+const PHONE_LAYOUT = /^(boisko-\d+|wynik-\d+|korekta-.+|sedzia|kartki|o-systemie)$/
 
 function isPhone() {
   const touch = matchMedia('(pointer: coarse)').matches
@@ -76,5 +77,6 @@ function Screen() {
   if (route === 'admin') return <Admin />
   if (route === 'kartki') return <PrintCards />
   if (route === 'tv') return <Tv />
+  if (route === 'o-systemie') return <About />
   return <Public route={route} />
 }

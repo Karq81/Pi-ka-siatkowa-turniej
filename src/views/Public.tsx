@@ -56,7 +56,9 @@ export function Public({ route }: { route: string }) {
         {tab === 'terminarz' && <Schedule state={state} />}
       </main>
       {/* Public pages are view-only: the organiser panel lives at #panel and is not linked from here. */}
-      <footer className="footer muted small">Wyniki odświeżają się same, nie trzeba przeładowywać strony.</footer>
+      <footer className="footer muted small">
+        Wyniki odświeżają się same, nie trzeba przeładowywać strony. · <a href="#o-systemie">O systemie SiatkaLive</a>
+      </footer>
     </div>
   )
 }
