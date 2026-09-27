@@ -67,7 +67,9 @@ const TENNIS: SportFormat[] = [
   { id: '2z3-stb', label: '2 z 3 setów, trzeci set: super tie-break do 10', rules: sets(3, 6, { cap: 7, last: 10, unit: 'gemy' }) },
   { id: '1set', label: '1 set do 6 gemów, tie-break przy 6:6', rules: sets(1, 6, { cap: 7, unit: 'gemy' }) },
   { id: 'pro9', label: 'Pro-set do 9 gemów, tie-break przy 8:8', rules: sets(1, 9, { cap: 9, unit: 'gemy' }) },
-  { id: 'fast4', label: 'Fast4: 2 z 3 setów do 4 gemów, tie-break przy 3:3', rules: sets(3, 4, { cap: 4, unit: 'gemy' }) },
+  { id: 'fast4', label: 'Fast4 / krótkie sety: 2 z 3 setów do 4 gemów, tie-break przy 3:3 (np. pomarańczowa piłka)', rules: sets(3, 4, { cap: 4, unit: 'gemy' }) },
+  { id: 'fast4-1', label: '1 krótki set do 4 gemów, tie-break przy 3:3 (np. zielona piłka)', rules: sets(1, 4, { cap: 4, unit: 'gemy' }) },
+  { id: 'tb10', label: 'Cały mecz to super tie-break do 10 pkt (np. czerwona piłka, najmłodsi)', rules: sets(1, 10) },
 ]
 
 export const SPORTS: Sport[] = [
@@ -83,11 +85,13 @@ export const SPORTS: Sport[] = [
   },
   {
     id: 'mini-siatkowka', label: 'Mini siatkówka', group: 'Siatkówka', entrants: 'drużyny', table: [2, 1, 1], slot: 15,
-    note: 'Dwójki, trójki, czwórki. Sety z przewagą 2. Tabela: 2 pkt za wygraną, 1 za przegraną.',
+    note: 'Dzieci do 12–13 lat: dwójki, trójki i czwórki na mniejszym boisku. Sety z przewagą 2, zwykle 1 set do 15 lub 25 albo 2 z 3. Tabela: 2 pkt za wygraną, 1 za przegraną.',
     formats: [
       { id: '1set15', label: '1 set do 15', rules: sets(1, 15) },
       { id: '1set21', label: '1 set do 21', rules: sets(1, 21) },
+      { id: '1set25', label: '1 set do 25 (jak w finałach mini siatkówki)', rules: sets(1, 25) },
       { id: '2z3-15', label: '2 z 3 setów do 15', rules: sets(3, 15) },
+      { id: '2z3-25', label: '2 z 3 setów do 25, trzeci do 15', rules: sets(3, 25, { last: 15 }) },
       { id: '2sety15', label: '2 sety do 15 (możliwy remis)', rules: sets(2, 15, { fixed: true }) },
     ],
   },
@@ -130,6 +134,7 @@ export const SPORTS: Sport[] = [
       { id: '3z5', label: '3 z 5 gemów do 11', rules: sets(5, 11) },
       { id: '2z3', label: '2 z 3 gemów do 11', rules: sets(3, 11) },
       { id: '2z3-15', label: '2 z 3 gemów do 15', rules: sets(3, 15) },
+      { id: '1gem11', label: '1 gem do 11 (dzieci, szybkie turnieje)', rules: sets(1, 11) },
     ],
   },
   {
@@ -139,6 +144,7 @@ export const SPORTS: Sport[] = [
       { id: '2z3', label: '2 z 3 gemów do 21', rules: sets(3, 21, { cap: 30 }) },
       { id: '1gem21', label: '1 gem do 21', rules: sets(1, 21, { cap: 30 }) },
       { id: '2z3-15', label: '2 z 3 gemów do 15 (do 21 maks.)', rules: sets(3, 15, { cap: 21 }) },
+      { id: '1gem15', label: '1 gem do 15 (dzieci, szybkie turnieje)', rules: sets(1, 15, { cap: 21 }) },
     ],
   },
   {
@@ -148,6 +154,7 @@ export const SPORTS: Sport[] = [
       { id: '3z5', label: '3 z 5 setów do 11', rules: sets(5, 11) },
       { id: '2z3', label: '2 z 3 setów do 11', rules: sets(3, 11) },
       { id: '4z7', label: '4 z 7 setów do 11', rules: sets(7, 11) },
+      { id: '1set11', label: '1 set do 11 (dzieci, szybkie turnieje)', rules: sets(1, 11) },
     ],
   },
   {
@@ -162,7 +169,7 @@ export const SPORTS: Sport[] = [
   },
   {
     id: 'pilka-nozna', label: 'Piłka nożna', group: 'Gry zespołowe', entrants: 'drużyny', table: [3, 1, 0], slot: 30,
-    note: 'Tabela: 3 pkt za wygraną, 1 za remis. Przy równej liczbie punktów decyduje różnica bramek.',
+    note: 'Tabela: 3 pkt za wygraną, 1 za remis. Przy równej liczbie punktów decyduje różnica bramek. Turnieje dzieci (PZPN): przy 5–6 meczach dziennie mecz do 1×20 lub 2×10 min, przy 3–4 meczach do 1×25 lub 2×20 min.',
     formats: scoreFormats('bramki', true),
   },
   {
@@ -177,7 +184,7 @@ export const SPORTS: Sport[] = [
   },
   {
     id: 'koszykowka', label: 'Koszykówka', group: 'Gry zespołowe', entrants: 'drużyny', table: [2, 0, 1], slot: 30,
-    note: 'Bez remisów (dogrywka). Tabela jak w FIBA: 2 pkt za wygraną, 1 za porażkę.',
+    note: 'Bez remisów (dogrywka). Tabela jak w FIBA: 2 pkt za wygraną, 1 za porażkę. Minikoszykówka (do 12 lat): 4×10 min; w turniejach dzieci remis bywa dozwolony, wybierz wtedy „Remis możliwy”.',
     formats: scoreFormats('punkty', false),
   },
   {

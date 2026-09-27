@@ -3,6 +3,9 @@
 # Needs the repository secret FIREBASE_SERVICE_ACCOUNT: the JSON key of a Google Cloud
 # service account of the project with the roles Firebase Admin, API Keys Viewer and
 # Service Usage Consumer. Without the secret the deploy step is skipped.
+# The AI assistant (Cloud Functions, needs the Blaze plan) is deployed only when the
+# repository secret ANTHROPIC_API_KEY is set too; the service account then also needs the
+# role Service Account User.
 name: Firebase deploy
 
 on:
@@ -37,3 +40,17 @@ jobs:
           printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/sa.json"
           export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/sa.json"
           npx firebase deploy --only hosting,firestore:rules --project turniej-siatkowki-faf22 --non-interactive
+      - name: Deploy the AI assistant (Cloud Functions)
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          if [ -z "$FIREBASE_SERVICE_ACCOUNT" ] || [ -z "$ANTHROPIC_API_KEY" ]; then
+            echo "::notice::ANTHROPIC_API_KEY is not set, the AI assistant is not deployed."
+            exit 0
+          fi
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/sa.json"
+          export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/sa.json"
+          printf 'ANTHROPIC_API_KEY=%s\n' "$ANTHROPIC_API_KEY" > functions/.env
+          (cd functions && npm ci)
+          npx firebase deploy --only functions --project turniej-siatkowki-faf22 --non-interactive --force

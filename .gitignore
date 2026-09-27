@@ -5,3 +5,5 @@ dist-single
 .DS_Store
 .env.local
 *-debug.log
+functions/node_modules
+functions/.env

@@ -1089,3 +1089,9 @@ a.court-link:hover { color: var(--accent); }
 .credit-calc p { margin: 0; }
 @media (max-width: 800px) { .usage, .credit-packs { grid-template-columns: minmax(0, 1fr); } }
 .acc-head .btn { width: auto; flex: none; }
+.ai-teaser { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; background: linear-gradient(120deg, color-mix(in srgb, var(--accent) 10%, var(--surface)), var(--surface)); }
+.ai-box { display: grid; gap: 12px; }
+.ai-box h2 { margin: 0; font-family: var(--display); }
+.ai-box label { display: grid; gap: 4px; font-weight: 600; }
+.ai-box textarea { font: inherit; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); }
+.ai-notes { margin: 0; padding: 10px 12px; border-radius: 8px; background: color-mix(in srgb, var(--accent) 8%, var(--surface)); }

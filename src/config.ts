@@ -42,6 +42,9 @@ function tournamentFromUrl(): string | null {
 /** Allowed tournament addresses: lowercase letters, digits and hyphens. */
 export const TOURNAMENT_SLUG = /^[a-z0-9](?:[a-z0-9-]{1,38}[a-z0-9])$/
 
+/** The AI assistant of "Załóż turniej" (a Cloud Function of the production project). */
+export const ASSISTANT_URL = env.VITE_ASSISTANT_URL || 'https://europe-central2-turniej-siatkowki-faf22.cloudfunctions.net/asystent'
+
 /** The service's name, shown on its front page. */
 export const BRAND = 'SportLiveArena'
 

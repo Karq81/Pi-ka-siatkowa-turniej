@@ -54,3 +54,21 @@ describe('score sports', () => {
     expect(rows.map((r) => [r.teamId, r.tablePoints, r.drawn])).toEqual([['x', 4, 1], ['y', 4, 1], ['z', 0, 0]])
   })
 })
+
+describe('assistant preset', () => {
+  it('keeps pasted teams and groups and builds the timetable', () => {
+    const s = blankState({
+      ...draft,
+      categories: ['Dziewczęta', 'Chłopcy'],
+      preset: [
+        { category: 'dziewczęta', teams: ['UKS Orzeł: Orzeł 1', 'UKS Orzeł: Orzeł 2', 'Fala', 'Sokół'], groups: [['Orzeł 1', 'Fala'], ['Orzeł 2', 'Sokół']] },
+        { category: 'Chłopcy', teams: ['A', 'B', 'C'], groups: [] },
+      ],
+    })
+    expect(s.teams.map((t) => t.name)).toEqual(['Orzeł 1', 'Orzeł 2', 'Fala', 'Sokół', 'A', 'B', 'C'])
+    expect(s.teams[0].club).toBe('UKS Orzeł')
+    expect(s.groups.map((g) => g.teamIds.length)).toEqual([2, 2])
+    expect(s.matches).toHaveLength(2)
+    expect(s.matches[0].start).toBe('2027-01-16T09:00')
+  })
+})

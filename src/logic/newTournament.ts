@@ -1,4 +1,5 @@
-import type { State, Team, Tournament } from '../types'
+import type { Group, State, Team, Tournament } from '../types'
+import { GROUP_LETTERS } from './draw'
 import { sportById, sportRules } from './sports'
 import { DEFAULT_SCHEDULE } from './demo'
 import { buildGroupSchedule, type ScheduleOptions } from './schedule'
@@ -17,6 +18,11 @@ export interface TournamentDraft {
   format?: string
   /** "Inna dyscyplina: wynik w setach": points per set. */
   setPoints?: number
+  /**
+   * Teams (and optionally groups) per category, e.g. prepared by the AI assistant from pasted
+   * notes. Groups list team names; empty groups mean the organiser draws them later.
+   */
+  preset?: { category: string; teams: string[]; groups: string[][] }[]
 }
 
 export const MAX_COURTS = 20
@@ -70,11 +76,31 @@ export function blankState(draft: TournamentDraft): State {
       dayEnd: draft.dayEnd,
       dayStart: draft.start.slice(11),
     },
-    categories: draft.categories.map((name, i) => ({ id: `k${i + 1}`, name })),
-    groups: [],
-    teams: [],
-    matches: [],
+    ...presetTeams(draft),
   }
+}
+
+/** Categories with the draft's preset teams and groups, and the group timetable if groups are set. */
+function presetTeams(draft: TournamentDraft): Pick<State, 'categories' | 'groups' | 'teams' | 'matches'> {
+  const categories = draft.categories.map((name, i) => ({ id: `k${i + 1}`, name }))
+  const teams: Team[] = []
+  const groups: Group[] = []
+  for (const c of categories) {
+    const preset = draft.preset?.find((p) => p.category.trim().toLowerCase() === c.name.trim().toLowerCase())
+    if (!preset) continue
+    const own = parseTeamList(preset.teams.join('\n'), c.id)
+    teams.push(...own)
+    const idOf = (name: string) => own.find((t) => t.name.toLowerCase() === name.trim().toLowerCase())?.id
+    preset.groups.filter((g) => g.length > 1).forEach((names, gi) => {
+      const ids = names.map(idOf).filter((id): id is string => !!id)
+      if (ids.length > 1) groups.push({ id: `${c.id}g${gi + 1}`, categoryId: c.id, name: `Grupa ${GROUP_LETTERS[gi] ?? gi + 1}`, teamIds: ids })
+    })
+  }
+  if (!draft.start || !groups.length) return { categories, teams, groups: [], matches: [] }
+  const schedule: ScheduleOptions = {
+    courts: draft.courts, start: draft.start, slotMinutes: draft.slotMinutes, dayEnd: draft.dayEnd, dayStart: draft.start.slice(11),
+  }
+  return { categories, teams, groups, matches: buildGroupSchedule(groups, schedule) }
 }
 
 /** Shown until the organiser's settings arrive (e.g. the tournament opened on another device). */

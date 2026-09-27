@@ -230,3 +230,9 @@ export async function countSiteVisit(): Promise<number | null> {
     return null
   }
 }
+
+/** Sign-in token of the organiser account, for the AI assistant. */
+export async function accountIdToken(): Promise<string | null> {
+  const user = firebaseHandles?.auth.currentUser
+  return user && !user.isAnonymous ? user.getIdToken() : null
+}
