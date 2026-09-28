@@ -13,7 +13,7 @@ import { hasElimination } from '../logic/elimination'
 import { isUnderway } from '../logic/courtBoard'
 import { CorrectButton } from './Correction'
 import { store, useSession } from '../store/store'
-import { formatRatio, isScore, scoreUnit, standings, tally } from '../logic/scoring'
+import { formatRatio, isScore, scoreUnit, standings, tally, TIEBREAK_NAMES, tiebreakOrder } from '../logic/scoring'
 import type { Match, State, Team } from '../types'
 import { BackBar, ConfirmDialog, courtLabel, formatDay, formatTime, StatusPill, useLookups, useNow } from '../ui'
 
@@ -218,6 +218,7 @@ function GroupView({ state, groupId }: { state: State; groupId: string }) {
           })}
         </ol>
         <p className="legend muted small">{t('M: mecze')} · {scoreUnit(rules)} · <b>{t('Pkt')}</b>{STAGE2[group.categoryId] ? ` · ${STAGE2[group.categoryId].legend}` : IS_ALBATROS ? ' · 2 pierwsze miejsca grają o miejsca 1–8' : ''}</p>
+        <p className="legend muted small">{t('Przy równej liczbie punktów:')} {tiebreakOrder(rules).map((k) => t(TIEBREAK_NAMES[k]).toLowerCase()).join(' → ')}.</p>
       </section>
 
       <h3 className="list-title">{t('Mecze grupy')}</h3>

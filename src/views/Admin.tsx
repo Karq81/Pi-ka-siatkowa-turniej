@@ -6,11 +6,11 @@ import { addTournamentToAccount, updateTournamentPin } from '../store/accounts'
 import { initialState, restoreTimetable } from '../logic/demo'
 import { blankState, readDraft, replanTimetable } from '../logic/newTournament'
 import { resetResults } from '../logic/draw'
-import { setsText, tally } from '../logic/scoring'
+import { setsText, tally, TIEBREAK_NAMES, tiebreakOrder } from '../logic/scoring'
 import { playOf } from '../logic/sports'
 import { store, useStore, useSync } from '../store/store'
 import { courtKeys } from '../logic/pins'
-import type { Match, MatchStatus, Pins, SetScore, State } from '../types'
+import type { Match, MatchStatus, Pins, Rules, SetScore, State, Tiebreak } from '../types'
 import { NumberField, BackBar, courtLabel, formatDay, formatTime, PinGate, useLookups } from '../ui'
 import { CourtCard, MatchList } from './Public'
 import { ResultForm } from './ResultForm'
@@ -302,8 +302,46 @@ function Settings({ state }: { state: State }) {
           <label>{t('Pkt za remis')}<NumberField lazy decimals id="set-pdraw" min={0} max={99} value={r.pointsDraw} onChange={(v) => rules({ pointsDraw: v })} /></label>
           <label>{t('Pkt za przegraną')}<NumberField lazy decimals id="set-ploss" min={0} max={99} value={r.pointsLoss} onChange={(v) => rules({ pointsLoss: v })} /></label>
         </div>
+        <TiebreakEditor rules={r} onChange={(tiebreak) => rules({ tiebreak })} />
         <p className="muted small">{t('Zasady do potwierdzenia z organizatorem. Zmiana od razu przelicza wszystkie tabele.')}</p>
       </section>
+    </div>
+  )
+}
+
+/** Order of the tie-breakers after table points: move up and down, add or take away. */
+function TiebreakEditor({ rules, onChange }: { rules: Rules; onChange: (order: Tiebreak[]) => void }) {
+  const order = tiebreakOrder(rules)
+  const unused = (Object.keys(TIEBREAK_NAMES) as Tiebreak[]).filter((k) => !order.includes(k))
+  const move = (i: number, d: -1 | 1) => {
+    const next = [...order]
+    ;[next[i], next[i + d]] = [next[i + d], next[i]]
+    onChange(next)
+  }
+  return (
+    <div className="tiebreak-edit">
+      <b>{t('Przy równej liczbie punktów decyduje kolejno:')}</b>
+      <ol>
+        {order.map((k, i) => (
+          <li key={k}>
+            <span>{t(TIEBREAK_NAMES[k])}</span>
+            <span className="tb-actions">
+              <button type="button" className="btn btn-sm" disabled={i === 0} onClick={() => move(i, -1)} aria-label={t('Wyżej')}>↑</button>
+              <button type="button" className="btn btn-sm" disabled={i === order.length - 1} onClick={() => move(i, 1)} aria-label={t('Niżej')}>↓</button>
+              <button type="button" className="btn btn-sm" disabled={order.length === 1} onClick={() => onChange(order.filter((x) => x !== k))} aria-label={t('Usuń')}>✕</button>
+            </span>
+          </li>
+        ))}
+      </ol>
+      {unused.length > 0 && (
+        <label className="tb-add">{t('Dodaj kryterium')}
+          <select value="" onChange={(e) => e.target.value && onChange([...order, e.target.value as Tiebreak])}>
+            <option value="">—</option>
+            {unused.map((k) => <option key={k} value={k}>{t(TIEBREAK_NAMES[k])}</option>)}
+          </select>
+        </label>
+      )}
+      <p className="muted small">{t('Na końcu, gdy wszystko jest równe: kolejność alfabetyczna (albo losowanie przez organizatora).')}</p>
     </div>
   )
 }

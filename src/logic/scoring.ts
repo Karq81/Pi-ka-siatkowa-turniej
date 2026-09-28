@@ -1,5 +1,5 @@
-import { t } from '../i18n'
-import type { Group, Match, Rules, SetScore, Team } from '../types'
+import { t, tk } from '../i18n'
+import type { Group, Match, Rules, SetScore, Team, Tiebreak } from '../types'
 import { judoLine, judoOf, judoResult, judoStopped } from './judo'
 import { karateResult, karateStopped } from './karate'
 import { chessText } from './chess'
@@ -226,40 +226,69 @@ export function standings(
   }
 
   const name = (id: string) => teams.find((t) => t.id === id)?.name ?? id
-  const headToHead = (x: string, y: string): number => {
-    const m = finished.find(
-      (m) => (m.teamA === x && m.teamB === y) || (m.teamA === y && m.teamB === x),
-    )
-    if (!m) return 0
-    const t = tally(rules, m.sets)
-    const xSets = m.teamA === x ? t.setsA : t.setsB
-    const ySets = m.teamA === x ? t.setsB : t.setsA
-    return ySets - xSets
+  const order = tiebreakOrder(rules)
+  // Criteria compare values within a block of teams level so far; h2h depends on the block.
+  const value = (key: Tiebreak, r: StandingRow, block: StandingRow[]): number => {
+    switch (key) {
+      case 'wins': return r.won
+      case 'diff': return r.pointsWon - r.pointsLost
+      case 'scored': return r.pointsWon
+      case 'setDiff': return r.setsWon - r.setsLost
+      case 'setRatio': return ratio(r.setsWon, r.setsLost)
+      case 'pointRatio': return ratio(r.pointsWon, r.pointsLost)
+      case 'h2h': return miniValue(r.teamId, block)
+    }
   }
+  // Head-to-head: points in the matches between the teams of the block, then the difference
+  // in those matches (sets for sets, goals for goals) – one number, points first.
+  const miniValue = (id: string, block: StandingRow[]): number => {
+    const ids = new Set(block.map((b) => b.teamId))
+    let pts = 0
+    let diff = 0
+    for (const m of finished) {
+      if (!ids.has(m.teamA) || !ids.has(m.teamB) || (m.teamA !== id && m.teamB !== id)) continue
+      const t = tally(rules, m.sets)
+      const mine = m.teamA === id ? t.setsA : t.setsB
+      const theirs = m.teamA === id ? t.setsB : t.setsA
+      const goalsMine = m.teamA === id ? t.pointsA : t.pointsB
+      const goalsTheirs = m.teamA === id ? t.pointsB : t.pointsA
+      pts += mine > theirs ? rules.pointsWin : mine < theirs ? rules.pointsLoss : rules.pointsDraw
+      diff += isScore(rules) ? goalsMine - goalsTheirs : mine - theirs
+    }
+    return pts * 100000 + diff
+  }
+  const rank = (block: StandingRow[], keys: Tiebreak[]): StandingRow[] => {
+    if (block.length < 2 || !keys.length) return [...block].sort((x, y) => name(x.teamId).localeCompare(name(y.teamId), 'pl'))
+    const [key, ...rest] = keys
+    const scored = block.map((r) => ({ r, v: value(key, r, block) }))
+    const levels = [...new Set(scored.map((x) => x.v))].sort((x, y) => desc(x, y))
+    return levels.flatMap((v) => rank(scored.filter((x) => x.v === v).map((x) => x.r), rest))
+  }
+  const all = [...rows.values()]
+  const pointsLevels = [...new Set(all.map((r) => r.tablePoints))].sort((x, y) => y - x)
+  return pointsLevels.flatMap((p) => rank(all.filter((r) => r.tablePoints === p), order))
+}
 
-  if (isScore(rules)) {
-    // Goals and points: table points, goal difference, goals scored, head-to-head.
-    return [...rows.values()].sort(
-      (x, y) =>
-        y.tablePoints - x.tablePoints ||
-        (y.pointsWon - y.pointsLost) - (x.pointsWon - x.pointsLost) ||
-        y.pointsWon - x.pointsWon ||
-        headToHead(x.teamId, y.teamId) ||
-        name(x.teamId).localeCompare(name(y.teamId), 'pl'),
-    )
-  }
-  return [...rows.values()].sort(
-    (x, y) =>
-      y.tablePoints - x.tablePoints ||
-      desc(ratio(x.setsWon, x.setsLost), ratio(y.setsWon, y.setsLost)) ||
-      desc(ratio(x.pointsWon, x.pointsLost), ratio(y.pointsWon, y.pointsLost)) ||
-      headToHead(x.teamId, y.teamId) ||
-      name(x.teamId).localeCompare(name(y.teamId), 'pl'),
-  )
+/** The tie-breakers in use: the tournament's own, or the usual ones for the scoring. */
+export function tiebreakOrder(rules: Rules): Tiebreak[] {
+  if (rules.tiebreak?.length) return rules.tiebreak
+  return isScore(rules) ? ['diff', 'scored', 'h2h'] : ['setRatio', 'pointRatio', 'h2h']
+
 }
 
 export function formatRatio(won: number, lost: number): string {
   const r = ratio(won, lost)
   if (r === Number.POSITIVE_INFINITY) return 'MAX'
   return r.toFixed(3).replace('.', ',')
+}
+
+/** Names of the tie-breakers, for the settings and the fans' tables. */
+export const TIEBREAK_NAMES: Record<Tiebreak, string> = {
+  h2h: tk('Mecz bezpośredni (mała tabela)'),
+  wins: tk('Liczba wygranych meczów'),
+  diff: tk('Różnica bramek / punktów'),
+  scored: tk('Bramki / punkty zdobyte'),
+  setRatio: tk('Stosunek setów'),
+  setDiff: tk('Różnica setów'),
+  pointRatio: tk('Stosunek małych punktów'),
 }

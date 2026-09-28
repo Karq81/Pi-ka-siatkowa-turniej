@@ -40,7 +40,20 @@ export interface Rules {
   scoreButtons?: number[]
   /** Volleyball: a match won in the deciding set gives the winner one point less and the loser one more (3:2 → 2 and 1 points). */
   tieBreakSplit?: boolean
+  /**
+   * Order of the tie-breakers after table points. Missing: the usual order (goals: difference,
+   * scored, head-to-head; sets: set ratio, small-points ratio, head-to-head).
+   */
+  tiebreak?: Tiebreak[]
 }
+
+/**
+ * h2h: head-to-head – a small table of the matches between the teams still level (points,
+ * then difference in those matches); wins: matches won; diff / scored: goal (point)
+ * difference and goals scored; setRatio / setDiff: sets won to lost; pointRatio: small points
+ * won to lost.
+ */
+export type Tiebreak = 'h2h' | 'wins' | 'diff' | 'scored' | 'setRatio' | 'setDiff' | 'pointRatio'
 
 export interface Tournament {
   name: string
