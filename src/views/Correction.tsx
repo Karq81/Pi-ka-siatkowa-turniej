@@ -4,6 +4,8 @@ import type { Match } from '../types'
 import { BackBar, ConfirmButton, courtLabel, formatDay, formatTime, PinGate, useLookups } from '../ui'
 import { ResultForm, withDecided } from './ResultForm'
 import { setsText } from '../logic/scoring'
+import { logged } from '../logic/special'
+import { LaterRoundsWarning, WalkoverButtons } from './Special'
 
 /** Small button shown only to the chief referee: opens the result correction for a match. */
 export function CorrectButton({ match }: { match: Match }) {
@@ -51,6 +53,11 @@ export function Correction({ matchId }: { matchId: string }) {
               match={m}
               submitLabel={t('Zapisz poprawiony wynik')}
               onSubmit={(sets, decidedBy) => {
+                if (m.status === 'finished') {
+                  const before = setsText(state.tournament.rules, m.sets)
+                  const after = setsText(state.tournament.rules, sets)
+                  if (before !== after) store.updateTournament({ log: logged(state.tournament, t('Korekta: {a} – {b}, {before} → {after}', { a: side(m, 'a'), b: side(m, 'b'), before, after })) })
+                }
                 store.updateMatch(m.id, (x) => ({ ...withDecided(x, decidedBy), status: 'finished', sets }))
                 done()
               }}
@@ -65,6 +72,8 @@ export function Correction({ matchId }: { matchId: string }) {
                 </button>
               )}
             </ResultForm>
+            <LaterRoundsWarning state={state} match={m} />
+            {m.status !== 'finished' && <WalkoverButtons state={state} match={m} onDone={done} />}
             <p className="muted small">{t('Tabele, drabinka i strony drużyn przeliczą się same od razu po zapisaniu.')}</p>
           </section>
         )}

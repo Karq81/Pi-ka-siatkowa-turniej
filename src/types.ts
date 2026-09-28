@@ -59,6 +59,8 @@ export interface Rules {
   byePoints?: number
   /** Measured events (runs, jumps, throws, golf…): what is measured and how results compare. */
   measure?: Measure
+  /** The discipline's walkover: goals for score games, points per set for set games. */
+  walkover?: { winner?: number; loser?: number; setScore?: number }
 }
 
 /**
@@ -158,6 +160,10 @@ export interface Tournament {
    * fewest win; `drop` worst rounds not counted).
    */
   measured?: { mode: 'heats' | 'rounds'; Q?: number; q?: number; points?: 'f1' | 'linear' | 'low'; drop?: number }
+  /** A team withdrawing: 'A' – under half its matches played: its results go; otherwise walkovers. 'B' – always walkovers. */
+  withdrawal?: 'A' | 'B'
+  /** The organiser's changes (walkovers, withdrawals, corrections, changed pairs), the newest last. */
+  log?: { at: number; text: string }[]
   /** Results of measured events: per heat or round (group id), per participant. */
   perf?: Record<string, Record<string, Perf>>
   /** Groups: each pair plays twice (return matches). */
@@ -233,6 +239,10 @@ export interface Team {
   rating?: number
   /** Withdrawn or disqualified teams stay in the results, marked. Missing: active. */
   status?: 'active' | 'withdrawn' | 'disqualified'
+  /** Withdrawn early (option A): its results are left out of the tables. */
+  voided?: boolean
+  /** Recreational formats (Americano, Mexicano): a pair made for one match, not listed as a team. */
+  pair?: [Id, Id]
 }
 
 export interface SetScore {
@@ -360,6 +370,8 @@ export interface Match {
   calledAt?: number
   /** How the match was decided, for table points (hockey: overtime and shootout give 2 and 1). Missing: regular time. */
   decidedBy?: 'regulation' | 'overtime' | 'shootout' | 'walkover' | 'retirement'
+  /** Teams set by hand by the organiser: the bracket does not fill them in any more. */
+  manual?: boolean
   /** Penalties (shootout) after a level knockout match or two-legged tie; not counted as goals. */
   penalties?: SetScore
   /** Swiss system: the round of this match (1, 2, …). */

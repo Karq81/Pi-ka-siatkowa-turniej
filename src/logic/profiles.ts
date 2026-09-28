@@ -90,6 +90,9 @@ export function profileRules(p: RulesProfile, swiss = false): Partial<Rules> {
   if (p.points.overtimeLoss !== undefined) r.pointsOvertimeLoss = p.points.overtimeLoss
   if (p.points.walkoverLoss !== undefined) r.pointsWalkoverLoss = p.points.walkoverLoss
   if (p.points.bye !== undefined) r.byePoints = p.points.bye
+  if (p.walkover && (p.walkover.winner !== undefined || p.walkover.setScore !== undefined)) {
+    r.walkover = { ...(p.walkover.winner !== undefined ? { winner: p.walkover.winner, loser: p.walkover.loser ?? 0 } : {}), ...(p.walkover.setScore !== undefined ? { setScore: p.walkover.setScore } : {}) }
+  }
   // Keep the stored rules free of undefined fields (Firestore does not take them).
   for (const k of Object.keys(r) as (keyof Rules)[]) if (r[k] === undefined) delete r[k]
   return r

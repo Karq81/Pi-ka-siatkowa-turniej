@@ -222,13 +222,15 @@ export function standings(
   teams: Team[],
 ): StandingRow[] {
   const rows = new Map<string, StandingRow>()
-  for (const id of group.teamIds) {
+  // A team withdrawn early (option A): out of the table, and its matches do not count.
+  const voided = new Set(teams.filter((x) => x.voided).map((x) => x.id))
+  for (const id of group.teamIds.filter((x) => !voided.has(x))) {
     rows.set(id, {
       teamId: id, played: 0, won: 0, drawn: 0, lost: 0,
       setsWon: 0, setsLost: 0, pointsWon: 0, pointsLost: 0, tablePoints: 0, place: 0,
     })
   }
-  const finished = matches.filter((m) => m.groupId === group.id && m.status === 'finished')
+  const finished = matches.filter((m) => m.groupId === group.id && m.status === 'finished' && !m.skipped && !voided.has(m.teamA) && !voided.has(m.teamB))
   for (const m of finished) {
     const a = rows.get(m.teamA)
     const b = rows.get(m.teamB)

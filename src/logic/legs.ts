@@ -107,7 +107,7 @@ export function isTwoLegged(state: State, m: Match): boolean {
  */
 export function needsPenalties(state: State, m: Match, sets: SetScore[]): boolean {
   const rules = state.tournament.rules
-  if (!m.ko || !isScore(rules) || !sets.length) return false
+  if (!m.ko || rules.scoring !== 'score' || !sets.length) return false
   const tl = tally(rules, sets)
   if (state.tournament.ties?.kind === 'two') {
     const tieId = m.ko.legOf ?? m.id
@@ -124,7 +124,8 @@ export function needsPenalties(state: State, m: Match, sets: SetScore[]): boolea
       return !score.winner
     }
   }
-  return tl.setsA === tl.setsB && !rules.draws
+  // A knockout match never ends level, even where the group matches may.
+  return tl.setsA === tl.setsB
 }
 
 /** Home and away in game `k` (1…n) of a series: 2-2-1-1-1 for 7, 2-2-1 for 5, else by turns. */

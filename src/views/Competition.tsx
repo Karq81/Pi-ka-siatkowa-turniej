@@ -11,6 +11,7 @@ import { CustomView, EliminationView } from './Elimination'
 import { hasCustom } from '../logic/custom'
 import { hasSwiss } from '../logic/swiss'
 import { isMeasured } from '../logic/measured'
+import { statusLabel } from '../logic/special'
 import { MeasuredView } from './Measured'
 import { hasElimination } from '../logic/elimination'
 import { isUnderway } from '../logic/courtBoard'
@@ -185,7 +186,8 @@ function GroupView({ state, groupId }: { state: State; groupId: string }) {
   const rules = state.tournament.rules
   const rows = standings(rules, group, state.matches, state.teams)
   const team = (id: string) => state.teams.find((t) => t.id === id)
-  const matches = state.matches.filter((m) => m.groupId === group.id).sort((a, b) => a.start.localeCompare(b.start) || a.court - b.court)
+  // Matches left out (a team withdrawn early, a phase ended) are not shown or counted.
+  const matches = state.matches.filter((m) => m.groupId === group.id && !m.skipped).sort((a, b) => a.start.localeCompare(b.start) || a.court - b.court)
   const done = matches.filter((m) => m.status === 'finished')
   // Last three results per team, oldest first.
   const trend = (id: string) => done
@@ -212,7 +214,7 @@ function GroupView({ state, groupId }: { state: State; groupId: string }) {
               <li key={r.teamId} className={`${i < 2 ? 'top' : ''} ${mine.includes(r.teamId) ? 'mine' : ''}`}>
                 <span className="pos">{r.place}</span>
                 <TeamBadge team={tm} />
-                <a className="name plain-link" href={`#druzyna-${r.teamId}`}>{tm?.name}</a>
+                <a className="name plain-link" href={`#druzyna-${r.teamId}`}>{tm?.name}{statusLabel(tm) && <span className="team-status"> · {statusLabel(tm)}</span>}</a>
                 <span className="trend" aria-label={tr.length ? `${t('Ostatnie mecze:')} ${tr.map((x) => (x === 'w' ? t('wygrana') : x === 'd' ? t('remis') : t('przegrana'))).join(', ')}` : undefined}>
                   {tr.map((x, j) => <i key={j} className={x} />)}
                 </span>

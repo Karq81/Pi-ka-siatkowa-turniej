@@ -323,7 +323,8 @@ label { display: flex; flex-direction: column; gap: 4px; font-size: 0.9rem; font
 .card-key { font-size: 1.1rem; }
 .card-key b { font-family: var(--display); font-size: 1.8rem; letter-spacing: 0.12em; }
 @media print {
-  .no-print, .banner { display: none !important; }
+  .no-print, .banner, .export-btn, .tabs, .btn, .btn-correct, .perf-edit, .walkover, .pair-edit, .help-fab, .lang-picker, .pf-nav { display: none !important; }
+  .comp, .standings, .mcard, .bm { break-inside: avoid; }
   body { background: #fff; }
   .page { max-width: none; padding: 0; }
   .cards { grid-template-columns: repeat(2, 1fr); gap: 10mm; }

@@ -1,6 +1,7 @@
 import { t } from '../i18n'
 import type { Group, State, Team } from '../types'
-import { buildGroupSchedule, type ScheduleOptions } from './schedule'
+import { buildGroupSchedule, personKeys, type ScheduleOptions } from './schedule'
+import { SPORTS } from './sports'
 
 /** Deterministic random numbers for tests; the app uses Math.random. */
 export function rng(seed: number): () => number {
@@ -96,7 +97,11 @@ export function drawCategory(
   // Keep categories in their usual order.
   const groups = state.categories.flatMap((c) =>
     c.id === categoryId ? drawn : state.groups.filter((g) => g.categoryId === c.id))
-  return { ...state, groups, matches: buildGroupSchedule(groups, schedule) }
+  // A player in two categories (singles and doubles) never plays two matches at once; teams
+  // of the same name in two age categories are different players, so only for players and pairs.
+  const individual = (SPORTS.find((x) => x.label === state.tournament.rules.sport)?.entrants ?? 'drużyny') !== 'drużyny'
+  const names = new Map(state.teams.map((x) => [x.id, personKeys(x.name)]))
+  return { ...state, groups, matches: buildGroupSchedule(groups, individual ? { ...schedule, keysOf: (id) => names.get(id) ?? [] } : schedule) }
 }
 
 /** Whether a category has been drawn into groups yet. */

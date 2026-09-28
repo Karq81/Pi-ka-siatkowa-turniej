@@ -54,6 +54,10 @@ export function Organizer({ route }: { route: string }) {
             title={t('Mecze, wyniki, tabele grup i klasyfikacja w pliku Excel (stan na teraz)')}>
             📊 {t('Pobierz wyniki do Excela')}
           </button>
+          <button type="button" className="btn btn-sm export-btn print-btn" onClick={() => window.print()}
+            title={t('Drukuj albo zapisz jako PDF to, co widać na ekranie (tabele, drabinka, wyniki)')}>
+            🖨️ {t('Drukuj / PDF')}
+          </button>
         </div>
         <nav className="tabs" aria-label={t('Panel organizatora')}>
           {tabs.map((x) => (

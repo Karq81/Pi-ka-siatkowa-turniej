@@ -44,6 +44,16 @@ export interface ScheduleOptions {
   rest?: number
   /** Times of day when no match starts (lunch): a round that would start then waits until `to`. */
   breaks?: TimeBreak[]
+  /**
+   * The people behind a team (a player's name; both players of a pair), so a player entered
+   * in two categories (singles and doubles) never has two matches at the same time.
+   */
+  keysOf?: (teamId: string) => string[]
+}
+
+/** The people behind a team: "Kowalski / Nowak" → both names, lowercase. */
+export function personKeys(name: string): string[] {
+  return name.split(/\s*(?:\/|&|\+|,)\s*/).map((x) => x.trim().toLowerCase().replace(/\s+/g, ' ')).filter(Boolean)
 }
 
 export interface TimeBreak {
@@ -110,11 +120,13 @@ export function buildGroupSchedule(groups: Group[], opts: ScheduleOptions): Matc
   let slot = opts.start
   for (let round = 0; queue.length; round++) {
     const busy = new Set<string>()
+    const people = (id: string) => [id, ...(opts.keysOf?.(id) ?? [])]
+    const isBusy = (id: string) => people(id).some((k) => busy.has(k))
     let court = 1
     for (let i = 0; i < queue.length && court <= opts.courts; ) {
       const m = queue[i]
-      if (busy.has(m.teamA) || busy.has(m.teamB) || !rested(m.teamA, round) || !rested(m.teamB, round)) { i++; continue }
-      busy.add(m.teamA); busy.add(m.teamB)
+      if (isBusy(m.teamA) || isBusy(m.teamB) || !rested(m.teamA, round) || !rested(m.teamB, round)) { i++; continue }
+      for (const k of [...people(m.teamA), ...people(m.teamB)]) busy.add(k)
       lastRound.set(m.teamA, round); lastRound.set(m.teamB, round)
       result.push({ ...m, court: court++, start: slot })
       queue.splice(i, 1)

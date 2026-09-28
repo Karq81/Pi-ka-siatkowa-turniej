@@ -311,7 +311,7 @@ export function propagate(state: State): Match[] {
         }
         continue
       }
-      if (!m.ko || m.status !== 'scheduled') continue
+      if (!m.ko || m.status !== 'scheduled' || m.manual) continue
       const a = resolveSource(current, m.ko.srcA)
       const b = resolveSource(current, m.ko.srcB)
       if (a !== m.teamA || b !== m.teamB) {

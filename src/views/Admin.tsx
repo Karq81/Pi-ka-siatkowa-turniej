@@ -14,6 +14,7 @@ import type { Match, MatchStatus, Pins, Rules, SetScore, State, Tiebreak } from 
 import { NumberField, BackBar, courtLabel, formatDay, formatTime, PinGate, useLookups } from '../ui'
 import { CourtCard, MatchList } from './Public'
 import { ResultForm, withDecided, type MatchExtra } from './ResultForm'
+import { ChangeLog, LaterRoundsWarning, PairEditor, WalkoverButtons, WithdrawPanel } from './Special'
 
 const TABS = [
   { id: 'boiska', label: tk('Boiska') },
@@ -126,6 +127,9 @@ function MatchEditor({ state, match, onClose }: { state: State; match: Match; on
         <button type="button" className="btn" onClick={() => save('live', match.status === 'live' ? match.sets : [])}>{t('Oznacz jako trwający')}</button>
         <button type="button" className="btn btn-danger" onClick={() => save('scheduled')}>{t('Wyczyść wynik')}</button>
       </ResultForm>
+      <LaterRoundsWarning state={state} match={match} />
+      {match.status !== 'finished' && <WalkoverButtons state={state} match={match} onDone={onClose} />}
+      <PairEditor state={state} match={match} />
       <p className="muted small">
         {t('„Oznacz jako trwający”: na stronie pojawi się „Mecz trwa, wynik po meczu”. Przydaje się na boiskach, gdzie nikt nie liczy punktów na telefonie.')}
       </p>
@@ -199,6 +203,8 @@ function Data({ state }: { state: State }) {
 
   return (
     <div className="data">
+      <WithdrawPanel state={state} />
+      <ChangeLog state={state} />
       <ResetPanel state={state} />
 
       <section className="panel">

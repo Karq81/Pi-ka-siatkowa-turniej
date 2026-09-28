@@ -89,7 +89,7 @@ function SetsResultForm({ state, match, submitLabel, onSubmit: save, children }:
   const sets = parseFields(fields)
   const tl = tally(rules, sets)
   // A leg of a two-legged tie may end level; so may a match that goes to penalties.
-  const formRules = isTwoLegged(state, match) ? { ...rules, draws: true } : rules
+  const formRules = isTwoLegged(state, match) ? { ...rules, draws: true } : match.ko ? { ...rules, draws: false } : rules
   const penaltiesNeeded = needsPenalties(state, match, sets)
   const penaltiesOk = pens.a !== '' && pens.b !== '' && pens.a !== pens.b
   const decided = isMatchDecided(formRules, sets) || (penaltiesNeeded && penaltiesOk)
