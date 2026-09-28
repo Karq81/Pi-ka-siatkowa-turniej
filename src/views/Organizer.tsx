@@ -1,6 +1,6 @@
 import { EntriesPanel } from './Registration'
 import { STAGE2 } from '../content/stage2'
-import { endGroupPhase, openFirstStage, openFirstStageMatches, reopenGroupPhase, stage2Groups, stage2Played } from '../logic/stage2'
+import { openFirstStageMatches, openStage2Matches, stage2Groups } from '../logic/stage2'
 import { downloadResults } from '../logic/export'
 import { sportLabelOf } from '../logic/sports'
 import { StreamSettings } from './Stream'
@@ -62,7 +62,7 @@ export function Organizer({ route }: { route: string }) {
       {tab === 'panel' && !IS_ALBATROS && <PinGate label={t('Zgłoszenia drużyn (sędzia główny)')}><EntriesPanel state={state} /></PinGate>}
       {tab === 'panel' && (IS_ALBATROS ? <TeamsAndDraw state={state} /> : <Setup state={state} />)}
       {tab === 'panel-grupy' && state.categories.some((c) => STAGE2[c.id]) && (
-        <PinGate label={t('Drugi etap (sędzia główny)')}><Stage2Panel state={state} /></PinGate>
+        <PinGate label={t('Mecze do rozegrania (sędzia główny)')}><Stage2Panel state={state} /></PinGate>
       )}
       {tab === 'panel-grupy' && (
         state.groups.length || state.matches.some((m) => m.ko?.bracket) ? <Competition state={state} route="grupy" /> : <Empty />
@@ -135,57 +135,33 @@ function DeleteTournament({ state }: { state: State }) {
  */
 function Stage2Panel({ state }: { state: State }) {
   const { teamName, groupName } = useLookups(state)
-  const [msg, setMsg] = useState('')
-  const [busy, setBusy] = useState('')
-  const run = async (categoryId: string, name: string) => {
-    const open = openFirstStage(state, categoryId)
-    if (open && !confirm(tp(open, 'W kategorii {cat} został {n} nierozegrany mecz fazy grupowej. Uruchomić drugi etap mimo to?|W kategorii {cat} zostały {n} nierozegrane mecze fazy grupowej. Uruchomić drugi etap mimo to?|W kategorii {cat} zostało {n} nierozegranych meczów fazy grupowej. Uruchomić drugi etap mimo to?', { cat: name }))) return
-    if (stage2Played(state, categoryId) && !confirm(t('Drugi etap ma już wyniki. Ułożenie go od nowa usunie te wyniki. Kontynuować?'))) return
-    setBusy(categoryId)
-    setMsg('')
-    const ok = await store.replace(endGroupPhase(state, categoryId))
-    setBusy('')
-    setMsg(ok ? t('Drugi etap ({cat}) uruchomiony: nowe grupy i terminarz są gotowe.', { cat: name }) : t('Nie udało się zapisać. Sprawdź internet i spróbuj jeszcze raz.'))
-  }
-  const undo = async (categoryId: string, name: string) => {
-    if (!confirm(t('Cofnąć drugi etap w kategorii {cat}? Jego grupy i mecze znikną.', { cat: name }))) return
-    await store.replace(reopenGroupPhase(state, categoryId))
-    setMsg(t('Drugi etap ({cat}) cofnięty.', { cat: name }))
-  }
   return (
     <section className="panel stage2-panel">
-      <h2>🏐 {t('Drugi etap')}</h2>
-      <p className="muted">{t('Po fazie grupowej kliknij „Uruchom drugi etap”. Strona sama ułoży ranking (miejsce w grupie, potem punkty, sety i małe punkty), nowe grupy i terminarz na boiskach tej kategorii.')}</p>
+      <h2>🏐 {t('Mecze do rozegrania')}</h2>
       {state.categories.filter((c) => STAGE2[c.id]).map((c) => {
-        const open = openFirstStage(state, c.id)
-        const made = stage2Groups(state, c.id).length > 0
+        const has2 = stage2Groups(state, c.id).length > 0
+        const open = has2 ? openStage2Matches(state, c.id) : openFirstStageMatches(state, c.id)
+        const phase = has2 ? t('drugi etap') : t('faza grupowa')
         return (
           <div key={c.id} className="stage2-cat">
-            <p><b>{c.name}</b> · {open ? tp(open, 'faza grupowa: został {n} mecz|faza grupowa: zostały {n} mecze|faza grupowa: zostało {n} meczów') : t('faza grupowa zakończona')}{made ? ` · ${t('drugi etap uruchomiony')}` : ''}</p>
-            {open > 0 && (
-              <details className="open-matches" open={open <= 5}>
-              <summary>{t('Które mecze zostały?')}</summary>
-              <ul className="stage2-open">
-                {openFirstStageMatches(state, c.id).map((m) => (
-                  <li key={m.id}>
-                    <span>{groupName(m.groupId)} · {t('Boisko {n}', { n: courtLabel(m.court) })} · {formatTime(m.start)}: <b>{teamName(m.teamA)}</b> – <b>{teamName(m.teamB)}</b></span>
-                    <a className="btn btn-sm btn-primary" href={`#korekta-${m.id}`}>{t('Wpisz wynik')}</a>
-                  </li>
-                ))}
-              </ul>
+            <p><b>{c.name}</b> · {phase}: {open.length ? tp(open.length, 'został {n} mecz|zostały {n} mecze|zostało {n} meczów') : t('wszystkie mecze rozegrane')}</p>
+            {open.length > 0 && (
+              <details className="open-matches" open={open.length <= 5}>
+                <summary>{t('Które mecze zostały?')}</summary>
+                <ul className="stage2-open">
+                  {open.map((m) => (
+                    <li key={m.id}>
+                      <span>{groupName(m.groupId)} · {t('Boisko {n}', { n: courtLabel(m.court) })} · {formatTime(m.start)}: <b>{teamName(m.teamA)}</b> – <b>{teamName(m.teamB)}</b></span>
+                      <a className="btn btn-sm btn-primary" href={`#korekta-${m.id}`}>{t('Wpisz wynik')}</a>
+                    </li>
+                  ))}
+                </ul>
               </details>
             )}
-            <div className="actions">
-              {/* Every group match played: the button pulses, it is time for the next stage. */}
-              <button type="button" className={`btn btn-primary ${!open && !made ? 'btn-pulse' : ''}`} disabled={busy === c.id} onClick={() => void run(c.id, c.name)}>
-                {busy === c.id ? t('Zapisuję…') : made ? t('Ułóż drugi etap od nowa') : t('Uruchom drugi etap')}
-              </button>
-              {made && <button type="button" className="btn" onClick={() => void undo(c.id, c.name)}>{t('Cofnij drugi etap')}</button>}
-            </div>
           </div>
         )
       })}
-      {msg && <p className="ok" role="status">{msg}</p>}
+      <p className="muted small">{t('Kolejny etap uruchamiasz przyciskiem pod napisem „Faza grupowa” albo „Drugi etap” niżej.')}</p>
     </section>
   )
 }
