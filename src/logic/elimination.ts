@@ -43,6 +43,59 @@ export function seedOrder(size: number): number[] {
   return order
 }
 
+/** The round (1 = first) in which bracket positions i and j could meet. */
+function meetRound(i: number, j: number): number {
+  return 32 - Math.clz32(i ^ j)
+}
+
+/**
+ * Bracket order for a draw that keeps players of one club apart: the players of one club
+ * go into different halves, then quarters…, so they meet as late as possible. `fixed`
+ * (seeding from the list): only players of the same seeding tier swap places (1, 2, 3–4,
+ * 5–8, 9–16…), so the top seeds stay where they are; otherwise any two may swap. Players
+ * without a club (undefined) are never a reason to move.
+ */
+export function arrangeSeeds<T>(items: T[], clubOf: (x: T) => string | undefined, fixed: boolean): T[] {
+  const n = items.length
+  const list = [...items]
+  if (n < 3) return list
+  let size = 2
+  while (size < n) size *= 2
+  const rounds = Math.log2(size)
+  const pos: number[] = []
+  seedOrder(size).forEach((seed, i) => { pos[seed - 1] = i })
+  const tier = (i: number) => (!fixed ? 0 : i < 2 ? i : Math.ceil(Math.log2(i + 1)) + 1)
+  // Cost of a player of `club` at seed `i`: meeting a clubmate early costs more.
+  const cost = (i: number, club: string | undefined, skip: number) => {
+    if (club === undefined) return 0
+    let c = 0
+    for (let q = 0; q < n; q++) {
+      if (q === i || q === skip || clubOf(list[q]) !== club) continue
+      c += 2 ** (rounds - meetRound(pos[i], pos[q]))
+    }
+    return c
+  }
+  for (let pass = 0; pass < 20; pass++) {
+    let better = false
+    for (let i = 0; i < n; i++) {
+      for (let j = i + 1; j < n; j++) {
+        if (tier(i) !== tier(j)) continue
+        const ci = clubOf(list[i])
+        const cj = clubOf(list[j])
+        if (ci === cj) continue
+        const now = cost(i, ci, j) + cost(j, cj, i)
+        const swapped = cost(i, cj, j) + cost(j, ci, i)
+        if (swapped < now) {
+          ;[list[i], list[j]] = [list[j], list[i]]
+          better = true
+        }
+      }
+    }
+    if (!better) break
+  }
+  return list
+}
+
 /** Name of a round by how many places it has left: final, semi-final, quarter-final, 1/8… */
 function roundName(matchesInRound: number, round: number, n: number): string {
   if (matchesInRound === 1) return t('Finał')
@@ -58,7 +111,7 @@ function roundName(matchesInRound: number, round: number, n: number): string {
  * winners' bracket, L{round}-{n} in the losers' bracket, GF and GF2 for the grand final,
  * P3 for 3rd place.
  */
-export function eliminationPlan(categoryId: string, teamIds: string[], double: boolean, thirdPlace = false): PlanItem[] {
+export function eliminationPlan(categoryId: string, teamIds: string[], double: boolean, thirdPlace = false, bronzes = false): PlanItem[] {
   const n = teamIds.length
   if (n < 2) return []
   let size = 2
@@ -98,7 +151,7 @@ export function eliminationPlan(categoryId: string, teamIds: string[], double: b
     for (let i = 0; i < slots.length; i += 2) {
       const last = r === rounds
       const res = match('W', r, (k) => (last && double ? t('Finał drabinki zwycięzców') : roundName(inRound, r, k)), slots[i], slots[i + 1],
-        last && !double ? { place: 1 } : {})
+        last && !double ? { place: 1 } : bronzes && !double && r === rounds - 1 ? { loserPlace: 3 } : {})
       next.push(res.win)
       lost.push(res.lose)
     }
@@ -109,7 +162,7 @@ export function eliminationPlan(categoryId: string, teamIds: string[], double: b
 
   if (!double) {
     // 3rd place: the two semi-final losers, when there were semi-finals.
-    if (thirdPlace && rounds >= 2) {
+    if (thirdPlace && !bronzes && rounds >= 2) {
       const [a, b] = losersOf[rounds - 2]
       if (a && b) match('F', rounds, () => placeLabel(3), a, b, { place: 3 })
     }
@@ -205,7 +258,7 @@ function depths(plan: PlanItem[], categoryId: string): Map<string, number> {
  */
 export function createElimination(state: State, categoryId: string, teamIds: string[], opts: KnockoutOptions): Match[] {
   const system = systemOf(state.tournament)
-  const plan = eliminationPlan(categoryId, teamIds, system === 'double', !!state.tournament.thirdPlace)
+  const plan = eliminationPlan(categoryId, teamIds, system === 'double', !!state.tournament.thirdPlace, !!state.tournament.bronzes)
   if (!plan.length) return []
   const depth = depths(plan, categoryId)
   const order = { W: 0, L: 1, F: 2, C: 3 }
@@ -242,22 +295,31 @@ export function hasElimination(state: State, categoryId: string): boolean {
   return state.matches.some((m) => m.categoryId === categoryId && !!m.ko?.bracket && m.ko.bracket !== 'C')
 }
 
-/** Final places decided so far: 1 and 2 from the (last) final, 3 from the 3rd place match or the losers' final. */
+/**
+ * Final places decided so far: 1 and 2 from the (last) final, 3 from the 3rd place match
+ * or the losers' final, two 3rd places with two bronzes.
+ */
 export function eliminationPlaces(state: State, categoryId: string, winnerOf: (m: Match) => string): { place: number; teamId: string }[] {
-  const ms = state.matches.filter((m) => m.categoryId === categoryId && m.ko?.bracket && m.status === 'finished' && !m.skipped)
-  const out = new Map<number, string>()
+  const ms = state.matches.filter((m) => m.categoryId === categoryId && m.ko?.bracket && m.ko.bracket !== 'C' && m.status === 'finished' && !m.skipped)
+  const out: { place: number; teamId: string }[] = []
+  const add = (place: number, teamId: string) => {
+    if (!teamId) return
+    const i = out.findIndex((x) => x.teamId === teamId)
+    if (i >= 0) { if (out[i].place > place) out[i].place = place; return }
+    out.push({ place, teamId })
+  }
   const finals = ms.filter((m) => m.ko!.place === 1).sort((a, b) => (a.ko!.resetOf ? 1 : 0) - (b.ko!.resetOf ? 1 : 0))
   const final = finals[finals.length - 1]
   if (final) {
     const w = winnerOf(final)
-    if (w) { out.set(1, w); out.set(2, w === final.teamA ? final.teamB : final.teamA) }
+    if (w) { add(1, w); add(2, w === final.teamA ? final.teamB : final.teamA) }
   }
   for (const m of ms) {
     const w = winnerOf(m)
     if (!w) continue
     const loser = w === m.teamA ? m.teamB : m.teamA
-    if (m.ko!.place === 3) { out.set(3, w); out.set(4, loser) }
-    if (m.ko!.loserPlace) out.set(m.ko!.loserPlace, loser)
+    if (m.ko!.place === 3) { add(3, w); add(4, loser) }
+    if (m.ko!.loserPlace) add(m.ko!.loserPlace, loser)
   }
-  return [...out.entries()].sort((a, b) => a[0] - b[0]).map(([place, teamId]) => ({ place, teamId }))
+  return out.sort((a, b) => a.place - b.place)
 }

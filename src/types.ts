@@ -111,6 +111,19 @@ export interface Tournament {
   swissRounds?: number
   /** Knockout: a match for 3rd place between the semi-final losers. */
   thirdPlace?: boolean
+  /** Knockout: both semi-final losers get bronze (3rd place), no match for it (combat sports). */
+  bronzes?: boolean
+  /** Knockout: everybody plays on for a place (losers play for 5–8, 9–16…). */
+  allPlaces?: boolean
+  /** Bracket draw: 'draw' (random, default) or 'list' (the list's order is the seeding, 1 = the best). */
+  seeding?: 'draw' | 'list'
+  /** Bracket draw: players of one club go into different halves (quarters…) as far as possible. */
+  separateClubs?: boolean
+  /**
+   * Groups, then a bracket for the best: `perGroup` best of each group, plus `best` teams
+   * from the next place (compared by points per match). Missing: everybody plays for places.
+   */
+  advance?: { perGroup: number; best?: number }
   /** Groups: each pair plays twice (return matches). */
   twice?: boolean
   /** Rounds a team rests between its matches (0: none). */
@@ -138,6 +151,8 @@ export interface CustomMatch {
   b: string
   place?: number
   loserPlace?: number
+  /** Made by the system from the tournament's settings (groups → bracket), not by the organiser. */
+  auto?: boolean
 }
 
 /** A team's (or player's) sign-up sent from the tournament's page; only the organiser reads it. */
@@ -259,6 +274,8 @@ export type KoSource =
   | { kind: 'match'; matchId: Id; take: 'winner' | 'loser'; label: string }
   /** A team placed in the bracket by the draw (knockout from the start). */
   | { kind: 'team'; teamId: Id }
+  /** The `rank`-th best of the teams in place `pos` of the category's groups (best thirds). */
+  | { kind: 'best'; categoryId: Id; pos: number; rank: number }
 
 export interface KoInfo {
   round: KoRound

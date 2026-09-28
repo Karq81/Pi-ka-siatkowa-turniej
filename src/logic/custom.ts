@@ -1,5 +1,6 @@
 import { t } from '../i18n'
 import type { CustomMatch, KoSource, Match, State } from '../types'
+import { arrangeSeeds } from './elimination'
 import { koId, propagate } from './knockout'
 import { scheduleOf } from './newTournament'
 import { nextSlot } from './schedule'
@@ -11,6 +12,7 @@ import { nextSlot } from './schedule'
  *   group:A:1           – 1st place of group A (after the group has finished)
  *   winner:Półfinał 1   – the winner of another match of the plan
  *   loser:Półfinał 1    – its loser (repechage, matches for places, …)
+ *   best:3:1            – the best of the teams 3rd in their groups (best:3:2 the second best…)
  * Matches are played after the groups (if any), each after the ones it waits for; later
  * matches fill in by themselves as results come in (see knockout.ts, propagate).
  */
@@ -19,14 +21,19 @@ export type Side =
   | { kind: 'team'; name: string }
   | { kind: 'group'; group: string; pos: number }
   | { kind: 'winner' | 'loser'; match: string }
+  | { kind: 'best'; pos: number; rank: number }
 
 const norm = (s: string) => s.trim().toLowerCase().replace(/\s+/g, ' ')
 
 export function parseSide(text: string): Side | null {
-  const m = /^\s*(team|group|winner|loser)\s*:\s*(.+?)\s*$/i.exec(text)
+  const m = /^\s*(team|group|winner|loser|best)\s*:\s*(.+?)\s*$/i.exec(text)
   if (!m) return null
   const kind = m[1].toLowerCase()
   const rest = m[2]
+  if (kind === 'best') {
+    const b = /^(\d+)\s*:\s*(\d+)$/.exec(rest)
+    return b ? { kind: 'best', pos: Number(b[1]), rank: Number(b[2]) } : null
+  }
   if (kind === 'team') return { kind: 'team', name: rest }
   if (kind === 'group') {
     const g = /^(.+?)\s*:\s*(\d+)$/.exec(rest)
@@ -60,6 +67,7 @@ export function checkCustom(plan: CustomMatch[], teamNames: string[], groups: { 
       const s = parseSide(side)
       if (!s) problems.push(t('„{match}”: nie rozumiem „{side}”.', { match: m.name, side }))
       else if (s.kind === 'team' && !teams.has(norm(s.name))) problems.push(t('„{match}”: nie ma na liście „{name}”.', { match: m.name, name: s.name }))
+      else if (s.kind === 'best' && !known.length) problems.push(t('„{match}”: „{side}” potrzebuje grup.', { match: m.name, side }))
       else if (s.kind === 'group' && !findGroup(known, s.group)) problems.push(t('„{match}”: nie ma grupy „{group}”.', { match: m.name, group: s.group }))
       else if ((s.kind === 'winner' || s.kind === 'loser') && !names.has(norm(s.match))) problems.push(t('„{match}”: nie ma spotkania „{other}”.', { match: m.name, other: s.match }))
     }
@@ -97,6 +105,7 @@ export function customMatches(state: State, categoryId: string): Match[] {
       const g = findGroup(groups, s.group)
       return g ? { kind: 'group', groupId: g.id, pos: s.pos } : null
     }
+    if (s.kind === 'best') return groups.length ? { kind: 'best', categoryId, pos: s.pos, rank: s.rank } : null
     const id = idOf.get(norm(s.match))
     const other = plan.find((x) => norm(x.name) === norm(s.match))
     return id && other ? { kind: 'match', matchId: id, take: s.kind, label: other.name } : null
@@ -259,4 +268,85 @@ export function consolationPlan(names: string[], thirdPlace = true): CustomMatch
     return rest
   })
   return [...main, ...plate]
+}
+
+/** Name of a round of the main bracket by the number of its matches. */
+function roundLabel(inRound: number, r: number, k: number): string {
+  if (inRound === 1) return t('Finał')
+  if (inRound === 2) return t('Półfinał {n}', { n: k })
+  if (inRound === 4) return t('Ćwierćfinał {n}', { n: k })
+  if (inRound === 8) return t('1/8 finału · {n}', { n: k })
+  if (inRound === 16) return t('1/16 finału · {n}', { n: k })
+  return t('Runda {r} · {n}', { r, n: k })
+}
+
+/**
+ * Everybody plays for a place: the first round's winners play on for the best places,
+ * its losers for the places after them (5–8, 9–16…), and so on down to single matches
+ * for each place. Sides in seeding order; byes to the first seeds.
+ */
+function classification(sides: string[], from: number, top: boolean, round = 1): CustomMatch[] {
+  const n = sides.length
+  if (n < 2) return []
+  const to = from + n - 1
+  if (n === 2) return [{ name: top ? t('Finał') : t('O {n}. miejsce', { n: from }), a: sides[0], b: sides[1], place: from }]
+  let size = 2
+  while (size < n) size *= 2
+  let order = [1]
+  while (order.length < size) order = order.flatMap((s) => [s, order.length * 2 + 1 - s])
+  const slots = order.map((seed) => (seed <= n ? sides[seed - 1] : null))
+  const plan: CustomMatch[] = []
+  const winners: string[] = []
+  const losers: string[] = []
+  let k = 0
+  for (let i = 0; i < slots.length; i += 2) {
+    const [a, b] = [slots[i], slots[i + 1]]
+    if (!a || !b) { winners.push((a ?? b)!); continue }
+    k++
+    const name = top ? roundLabel(size / 2, round, k) : t('Miejsca {from}–{to}, mecz {n}', { from, to, n: k })
+    plan.push({ name, a, b })
+    winners.push(`winner:${name}`)
+    losers.push(`loser:${name}`)
+  }
+  return [
+    ...plan,
+    ...classification(winners, from, top, round + 1),
+    ...classification(losers, from + winners.length, false, round + 1),
+  ]
+}
+
+export interface KnockoutOptions {
+  /** A match for 3rd place. */
+  thirdPlace?: boolean
+  /** Two bronzes: both semi-final losers are 3rd, no match for it. */
+  bronzes?: boolean
+  /** Everybody plays for a place (5–8, 9–16…). */
+  allPlaces?: boolean
+}
+
+/** A knockout bracket as a plan, sides in seeding order (byes to the first seeds). */
+export function knockoutPlan(sides: string[], opts: KnockoutOptions = {}): CustomMatch[] {
+  if (opts.allPlaces) return classification(sides, 1, true)
+  const plan = knockoutAsPlan(sides, '', 1, !!opts.thirdPlace && !opts.bronzes)
+  if (!opts.bronzes) return plan
+  // Both semi-final losers take bronze.
+  const semis = new Set(plan.filter((m) => plan.some((f) => f.place === 1 && (f.a === `winner:${m.name}` || f.b === `winner:${m.name}`))).map((m) => m.name))
+  return plan.map((m) => (semis.has(m.name) && m.place !== 1 ? { ...m, loserPlace: 3 } : m))
+}
+
+/**
+ * Groups, then a bracket for the best: the first `perGroup` of each group and the `best`
+ * best teams of the next place. Group winners are the top seeds (they never meet in the
+ * first round, and byes go to them); teams of one group go into opposite halves.
+ */
+export function groupPlayoffPlan(groupCount: number, perGroup: number, best: number, opts: KnockoutOptions = {}): CustomMatch[] {
+  const letters = 'ABCDEFGHIJKL'.slice(0, groupCount).split('')
+  const seeds: { side: string; group?: string }[] = []
+  for (let pos = 1; pos <= perGroup; pos++) {
+    for (const g of pos % 2 ? letters : [...letters].reverse()) seeds.push({ side: `group:${g}:${pos}`, group: g })
+  }
+  for (let r = 1; r <= best; r++) seeds.push({ side: `best:${perGroup + 1}:${r}` })
+  if (seeds.length < 2) return []
+  const arranged = arrangeSeeds(seeds, (x) => x.group, true)
+  return knockoutPlan(arranged.map((x) => x.side), opts).map((m) => ({ ...m, auto: true }))
 }

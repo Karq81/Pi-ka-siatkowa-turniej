@@ -1,12 +1,12 @@
-import { TOURNAMENT_ID } from '../config'
+import { IS_ALBATROS, TOURNAMENT_ID } from '../config'
 import { AttachButtons, PhotoTip } from './Attach'
 import { t, tk } from '../i18n'
 import { useMemo, useState, useSyncExternalStore } from 'react'
 import { tournamentUrl } from '../config'
 import { clubOf, drawCategory, shuffle } from '../logic/draw'
 import { nextSlot } from '../logic/schedule'
-import { createElimination, hasElimination, isElimination, systemOf } from '../logic/elimination'
-import { consolationPlan, hasCustom, stepladderPlan, withCustom } from '../logic/custom'
+import { arrangeSeeds, createElimination, hasElimination, isElimination, systemOf } from '../logic/elimination'
+import { consolationPlan, groupPlayoffPlan, hasCustom, knockoutPlan, stepladderPlan, withCustom } from '../logic/custom'
 import { defaultSwissRounds, hasSwiss, startSwiss } from '../logic/swiss'
 import { parseTeamList, scheduleOf, suspiciousNames } from '../logic/newTournament'
 import { SPORTS } from '../logic/sports'
@@ -93,6 +93,7 @@ export function Setup({ state }: { state: State }) {
 /** How the tournament is played; changing it needs a new draw. */
 function SystemSetting({ state }: { state: State }) {
   const system = systemOf(state.tournament)
+  const T = state.tournament
   const options = [
     ['groups', t('Grupy (każdy z każdym), potem drabinka')],
     ['knockout', t('Drabinka pucharowa')],
@@ -109,9 +110,39 @@ function SystemSetting({ state }: { state: State }) {
           {options.map(([id, label]) => <option key={id} value={id}>{label}</option>)}
         </select>
       </label>
-      {system === 'knockout' && (
-        <label className="check"><input type="checkbox" checked={!!state.tournament.thirdPlace} onChange={(e) => store.updateTournament({ thirdPlace: e.target.checked })} /> {t('Spotkanie o 3. miejsce')}</label>
+      {system === 'groups' && !IS_ALBATROS && (
+        <>
+          <label>{t('Po grupach')}
+            <select value={T.advance ? 'top' : 'places'} onChange={(e) => store.updateTournament({ advance: e.target.value === 'top' ? { perGroup: 2, best: 0 } : null as unknown as undefined })}>
+              <option value="places">{t('Wszyscy grają dalej o miejsca (1–8, 9–16…)')}</option>
+              <option value="top">{t('Drabinka pucharowa dla najlepszych z każdej grupy')}</option>
+            </select>
+          </label>
+          {T.advance && (
+            <div className="setup-row">
+              <label>{t('Awansuje z każdej grupy')}
+                <NumberField lazy min={1} max={8} value={T.advance.perGroup} onChange={(v) => store.updateTournament({ advance: { ...T.advance!, perGroup: v } })} />
+              </label>
+              <label>{t('Plus najlepsze z kolejnego miejsca')}
+                <NumberField lazy min={0} max={11} value={T.advance.best ?? 0} onChange={(v) => store.updateTournament({ advance: { ...T.advance!, best: v } })} />
+              </label>
+            </div>
+          )}
+          {T.advance && <FinishSetting state={state} />}
+        </>
       )}
+      {(system === 'knockout' || system === 'double' || system === 'consolation') && (
+        <>
+          <label>{t('Rozstawienie')}
+            <select value={T.seeding ?? 'draw'} onChange={(e) => store.updateTournament({ seeding: e.target.value as 'draw' | 'list' })}>
+              <option value="draw">{t('Losowanie')}</option>
+              <option value="list">{t('Kolejność z listy (pierwszy = najlepszy, wolne losy dla najlepszych)')}</option>
+            </select>
+          </label>
+          <label className="check"><input type="checkbox" checked={!!T.separateClubs} onChange={(e) => store.updateTournament({ separateClubs: e.target.checked })} /> {t('Zawodnicy z jednego klubu w różnych połówkach drabinki')}</label>
+        </>
+      )}
+      {system === 'knockout' && <FinishSetting state={state} />}
       {system === 'swiss' && (
         <label>{t('Liczba rund')}
           <NumberField lazy min={1} max={15} value={state.tournament.swissRounds ?? defaultSwissRounds(state.teams.length)} onChange={(v) => store.updateTournament({ swissRounds: v })} />
@@ -129,6 +160,32 @@ function SystemSetting({ state }: { state: State }) {
       </p>
     </section>
   )
+}
+
+/** What comes after the semi-finals: a match for 3rd place, two bronzes, or places for everybody. */
+function FinishSetting({ state }: { state: State }) {
+  const T = state.tournament
+  const value = T.allPlaces ? 'all' : T.bronzes ? 'bronzes' : T.thirdPlace ? 'third' : 'none'
+  return (
+    <label>{t('Po półfinałach')}
+      <select value={value} onChange={(e) => {
+        const v = e.target.value
+        store.updateTournament({ thirdPlace: v === 'third', bronzes: v === 'bronzes', allPlaces: v === 'all' })
+      }}>
+        <option value="third">{t('Mecz o 3. miejsce')}</option>
+        <option value="bronzes">{t('Dwa brązowe medale (bez meczu o 3. miejsce)')}</option>
+        <option value="all">{t('Wszyscy grają o miejsca (5–8, 9–16…)')}</option>
+        <option value="none">{t('Tylko finał')}</option>
+      </select>
+    </label>
+  )
+}
+
+/** Bracket order for the draw: seeding from the list or random, clubs kept apart when asked. */
+function seeded(state: State, list: Team[]): Team[] {
+  const T = state.tournament
+  const fromList = T.seeding === 'list'
+  return arrangeSeeds(fromList ? list : shuffle(list, Math.random), (x) => (T.separateClubs ? clubOf(x) : undefined), fromList)
 }
 
 /** "Zespoły", "Zawodnicy", "Pary"… for the tournament's discipline. */
@@ -217,11 +274,13 @@ function CategorySetup({ state, category }: { state: State; category: Category }
       return
     }
     const sys = systemOf(state.tournament)
-    if (sys === 'stepladder' || sys === 'consolation') {
+    if (sys === 'stepladder' || sys === 'consolation' || (sys === 'knockout' && state.tournament.allPlaces)) {
       // Made as the tournament's own plan: stepladder in the list's order (the best first),
       // the consolation bracket from a random draw.
-      const names = (sys === 'stepladder' ? list : shuffle(list, Math.random)).map((x) => x.name)
-      const plan = sys === 'stepladder' ? stepladderPlan(names) : consolationPlan(names, state.tournament.thirdPlace ?? true)
+      const names = (sys === 'stepladder' ? list : seeded(state, list)).map((x) => x.name)
+      const plan = sys === 'stepladder' ? stepladderPlan(names)
+        : sys === 'knockout' ? knockoutPlan(names.map((x) => `team:${x}`), { allPlaces: true }).map((m) => ({ ...m, auto: true }))
+          : consolationPlan(names, state.tournament.thirdPlace ?? true)
       const others = state.teams.filter((t) => t.categoryId !== category.id)
       const next = withCustom({
         ...state, teams: [...others, ...list],
@@ -267,7 +326,13 @@ function CategorySetup({ state, category }: { state: State; category: Category }
         matches: state.matches.filter((m) => m.categoryId !== category.id),
       }
       const courts = Array.from({ length: state.tournament.courts }, (_, i) => i + 1)
-      const matches = createElimination(base, category.id, shuffle(list.map((x) => x.id), Math.random), { start: sched.start, slotMinutes: sched.slotMinutes, courts, dayEnd: sched.dayEnd, dayStart: sched.dayStart, breaks: sched.breaks })
+      // A plan made before (e.g. "everybody plays for places") gives way to the bracket.
+      if (base.tournament.custom?.[category.id]?.every((m) => m.auto)) {
+        const { [category.id]: _drop, ...rest } = base.tournament.custom
+        void _drop
+        base.tournament = { ...base.tournament, custom: rest }
+      }
+      const matches = createElimination(base, category.id, seeded(state, list).map((x) => x.id), { start: sched.start, slotMinutes: sched.slotMinutes, courts, dayEnd: sched.dayEnd, dayStart: sched.dayStart, breaks: sched.breaks })
       setMsg(t('Zapisuję…'))
       if (!(await store.replace({ ...base, matches: [...base.matches, ...matches] }))) {
         setMsg(t('Nie udało się zapisać losowania. Sprawdź internet i kliknij jeszcze raz.'))
@@ -280,8 +345,19 @@ function CategorySetup({ state, category }: { state: State; category: Category }
     // At least two teams per group.
     const count = Math.max(1, Math.min(groups, Math.floor(list.length / 2)))
     const others = state.teams.filter((t) => t.categoryId !== category.id)
+    // Groups, then a bracket for the best: the plan made from the settings (group places).
+    const tour = { ...state.tournament, custom: { ...(state.tournament.custom ?? {}) } }
+    const adv = state.tournament.advance
+    if (adv && !IS_ALBATROS) {
+      const smallest = Math.floor(list.length / count)
+      const perGroup = Math.max(1, Math.min(adv.perGroup, smallest))
+      const best = perGroup < smallest ? Math.min(adv.best ?? 0, count) : 0
+      tour.custom[category.id] = groupPlayoffPlan(count, perGroup, best, { thirdPlace: tour.thirdPlace, bronzes: tour.bronzes, allPlaces: tour.allPlaces })
+    } else if (tour.custom[category.id]?.every((m) => m.auto)) {
+      delete tour.custom[category.id]
+    }
     // The organiser's own plan (matches after the groups) is made again for the new groups.
-    const next = withCustom(drawCategory({ ...state, teams: [...others, ...list] }, category.id, count, scheduleOf(state.tournament)))
+    const next = withCustom(drawCategory({ ...state, tournament: tour, teams: [...others, ...list] }, category.id, count, scheduleOf(state.tournament)))
     setGroups(count)
     setMsg(t('Zapisuję…'))
     if (!(await store.replace(next))) {
@@ -397,7 +473,10 @@ function DrawForecast({ state, categoryId, teams, groups }: { state: State; cate
     const base: State = { ...state, teams: [...others, ...teams] }
     let matches: Match[]
     const system = systemOf(state.tournament)
-    if (system === 'knockout' || system === 'double') {
+    if (system === 'knockout' && state.tournament.allPlaces) {
+      const plan = knockoutPlan(teams.map((x) => `team:${x.name}`), { allPlaces: true })
+      matches = withCustom({ ...base, groups: [], matches: [], tournament: { ...state.tournament, custom: { [categoryId]: plan } } }).matches
+    } else if (system === 'knockout' || system === 'double') {
       const courts = Array.from({ length: state.tournament.courts }, (_, i) => i + 1)
       matches = createElimination({ ...base, matches: state.matches.filter((m) => m.categoryId !== categoryId) }, categoryId, teams.map((x) => x.id),
         { start: sched.start, slotMinutes: sched.slotMinutes, courts, dayEnd: sched.dayEnd, dayStart: sched.dayStart, breaks: sched.breaks })
@@ -416,7 +495,11 @@ function DrawForecast({ state, categoryId, teams, groups }: { state: State; cate
       matches = withCustom({ ...base, groups: [], matches: [] }).matches.filter((m) => m.categoryId === categoryId)
     } else {
       const count = Math.max(1, Math.min(groups, Math.floor(teams.length / 2)))
-      matches = withCustom(drawCategory(base, categoryId, count, sched, () => 0.5)).matches.filter((m) => m.categoryId === categoryId)
+      const adv = state.tournament.advance
+      const tour = adv && !IS_ALBATROS
+        ? { ...state.tournament, custom: { ...(state.tournament.custom ?? {}), [categoryId]: groupPlayoffPlan(count, Math.min(adv.perGroup, Math.floor(teams.length / count)), adv.perGroup < Math.floor(teams.length / count) ? Math.min(adv.best ?? 0, count) : 0, state.tournament) } }
+        : state.tournament
+      matches = withCustom(drawCategory({ ...base, tournament: tour }, categoryId, count, sched, () => 0.5)).matches.filter((m) => m.categoryId === categoryId)
     }
     const starts = matches.map((m) => m.start).filter(Boolean).sort()
     return { n: matches.length, last: starts.at(-1) ?? '' }

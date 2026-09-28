@@ -161,8 +161,29 @@ export function tierForGroupPlace(state: State, groupId: string, pos: number): [
   return item ? [item.info.tierFrom, item.info.tierTo] : null
 }
 
+/**
+ * Teams in place `pos` of the category's groups, best first, once every group has finished:
+ * table points per match, then goal (point) difference and goals per match, so groups of
+ * different sizes compare fairly (best thirds).
+ */
+export function bestOfPlace(state: State, categoryId: string, pos: number): string[] {
+  const played = new Set(state.matches.filter((m) => !m.ko && m.categoryId === categoryId && m.groupId).map((m) => m.groupId))
+  const groups = groupsOf(state, categoryId).filter((x) => played.has(x.id))
+  if (!groups.length || !groups.every((x) => groupFinished(state, x.id))) return []
+  const rows = groups.flatMap((x) => standings(state.tournament.rules, x, state.matches, state.teams).slice(pos - 1, pos))
+  const per = (v: number, n: number) => (n ? v / n : 0)
+  const name = (id: string) => state.teams.find((x) => x.id === id)?.name ?? id
+  return rows
+    .sort((a, b) => per(b.tablePoints, b.played) - per(a.tablePoints, a.played)
+      || per(b.pointsWon - b.pointsLost, b.played) - per(a.pointsWon - a.pointsLost, a.played)
+      || per(b.pointsWon, b.played) - per(a.pointsWon, a.played)
+      || name(a.teamId).localeCompare(name(b.teamId), 'pl'))
+    .map((r) => r.teamId)
+}
+
 export function resolveSource(state: State, src: KoSource): string {
   if (src.kind === 'team') return src.teamId
+  if (src.kind === 'best') return bestOfPlace(state, src.categoryId, src.pos)[src.rank - 1] ?? ''
   return src.kind === 'group' ? groupPlace(state, src.groupId, src.pos) : outcome(state, src.matchId, src.take)
 }
 
@@ -173,6 +194,7 @@ export function sourceLabel(state: State, src: KoSource): string {
     const name = state.groups.find((x) => x.id === src.groupId)?.name ?? ''
     return t('{n}. miejsce · {group}', { n: src.pos, group: name })
   }
+  if (src.kind === 'best') return t('{r}. najlepsza z {n}. miejsc w grupach', { r: src.rank, n: src.pos })
   return src.take === 'winner' ? t('Zwycięzca: {match}', { match: src.label }) : t('Przegrany: {match}', { match: src.label })
 }
 
