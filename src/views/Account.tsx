@@ -180,19 +180,25 @@ function MyTournaments({ account }: { account: Account }) {
   )
 }
 
+/** "Wstecz": always one level up (list → account, tournament → list), also after a delete. */
+function UpButton({ to }: { to: string }) {
+  return (
+    <div className="backbar">
+      <a className="btn-back" href={`#${to}`}><span aria-hidden="true">←</span> {t('Wstecz')}</a>
+    </div>
+  )
+}
+
 /** #lista-turniejow: the account's tournaments, one button each. */
 export function TournamentList({ account }: { account: Account }) {
   const [done] = useState(() => { const m = listMessage; listMessage = ''; return m })
   return (
     <>
-      <a className="acc-back" href="#moje-turnieje">← {t('Konto organizatora')}</a>
+      <UpButton to="moje-turnieje" />
       <h1 className="acc-page-title">🏆 {t('Moje turnieje')} <span className="acc-count">{account.tournaments.length}</span></h1>
       {done && <p className="ok" role="status">{done}</p>}
       {account.tournaments.length === 0 ? (
-        <div className="panel acc-empty">
-          <p>{t('Nie masz jeszcze turniejów. Załóż pierwszy, zapisze się na tym koncie.')}</p>
-          <a className="btn btn-primary" href="#nowy-turniej">+ {t('Załóż nowy turniej')}</a>
-        </div>
+        <p className="panel acc-empty muted">{t('Nie masz jeszcze turniejów.')}</p>
       ) : (
         <ul className="acc-t-list">
           {account.tournaments.map((tr) => (
@@ -220,7 +226,7 @@ export function MyTournament({ account, id }: { account: Account; id: string }) 
   if (!tr) {
     return (
       <>
-        <a className="acc-back" href="#lista-turniejow">← {t('Moje turnieje')}</a>
+        <UpButton to="lista-turniejow" />
         <p className="notice-inline">{t('Tego turnieju nie ma na Twoim koncie.')}</p>
       </>
     )
@@ -247,7 +253,7 @@ export function MyTournament({ account, id }: { account: Account; id: string }) 
   }
   return (
     <>
-      <a className="acc-back" href="#lista-turniejow">← {t('Moje turnieje')}</a>
+      <UpButton to="lista-turniejow" />
       <header className="acc-t-head">
         <p className="eyebrow">{t('Mój turniej')}</p>
         <h1>{tr.name}</h1>

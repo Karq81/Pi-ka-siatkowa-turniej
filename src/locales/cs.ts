@@ -434,7 +434,6 @@ const dict: Record<string, string> = {
   "Nie ma jeszcze takiego turnieju": "Takový turnaj zatím neexistuje",
   "Nie ma takiego konta.": "Takový účet neexistuje.",
   "Nie masz jeszcze turniejów.": "Zatím nemáte žádné turnaje.",
-  "Nie masz jeszcze turniejów. Załóż pierwszy, zapisze się na tym koncie.": "Zatím nemáte žádné turnaje. Založte první, uloží se na tento účet.",
   "Nie musisz pisać ładnie. Wystarczy, że wiesz, czego chcesz.": "Nemusíte psát hezky. Stačí, že víte, co chcete.",
   "Nie musisz przepisywać drużyn i ustawień. Opisz turniej własnymi słowami, wklej notatki albo zrób zdjęcie kartki: listę drużyn, podział na grupy, dzień i godzinę. Asystent sam:": "Nemusíte přepisovat týmy a nastavení. Popište turnaj vlastními slovy, vložte poznámky nebo vyfoťte papír: seznam týmů, rozdělení do skupin, den a čas. Asistent sám:",
   "Nie musisz znać żadnego programu. Opisz turniej swoimi słowami albo przepisz go z kartki, a asystent AI ułoży drużyny, grupy i terminarz. Kibice oglądają wyniki na żywo w telefonie.": "Nemusíte znát žádný program. Popište turnaj vlastními slovy nebo ho opište z papíru a AI asistent sestaví týmy, skupiny a rozpis. Fanoušci sledují výsledky živě v mobilu.",

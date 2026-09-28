@@ -434,7 +434,6 @@ const dict: Record<string, string> = {
   "Nie ma jeszcze takiego turnieju": "There is no such tournament yet",
   "Nie ma takiego konta.": "There is no such account.",
   "Nie masz jeszcze turniejów.": "You have no tournaments yet.",
-  "Nie masz jeszcze turniejów. Załóż pierwszy, zapisze się na tym koncie.": "You have no tournaments yet. Create your first one; it will be saved on this account.",
   "Nie musisz pisać ładnie. Wystarczy, że wiesz, czego chcesz.": "You don't need to write nicely. It's enough to know what you want.",
   "Nie musisz przepisywać drużyn i ustawień. Opisz turniej własnymi słowami, wklej notatki albo zrób zdjęcie kartki: listę drużyn, podział na grupy, dzień i godzinę. Asystent sam:": "No need to retype teams and settings. Describe the tournament in your own words, paste your notes or take a photo of your sheet: the team list, the group split, the day and time. The assistant will:",
   "Nie musisz znać żadnego programu. Opisz turniej swoimi słowami albo przepisz go z kartki, a asystent AI ułoży drużyny, grupy i terminarz. Kibice oglądają wyniki na żywo w telefonie.": "You don't need to know any software. Describe the tournament in your own words or copy it from your notes, and the AI assistant sets up the teams, groups and schedule. Fans follow live results on their phones.",

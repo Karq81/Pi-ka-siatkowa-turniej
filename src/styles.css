@@ -1471,7 +1471,8 @@ input.num-bad { border-color: #dc2626; box-shadow: 0 0 0 3px #dc262622; }
 .acc-open-text { display: grid; gap: 2px; flex: 1; }
 .acc-open-text b { font-family: var(--display); font-size: 1.7rem; letter-spacing: .02em; text-transform: uppercase; }
 .acc-open-text span { opacity: .8; font-size: .92rem; }
-.acc-back { display: inline-block; margin: 0 0 12px; font-weight: 600; }
+.pf-main .backbar { position: static; margin: 0 0 16px; padding: 0; background: none; border: 0; backdrop-filter: none; }
+a.btn-back { text-decoration: none; }
 .acc-page-title { display: flex; align-items: center; gap: 10px; font-family: var(--display); font-size: 2rem; margin: 0 0 16px; }
 .acc-empty { display: grid; gap: 12px; justify-items: start; }
 .acc-t-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }

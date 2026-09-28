@@ -434,7 +434,6 @@ const dict: Record<string, string> = {
   "Nie ma jeszcze takiego turnieju": "Dieses Turnier gibt es noch nicht",
   "Nie ma takiego konta.": "Dieses Konto gibt es nicht.",
   "Nie masz jeszcze turniejów.": "Du hast noch keine Turniere.",
-  "Nie masz jeszcze turniejów. Załóż pierwszy, zapisze się na tym koncie.": "Du hast noch keine Turniere. Leg das erste an, es wird in diesem Konto gespeichert.",
   "Nie musisz pisać ładnie. Wystarczy, że wiesz, czego chcesz.": "Du musst nicht schön schreiben. Es reicht, dass du weißt, was du willst.",
   "Nie musisz przepisywać drużyn i ustawień. Opisz turniej własnymi słowami, wklej notatki albo zrób zdjęcie kartki: listę drużyn, podział na grupy, dzień i godzinę. Asystent sam:": "Du musst Teams und Einstellungen nicht abtippen. Beschreibe das Turnier mit eigenen Worten, füge Notizen ein oder fotografiere deinen Zettel: Teamliste, Gruppeneinteilung, Tag und Uhrzeit. Der Assistent wird selbst:",
   "Nie musisz znać żadnego programu. Opisz turniej swoimi słowami albo przepisz go z kartki, a asystent AI ułoży drużyny, grupy i terminarz. Kibice oglądają wyniki na żywo w telefonie.": "Du musst kein Programm kennen. Beschreibe das Turnier mit eigenen Worten oder schreib es vom Zettel ab, und der KI-Assistent erstellt Teams, Gruppen und Spielplan. Die Fans verfolgen die Ergebnisse live auf dem Handy.",

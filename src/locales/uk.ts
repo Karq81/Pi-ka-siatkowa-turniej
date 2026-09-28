@@ -434,7 +434,6 @@ const dict: Record<string, string> = {
   "Nie ma jeszcze takiego turnieju": "Такого турніру ще немає",
   "Nie ma takiego konta.": "Такого облікового запису немає.",
   "Nie masz jeszcze turniejów.": "У вас ще немає турнірів.",
-  "Nie masz jeszcze turniejów. Załóż pierwszy, zapisze się na tym koncie.": "У вас ще немає турнірів. Створіть перший, він збережеться в цьому обліковому записі.",
   "Nie musisz pisać ładnie. Wystarczy, że wiesz, czego chcesz.": "Не треба писати гарно. Досить знати, чого ви хочете.",
   "Nie musisz przepisywać drużyn i ustawień. Opisz turniej własnymi słowami, wklej notatki albo zrób zdjęcie kartki: listę drużyn, podział na grupy, dzień i godzinę. Asystent sam:": "Не треба переписувати команди й налаштування. Опишіть турнір своїми словами, вставте нотатки або сфотографуйте аркуш: список команд, поділ на групи, день і час. Асистент сам:",
   "Nie musisz znać żadnego programu. Opisz turniej swoimi słowami albo przepisz go z kartki, a asystent AI ułoży drużyny, grupy i terminarz. Kibice oglądają wyniki na żywo w telefonie.": "Не треба знати жодної програми. Опишіть турнір своїми словами або перепишіть його з аркуша, а ШІ-асистент складе команди, групи й розклад. Уболівальники стежать за результатами наживо в телефоні.",
