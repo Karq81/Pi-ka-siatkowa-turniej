@@ -8,6 +8,7 @@ import { Public } from './views/Public'
 import { Correction } from './views/Correction'
 import { Organizer } from './views/Organizer'
 import { Tv } from './views/Tv'
+import { Scoreboard } from './views/Scoreboard'
 import { useEffect } from 'react'
 import { SyncBanner, useRoute } from './ui'
 import { HelpBot } from './views/HelpBot'
@@ -20,7 +21,7 @@ import { HelpBot } from './views/HelpBot'
  * result entry, corrections) keep the normal phone layout with big buttons.
  */
 const DESKTOP_LIKE_WIDTH = 640
-const PHONE_LAYOUT = /^(boisko-\d+|wynik-\d+|korekta-.+|sedzia|kartki|o-systemie|nowy-turniej|konto|rejestracja|moje-turnieje|kredyty)$/
+const PHONE_LAYOUT = /^(boisko-\d+|tablica-\d+|wynik-\d+|korekta-.+|sedzia|kartki|o-systemie|nowy-turniej|konto|rejestracja|moje-turnieje|kredyty)$/
 
 function isPhone() {
   const touch = matchMedia('(pointer: coarse)').matches
@@ -65,7 +66,7 @@ export function App() {
   return (
     <>
       {/* The service pages show no tournament, so no connection notices either. */}
-      {!(IS_LANDING || PLATFORM_ROUTES.includes(route)) && <SyncBanner />}
+      {!(IS_LANDING || PLATFORM_ROUTES.includes(route) || route.startsWith('tablica-')) && <SyncBanner />}
       <Screen route={route} />
       {/* The AI help desk on the service's and the organiser's screens (not on fans' or scoring screens). */}
       {(IS_LANDING || PLATFORM_ROUTES.includes(route) || /^(panel(-[a-z]+)?|admin|kartki|sedzia)$/.test(route)) && <HelpBot route={route} />}
@@ -89,6 +90,8 @@ function Screen({ route }: { route: string }) {
   if (route === 'admin') return <Admin />
   if (route === 'kartki') return <PrintCards />
   if (route === 'tv') return <Tv />
+  const board = /^tablica-(\d+)$/.exec(route)
+  if (board) return <Scoreboard court={Number(board[1])} />
   if (route === 'o-systemie') return <About />
   if (route === 'nowy-turniej') return <NewTournament />
   if (route === 'konto' || route === 'rejestracja' || route === 'moje-turnieje' || route === 'kredyty') return <AccountPage key={route} view={route} />

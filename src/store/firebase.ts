@@ -6,6 +6,7 @@ import {
   persistentMultipleTabManager, setDoc, updateDoc, writeBatch, type Firestore,
 } from 'firebase/firestore'
 import { applyMatchUpdate } from '../logic/knockout'
+import { boardKey, publicBoard } from '../logic/publicBoard'
 import { dayKey } from '../logic/usage'
 import type { Match, Pins, Session, State } from '../types'
 import type { Store, SyncInfo } from './types'
@@ -235,11 +236,11 @@ export function createFirebaseStore(config: FirebaseOptions, tournamentId: strin
     const uid = auth.currentUser?.uid
     if (!ch || !uid) return
     const court = s.role === 'court' ? s.court : undefined
-    if (await ch.signIn(uid, s.role, pin, court)) { void restoreBackups(); return }
+    if (await ch.signIn(uid, s.role, pin, court)) { void afterLiveSignIn(); return }
     // Tournaments set up before the live scores: the chief referee copies the keys there.
     if (s.role === 'admin') {
       const pins = await readPins()
-      if (pins && await ch.copyPins(pins) && await ch.signIn(uid, s.role, pin, court)) void restoreBackups()
+      if (pins && await ch.copyPins(pins) && await ch.signIn(uid, s.role, pin, court)) void afterLiveSignIn()
     }
   }
 
@@ -251,6 +252,11 @@ export function createFirebaseStore(config: FirebaseOptions, tournamentId: strin
       const saved = (await getDoc(doc(tRef, 'sessions', u.uid))).data() as { pin?: string } | undefined
       if (saved?.pin) await liveSignIn(session, saved.pin)
     } catch { /* no session: nothing to resume */ }
+  }
+
+  async function afterLiveSignIn() {
+    await restoreBackups()
+    publishBoards(allCourts())
   }
 
   /** Points typed on this phone that never reached the database (page reloaded offline). */
@@ -265,6 +271,26 @@ export function createFirebaseStore(config: FirebaseOptions, tournamentId: strin
       if (!same && e.sets.length >= m.sets.length && (!sent || e.at >= sent.at)) store.updateMatch(id, (x) => ({ ...x, sets: e.sets }))
     }
   }
+
+  /**
+   * The courts' scoreboards for camera apps (board/… in the Realtime Database), written by
+   * the phones that score: a court's referee its own court, the chief referee every court.
+   */
+  const boardsSent = new Map<number, string>()
+  const publishBoards = (courts: Iterable<number>, from: State = state) => {
+    // Before the matches are loaded, the board would say the court is empty.
+    if (!live?.canWrite() || !session || (from === state && !sheetsLoaded)) return
+    for (const c of new Set(courts)) {
+      if (session.role === 'court' && session.court !== c) continue
+      if (c < 1 || c > from.tournament.courts) continue
+      const board = publicBoard(from, c, Date.now())
+      const key = boardKey(board)
+      if (boardsSent.get(c) === key) continue
+      boardsSent.set(c, key)
+      live.writeBoard(c, board)
+    }
+  }
+  const allCourts = (s: State = state) => Array.from({ length: s.tournament.courts }, (_, i) => i + 1)
 
   /** Writes whole matches into their courts' Firestore sheets. */
   const writeSheets = (changed: Match[]) => {
@@ -314,6 +340,7 @@ export function createFirebaseStore(config: FirebaseOptions, tournamentId: strin
         liveScores.set(id, entry)
         backupScore(tournamentId, id, entry)
         live.write(m.court, id, entry, () => writeSheets([m]))
+        publishBoards([m.court])
         return
       }
       writeSheets(changed)
@@ -328,6 +355,7 @@ export function createFirebaseStore(config: FirebaseOptions, tournamentId: strin
           live?.clear(c.court, c.id)
         }
       }
+      publishBoards([before.court, ...changed.map((c) => c.court)])
     },
     async replace(next) {
       const ops: ((b: ReturnType<typeof writeBatch>) => void)[] = []
@@ -349,6 +377,7 @@ export function createFirebaseStore(config: FirebaseOptions, tournamentId: strin
           ops.slice(i, i + 400).forEach((op) => op(b))
           await b.commit()
         }
+        publishBoards(allCourts(next), next)
       } catch (e) {
         fail(tk('Zapis turnieju'))(e)
       }
@@ -357,6 +386,7 @@ export function createFirebaseStore(config: FirebaseOptions, tournamentId: strin
       state = { ...state, tournament: { ...state.tournament, ...patch } }
       notify()
       updateDoc(tRef, { tournament: state.tournament }).catch(fail(tk('Zapis ustawień')))
+      publishBoards(allCourts())
     },
     getPins: readPins,
     async setPins(pins) {

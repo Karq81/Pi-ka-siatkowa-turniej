@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { TOURNAMENT_ID, tournamentUrl } from '../config'
 import { t } from '../i18n'
 import { streamEmbed } from '../logic/stream'
 import { store } from '../store/store'
@@ -41,6 +42,7 @@ export function StreamSettings({ state }: { state: State }) {
       <h2>📺 {t('Transmisja wideo na żywo')}</h2>
       <p>{t('Możesz nadawać mecz na żywo z telefonu (Facebook albo YouTube) i pokazać obraz kibicom na stronie turnieju, obok wyników. Nie jest to obowiązkowe.')}</p>
       <StreamGuide />
+      <CameraApp courts={tour.courts} />
       <p className="muted small">{t('Gdy transmisja już trwa: skopiuj jej link i wklej go poniżej.')}</p>
       <label>{t('Link do transmisji całego turnieju')}
         <input value={all} onChange={(e) => { setAll(e.target.value); setMsg('') }} placeholder="https://youtube.com/live/…" inputMode="url" />
@@ -221,5 +223,49 @@ function GoodTips() {
         <li>{t('Filmujesz dzieci? Uprzedź rodziców i zapisz w regulaminie turnieju, że mecze są transmitowane (RODO).')}</li>
       </ul>
     </section>
+  )
+}
+
+/**
+ * The address of a court's scoreboard for the SportCast camera app. Opened in a browser it
+ * shows the scoreboard page; the app reads `board` (tournament/court in the database).
+ */
+export function cameraAppUrl(court: number): string {
+  const base = tournamentUrl()
+  return `${base}${base.includes('?') ? '&' : '?'}board=${TOURNAMENT_ID}/${court}#tablica-${court}`
+}
+
+/** A QR code per court for the SportCast app, which then draws the live score on the video. */
+function CameraApp({ courts }: { courts: number }) {
+  const [court, setCourt] = useState(0)
+  const [qr, setQr] = useState('')
+  const pick = async (c: number) => {
+    setCourt(c)
+    const QRCode = (await import('qrcode')).default
+    setQr(await QRCode.toString(cameraAppUrl(c), { type: 'svg', margin: 1 }))
+  }
+  return (
+    <details className="camera-app">
+      <summary>📱 {t('Nadajesz aplikacją SportCast? Wynik na obrazie sam się zmienia')}</summary>
+      <p>{t('Aplikacja SportCast (Android) rysuje na obrazie tablicę wyników. Wynik bierze prosto z panelu sędziego, więc operator kamery niczego nie klika.')}</p>
+      <Steps items={[
+        t('W aplikacji SportCast wybierz sport i naciśnij „Wynik z sportlivearena.com”.'),
+        t('Wybierz poniżej boisko, na które patrzy kamera, i zeskanuj kod QR aplikacją.'),
+        t('Sędzia liczy punkty w swoim panelu jak zwykle. Po sekundzie ten sam wynik widać na obrazie.'),
+      ]} />
+      <div className="actions">
+        {Array.from({ length: courts }, (_, i) => i + 1).map((c) => (
+          <button key={c} type="button" className={`btn${c === court ? ' btn-primary' : ''}`} onClick={() => void pick(c)}>
+            {t('Boisko {n}', { n: courtLabel(c) })}
+          </button>
+        ))}
+      </div>
+      {court > 0 && qr && (
+        <>
+          <div className="larix-qr" dangerouslySetInnerHTML={{ __html: qr }} />
+          <p className="muted small">{t('Ten sam wynik w przeglądarce (np. do sprawdzenia):')} <a href={cameraAppUrl(court)} target="_blank" rel="noreferrer">{t('tablica boiska {n}', { n: courtLabel(court) })}</a></p>
+        </>
+      )}
+    </details>
   )
 }

@@ -1,4 +1,5 @@
 import type { FirebaseApp } from 'firebase/app'
+import type { PublicBoard } from '../logic/publicBoard'
 import type { Pins, SetScore } from '../types'
 
 /**
@@ -11,6 +12,7 @@ import type { Pins, SetScore } from '../types'
  *   pins/{t}               { admin, courts: { "1": key, … } }, a copy of the Firestore keys
  *   sessions/{t}/{uid}     { role, court?, pin }: a device's role, accepted when the key matches
  *   live/{t}/{court}/{id}  { sets, at }: the score of a match in progress, readable by all
+ *   board/{t}/{court}      the court's scoreboard for camera apps (see logic/publicBoard.ts), readable by all
  */
 export interface LiveEntry {
   sets: SetScore[]
@@ -26,6 +28,8 @@ export interface LiveChannel {
   /** Sends a score; `onRefused` runs when the database does not accept it (then use Firestore). */
   write(court: number, matchId: string, entry: LiveEntry, onRefused: () => void): void
   clear(court: number, matchId: string): void
+  /** Publishes a court's scoreboard for camera apps (skipped when this device may not). */
+  writeBoard(court: number, board: PublicBoard): void
   /** The chief referee: removes all live scores of the tournament. */
   clearAll(): void
   /** Opens a session for this device; resolves to whether the key was accepted. */
@@ -70,6 +74,9 @@ export async function openLive(app: FirebaseApp, tournamentId: string, emulator:
     write(court, matchId, entry, onRefused) {
       set(ref(db, `live/${tournamentId}/${court}/${matchId}`), { sets: entry.sets.map((s) => ({ a: s.a, b: s.b })), at: entry.at })
         .catch((e) => { console.warn('live write', e); writable = false; onRefused() })
+    },
+    writeBoard(court, board) {
+      if (writable) set(ref(db, `board/${tournamentId}/${court}`), JSON.parse(JSON.stringify(board))).catch((e) => console.warn('board write', e))
     },
     clearAll() {
       if (writable) remove(ref(db, `live/${tournamentId}`)).catch(() => {})

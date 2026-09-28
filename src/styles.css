@@ -1263,3 +1263,20 @@ button.btn-correct { font: inherit; cursor: pointer; }
 .larix-qr { width: 220px; max-width: 100%; margin: 0 auto; background: #fff; padding: 8px; border-radius: 8px; }
 .larix-url { word-break: break-all; font-size: 0.85rem; }
 .guide-tips ul { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+
+/* SportCast: the QR codes for the camera app, and one court's scoreboard page */
+.camera-app { margin-top: 12px; padding: 12px; border: 1px dashed var(--line); border-radius: 12px; }
+.camera-app summary { cursor: pointer; font-weight: 700; }
+.camera-app[open] { display: grid; gap: 8px; }
+.scoreboard-page { min-height: 100vh; display: grid; place-content: center; gap: 16px; padding: 16px; background: #0b1220; }
+.scoreboard { width: min(560px, calc(100vw - 32px)); background: #111a2e; color: #fff; border-radius: 14px; overflow: hidden; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4); }
+.sb-head { background: #1d4ed8; padding: 8px 14px; font-size: 0.9rem; font-weight: 600; }
+.sb-row { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-bottom: 1px solid #22304d; font-size: 1.4rem; font-weight: 700; }
+.sb-team { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sb-sets { min-width: 2ch; text-align: center; color: #fbbf24; }
+.sb-points { min-width: 2.5ch; text-align: center; background: #fff; color: #111a2e; border-radius: 8px; padding: 0 8px; }
+.sb-foot { padding: 8px 14px; font-size: 0.9rem; color: #cbd5e1; }
+.sb-foot .muted { color: #94a3b8; }
+.sb-live { color: #f87171; font-weight: 700; }
+.sb-empty { padding: 20px 14px; color: #cbd5e1; }
+.sb-note { max-width: 560px; color: #94a3b8; font-size: 0.85rem; text-align: center; margin: 0; }

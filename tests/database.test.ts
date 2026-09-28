@@ -7,6 +7,12 @@ import { afterAll, beforeAll, beforeEach, describe, it } from 'vitest'
 let env: RulesTestEnvironment
 const PINS = { admin: '1234', courts: { '1': '1111', '2': '2222' } }
 const score = { sets: [{ a: 5, b: 3 }], at: 1 }
+const board = {
+  v: 1, at: 1, tournament: 'Cup', court: 'A', status: 'live', stage: 'Grupa A', a: 'Orły', b: 'Sokoły',
+  sets: [{ a: 25, b: 20 }, { a: 3, b: 1 }], setsA: 1, setsB: 0, pointsA: 3, pointsB: 1, scoring: 'sets',
+  setsToWin: 2, setPoints: 25, lastSetPoints: 15, start: '2026-10-23T10:00', next: { a: 'X', b: 'Y', start: '2026-10-23T10:40' },
+  previous: { a: 'P', b: 'Q', setsA: 2, setsB: 0, sets: [{ a: 25, b: 1 }, { a: 25, b: 2 }] },
+}
 
 beforeAll(async () => {
   env = await initializeTestEnvironment({
@@ -79,5 +85,23 @@ describe('realtime database rules', () => {
     await assertFails(set(ref(as('ref1'), 'live/main/1/m1'), { sets: [{ a: 'x', b: 1 }], at: 1 }))
     await assertFails(set(ref(as('ref1'), 'live/main/1/m1'), { sets: [{ a: 1, b: 1 }] }))
     await assertFails(set(ref(as('ref1'), 'live/main/1/m1'), { ...score, extra: 1 }))
+  })
+
+  it('lets anyone read a court scoreboard, and only its own referee or the chief write it', async () => {
+    await assertSucceeds(get(ref(as(null), 'board/main/1')))
+    await assertFails(set(ref(as('fan'), 'board/main/1'), board))
+    await login('ref1', '1111', 1)
+    await assertSucceeds(set(ref(as('ref1'), 'board/main/1'), board))
+    await assertFails(set(ref(as('ref1'), 'board/main/2'), board))
+    await login('boss', '1234')
+    await assertSucceeds(set(ref(as('boss'), 'board/main/2'), { ...board, status: 'none', a: '', b: '', sets: null, next: null }))
+  })
+
+  it('accepts only proper scoreboards', async () => {
+    await login('ref1', '1111', 1)
+    await assertFails(set(ref(as('ref1'), 'board/main/1'), { ...board, status: 'party' }))
+    await assertFails(set(ref(as('ref1'), 'board/main/1'), { ...board, extra: 'x' }))
+    await assertFails(set(ref(as('ref1'), 'board/main/1'), { ...board, setsA: 'x' }))
+    await assertFails(set(ref(as('ref1'), 'board/main/1'), { ...board, a: 'x'.repeat(300) }))
   })
 })
