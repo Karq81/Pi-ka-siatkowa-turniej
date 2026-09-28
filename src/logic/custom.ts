@@ -186,3 +186,77 @@ export function customPlaces(state: State, categoryId: string, winnerOf: (m: Mat
   }
   return out.sort((a, b) => a.place - b.place)
 }
+
+/**
+ * Stepladder: players in order of strength (the best first). The two weakest play; the
+ * winner meets the next one up, and so on, until the final against number 1. Each loser
+ * takes the place of their step (the first loser is last).
+ */
+export function stepladderPlan(names: string[]): CustomMatch[] {
+  const n = names.length
+  if (n < 2) return []
+  const plan: CustomMatch[] = []
+  let prev = `team:${names[n - 1]}`
+  for (let i = n - 2, k = 1; i >= 0; i--, k++) {
+    const last = i === 0
+    const name = last ? t('Finał') : t('Szczebel {n}', { n: k })
+    plan.push({ name, a: `team:${names[i]}`, b: prev, ...(last ? { place: 1 } : { loserPlace: i + 2 }) })
+    prev = `winner:${name}`
+  }
+  return plan
+}
+
+/**
+ * A knockout bracket written as a plan (players in draw order; byes to the first places so
+ * no round is odd), plus a consolation bracket for the first-round losers. Round names come
+ * with a prefix, so both brackets live in one plan.
+ */
+function knockoutAsPlan(sides: string[], prefix: string, placeFrom: number, thirdPlace: boolean): CustomMatch[] {
+  const n = sides.length
+  if (n < 2) return []
+  let size = 2
+  while (size < n) size *= 2
+  const rounds = Math.log2(size)
+  let order = [1]
+  while (order.length < size) order = order.flatMap((s) => [s, order.length * 2 + 1 - s])
+  let slots: (string | null)[] = order.map((seed) => (seed <= n ? sides[seed - 1] : null))
+  const plan: CustomMatch[] = []
+  let semiLosers: string[] = []
+  for (let r = 1; r <= rounds; r++) {
+    const inRound = size / 2 ** r
+    const next: (string | null)[] = []
+    const losers: string[] = []
+    let k = 0
+    for (let i = 0; i < slots.length; i += 2) {
+      const [a, b] = [slots[i], slots[i + 1]]
+      if (!a || !b) { next.push(a ?? b); continue }
+      k++
+      const label = inRound === 1 ? t('Finał') : inRound === 2 ? t('Półfinał {n}', { n: k }) : inRound === 4 ? t('Ćwierćfinał {n}', { n: k }) : t('Runda {r} · {n}', { r, n: k })
+      const name = prefix ? `${prefix}: ${label}` : label
+      plan.push({ name, a, b, ...(inRound === 1 ? { place: placeFrom } : {}) })
+      next.push(`winner:${name}`)
+      losers.push(`loser:${name}`)
+    }
+    if (inRound === 2) semiLosers = losers
+    slots = next
+  }
+  if (thirdPlace && semiLosers.length === 2) {
+    const label = t('O {n}. miejsce', { n: placeFrom + 2 })
+    plan.push({ name: prefix ? `${prefix}: ${label}` : label, a: semiLosers[0], b: semiLosers[1], place: placeFrom + 2 })
+  }
+  return plan
+}
+
+/** The main knockout bracket and, for the first-round losers, a consolation bracket. */
+export function consolationPlan(names: string[], thirdPlace = true): CustomMatch[] {
+  const main = knockoutAsPlan(names.map((x) => `team:${x}`), '', 1, thirdPlace)
+  // First-round losers: matches that take two named players.
+  const firstLosers = main.filter((m) => m.a.startsWith('team:') && m.b.startsWith('team:')).map((m) => `loser:${m.name}`)
+  const plate = knockoutAsPlan(firstLosers, t('Pocieszenie'), 0, false).map((m) => {
+    // The consolation final decides no medal place; its matches keep no places.
+    const { place: _p, ...rest } = m
+    void _p
+    return rest
+  })
+  return [...main, ...plate]
+}

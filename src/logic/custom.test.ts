@@ -88,3 +88,34 @@ describe('own plan (from the AI assistant)', () => {
     expect(places).toEqual(['1:Adam', '2:Bartek', '3:Emil', '4:Filip'])
   })
 })
+
+describe('stepladder and consolation', () => {
+  it('stepladder: 5 players, 4 matches, places 1–5', async () => {
+    const { stepladderPlan } = await import('./custom')
+    const names = ['Adam', 'Bartek', 'Czarek', 'Darek', 'Emil']
+    const plan = stepladderPlan(names)
+    expect(plan).toHaveLength(4)
+    expect(plan[0]).toMatchObject({ a: 'team:Darek', b: 'team:Emil', loserPlace: 5 })
+    expect(plan[3]).toMatchObject({ a: 'team:Adam', place: 1 })
+    const s = blankState({ ...draft, system: 'custom', preset: [{ category: 'Open', teams: names, groups: [], matches: plan }] })
+    const done = playAll(s)
+    const places = customPlaces(done, 'k1', winnerOf(done)).map((p) => `${p.place}:${nameOf(done, p.teamId)}`)
+    // The earlier on the list wins: Adam beats everyone in the end.
+    expect(places).toEqual(['1:Adam', '2:Bartek', '3:Czarek', '4:Darek', '5:Emil'])
+  })
+
+  it('consolation: 8 players, main bracket + 3rd place + plate for the 4 first-round losers', async () => {
+    const { consolationPlan } = await import('./custom')
+    const plan = consolationPlan(players)
+    expect(plan.filter((m) => !m.name.startsWith('Pocieszenie'))).toHaveLength(8)
+    expect(plan.filter((m) => m.name.startsWith('Pocieszenie'))).toHaveLength(3)
+    expect(checkCustom(plan, players, null)).toEqual([])
+    const s = blankState({ ...draft, system: 'custom', preset: [{ category: 'Open', teams: players, groups: [], matches: plan }] })
+    const done = playAll(s)
+    expect(done.matches.every((m) => m.status === 'finished')).toBe(true)
+    // Every player plays at least twice.
+    const count = new Map<string, number>()
+    for (const m of done.matches) for (const id of [m.teamA, m.teamB]) count.set(id, (count.get(id) ?? 0) + 1)
+    expect([...count.values()].every((n) => n >= 2)).toBe(true)
+  })
+})

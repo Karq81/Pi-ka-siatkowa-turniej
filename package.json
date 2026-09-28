@@ -14,6 +14,7 @@
     "dev:emulator": "firebase emulators:exec --only firestore,auth,database --project demo-siatkalive \"vite --mode emulator\""
   },
   "dependencies": {
+    "edmonds-blossom-fixed": "^1.0.1",
     "firebase": "^12.19.0",
     "qrcode": "^1.5.4",
     "react": "^19.3.0",

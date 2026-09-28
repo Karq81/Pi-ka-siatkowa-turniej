@@ -1,4 +1,5 @@
 import { EntriesPanel } from './Registration'
+import { currentSwissRound, hasSwiss, pairNextRound, swissOpen, swissRounds } from '../logic/swiss'
 import { SlotCalc } from './NewTournament'
 import { STAGE2 } from '../content/stage2'
 import { openFirstStageMatches, openStage2Matches, stage2Groups } from '../logic/stage2'
@@ -62,6 +63,9 @@ export function Organizer({ route }: { route: string }) {
       </header>
       {tab === 'panel' && !IS_ALBATROS && <PinGate label={t('Zgłoszenia drużyn (sędzia główny)')}><EntriesPanel state={state} /></PinGate>}
       {tab === 'panel' && (IS_ALBATROS ? <TeamsAndDraw state={state} /> : <Setup state={state} />)}
+      {tab === 'panel-grupy' && state.categories.some((c) => hasSwiss(state, c.id)) && (
+        <PinGate label={t('Kolejne rundy (sędzia główny)')}><SwissPanel state={state} /></PinGate>
+      )}
       {tab === 'panel-grupy' && state.categories.some((c) => STAGE2[c.id]) && (
         <PinGate label={t('Mecze do rozegrania (sędzia główny)')}><Stage2Panel state={state} /></PinGate>
       )}
@@ -167,6 +171,44 @@ function Stage2Panel({ state }: { state: State }) {
         </div>
       ))}
       <p className="muted small">{t('Kolejny etap uruchamiasz przyciskiem pod napisem „Faza grupowa” albo „Drugi etap” niżej.')}</p>
+    </section>
+  )
+}
+
+/**
+ * Swiss system: the round being played, the games still open, and the button that pairs
+ * the next round from the table (it pulses once every game of the round has a result).
+ */
+function SwissPanel({ state }: { state: State }) {
+  const [busy, setBusy] = useState('')
+  const [msg, setMsg] = useState('')
+  const next = async (categoryId: string) => {
+    setBusy(categoryId)
+    const made = pairNextRound(state, categoryId)
+    const ok = await store.replace({ ...state, matches: [...state.matches, ...made] })
+    setBusy('')
+    setMsg(ok ? t('Runda {r} rozlosowana: {n} spotkań.', { r: made[0]?.swissRound ?? '', n: made.filter((m) => !m.bye).length }) : t('Nie udało się zapisać. Sprawdź internet i spróbuj jeszcze raz.'))
+  }
+  return (
+    <section className="panel stage2-panel">
+      <h2>♟️ {t('System szwajcarski')}</h2>
+      {state.categories.filter((c) => hasSwiss(state, c.id)).map((c) => {
+        const round = currentSwissRound(state, c.id)
+        const total = swissRounds(state, c.id)
+        const open = swissOpen(state, c.id).length
+        const done = round >= total && !open
+        return (
+          <div key={c.id} className="stage2-cat">
+            <p><b>{c.name}</b> · {t('runda {r} z {n}', { r: round, n: total })} · {open ? tp(open, 'został {n} mecz|zostały {n} mecze|zostało {n} meczów') : t('wszystkie mecze rozegrane')}</p>
+            {done ? <p className="phase-done">🏆 {t('Wszystkie rundy rozegrane. Tabela jest klasyfikacją końcową.')}</p> : (
+              <button type="button" className={`btn btn-primary ${open ? '' : 'btn-pulse'}`} disabled={!!open || busy === c.id} onClick={() => void next(c.id)}>
+                {busy === c.id ? t('Zapisuję…') : t('Losuj rundę {r}', { r: round + 1 })}
+              </button>
+            )}
+          </div>
+        )
+      })}
+      {msg && <p className="ok" role="status">{msg}</p>}
     </section>
   )
 }

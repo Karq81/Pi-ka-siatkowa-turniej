@@ -4,8 +4,10 @@ import { t, tk } from '../i18n'
 import { useMemo, useState, useSyncExternalStore } from 'react'
 import { tournamentUrl } from '../config'
 import { clubOf, drawCategory, shuffle } from '../logic/draw'
+import { nextSlot } from '../logic/schedule'
 import { createElimination, hasElimination, isElimination, systemOf } from '../logic/elimination'
-import { hasCustom, withCustom } from '../logic/custom'
+import { consolationPlan, hasCustom, stepladderPlan, withCustom } from '../logic/custom'
+import { defaultSwissRounds, hasSwiss, startSwiss } from '../logic/swiss'
 import { parseTeamList, scheduleOf, suspiciousNames } from '../logic/newTournament'
 import { SPORTS } from '../logic/sports'
 import { store, useSync } from '../store/store'
@@ -95,6 +97,9 @@ function SystemSetting({ state }: { state: State }) {
     ['groups', t('Grupy (każdy z każdym), potem drabinka')],
     ['knockout', t('Drabinka pucharowa')],
     ['double', t('Podwójna eliminacja (drabinka przegranych)')],
+    ['swiss', t('System szwajcarski (szachy, darts)')],
+    ['stepladder', t('Drabinka schodkowa (od najsłabszego do najlepszego)')],
+    ['consolation', t('Drabinka pucharowa z turniejem pocieszenia')],
     ...(state.tournament.custom ? [['custom', t('Plan własny (z opisu turnieju)')] as const] : []),
   ] as const
   return (
@@ -107,8 +112,16 @@ function SystemSetting({ state }: { state: State }) {
       {system === 'knockout' && (
         <label className="check"><input type="checkbox" checked={!!state.tournament.thirdPlace} onChange={(e) => store.updateTournament({ thirdPlace: e.target.checked })} /> {t('Spotkanie o 3. miejsce')}</label>
       )}
+      {system === 'swiss' && (
+        <label>{t('Liczba rund')}
+          <NumberField lazy min={1} max={15} value={state.tournament.swissRounds ?? defaultSwissRounds(state.teams.length)} onChange={(v) => store.updateTournament({ swissRounds: v })} />
+        </label>
+      )}
       <p className="muted small">
-        {system === 'custom' ? t('Spotkania ułożone według opisu turnieju. Kolejne spotkania wypełniają się same po wpisaniu wyników.')
+        {system === 'stepladder' ? t('Wpisz zawodników od najlepszego do najsłabszego. Dwóch najsłabszych gra pierwsze spotkanie, zwycięzca gra z kolejnym wyżej, aż do finału z numerem 1.')
+          : system === 'consolation' ? t('Przegrany odpada z głównej drabinki, ale przegrani z pierwszej rundy grają swoją drabinkę pocieszenia, więc każdy rozegra co najmniej dwa spotkania.')
+          : system === 'swiss' ? t('Wszyscy grają w każdej rundzie, z rywalami o podobnej liczbie punktów, nigdy dwa razy z tym samym. Kolejną rundę losujesz po zakończeniu poprzedniej.')
+          : system === 'custom' ? t('Spotkania ułożone według opisu turnieju. Kolejne spotkania wypełniają się same po wpisaniu wyników.')
           : system === 'groups' ? t('Najpierw grupy, w których każdy gra z każdym; potem mecze o miejsca.')
           : system === 'knockout' ? t('Od razu drabinka: przegrany odpada. Przy nieparzystej liczbie część dostaje wolny los.')
             : t('Po pierwszej porażce spada się do drabinki przegranych, po drugiej odpada. Na koniec wielki finał (z rewanżem, gdy wygra ten z drabinki przegranych).')}
@@ -190,6 +203,41 @@ function CategorySetup({ state, category }: { state: State; category: Category }
       if (strange.length) { setOdd(strange); return }
     }
     if (played && !confirm(t('Są już wpisane wyniki. Nowe losowanie ułoży terminarz od nowa i usunie wszystkie wyniki. Losować?'))) return
+    if (systemOf(state.tournament) === 'swiss') {
+      // Swiss system: the table and round 1; later rounds are paired from the results.
+      const others = state.teams.filter((t) => t.categoryId !== category.id)
+      const next = startSwiss({ ...state, teams: [...others, ...list] }, category.id, shuffle(list.map((x) => x.id), Math.random))
+      setMsg(t('Zapisuję…'))
+      if (!(await store.replace(next))) {
+        setMsg(t('Nie udało się zapisać losowania. Sprawdź internet i kliknij jeszcze raz.'))
+        return
+      }
+      try { sessionStorage.removeItem(draftKey) } catch { /* no storage */ }
+      setMsg(t('Runda 1 rozlosowana: {n} spotkań. Kolejne rundy losujesz w zakładce „2. Grupy”.', { n: next.matches.filter((m) => m.categoryId === category.id && !m.bye).length }))
+      return
+    }
+    const sys = systemOf(state.tournament)
+    if (sys === 'stepladder' || sys === 'consolation') {
+      // Made as the tournament's own plan: stepladder in the list's order (the best first),
+      // the consolation bracket from a random draw.
+      const names = (sys === 'stepladder' ? list : shuffle(list, Math.random)).map((x) => x.name)
+      const plan = sys === 'stepladder' ? stepladderPlan(names) : consolationPlan(names, state.tournament.thirdPlace ?? true)
+      const others = state.teams.filter((t) => t.categoryId !== category.id)
+      const next = withCustom({
+        ...state, teams: [...others, ...list],
+        groups: state.groups.filter((g) => g.categoryId !== category.id),
+        matches: state.matches.filter((m) => m.categoryId !== category.id),
+        tournament: { ...state.tournament, custom: { ...(state.tournament.custom ?? {}), [category.id]: plan } },
+      })
+      setMsg(t('Zapisuję…'))
+      if (!(await store.replace(next))) {
+        setMsg(t('Nie udało się zapisać losowania. Sprawdź internet i kliknij jeszcze raz.'))
+        return
+      }
+      try { sessionStorage.removeItem(draftKey) } catch { /* no storage */ }
+      setMsg(t('Plan gotowy: {m} spotkań. Terminarz gotowy.', { m: next.matches.filter((m) => m.categoryId === category.id).length }))
+      return
+    }
     if (systemOf(state.tournament) === 'custom') {
       // The organiser's own plan: the list is saved and the plan's matches are made again.
       const others = state.teams.filter((t) => t.categoryId !== category.id)
@@ -272,14 +320,18 @@ function CategorySetup({ state, category }: { state: State; category: Category }
       {teams.length >= 2 && <DrawForecast state={state} categoryId={category.id} teams={teams} groups={groups} />}
       <div className="form-row">
         <span className="muted">{t('Na liście:')} {teams.length}</span>
-        {!bracket && (
+        {!bracket && systemOf(state.tournament) !== 'swiss' && (
           <label>{t('Liczba grup')}
             <NumberField min={1} max={12} value={groups} onChange={setGroups} />
           </label>
         )}
       </div>
       <button className="btn btn-primary" disabled={teams.length < 2} onClick={() => void draw()}>
-        {systemOf(state.tournament) === 'custom'
+        {systemOf(state.tournament) === 'stepladder' || systemOf(state.tournament) === 'consolation'
+          ? t('Zapisz listę i ułóż drabinkę')
+          : systemOf(state.tournament) === 'swiss'
+          ? (hasSwiss(state, category.id) ? t('Zapisz listę i losuj 1. rundę od nowa') : t('Zapisz listę i losuj 1. rundę'))
+          : systemOf(state.tournament) === 'custom'
           ? t('Zapisz listę i ułóż plan')
           : bracket
           ? (hasElimination(state, category.id) ? t('Zapisz i losuj drabinkę od nowa') : t('Zapisz i losuj drabinkę'))
@@ -349,6 +401,17 @@ function DrawForecast({ state, categoryId, teams, groups }: { state: State; cate
       const courts = Array.from({ length: state.tournament.courts }, (_, i) => i + 1)
       matches = createElimination({ ...base, matches: state.matches.filter((m) => m.categoryId !== categoryId) }, categoryId, teams.map((x) => x.id),
         { start: sched.start, slotMinutes: sched.slotMinutes, courts, dayEnd: sched.dayEnd, dayStart: sched.dayStart, breaks: sched.breaks })
+    } else if (system === 'swiss') {
+      const first = startSwiss(base, categoryId, teams.map((x) => x.id)).matches.filter((m) => m.categoryId === categoryId && !m.bye)
+      const rounds = state.tournament.swissRounds ?? defaultSwissRounds(teams.length)
+      const perRound = Math.ceil(first.length / Math.max(1, state.tournament.courts))
+      let last = first[0]?.start ?? sched.start
+      for (let i = 1; i < rounds * perRound; i++) last = nextSlot(last, sched)
+      return { n: first.length * rounds, last }
+    } else if (system === 'stepladder' || system === 'consolation') {
+      const names = teams.map((x) => x.name)
+      const plan = system === 'stepladder' ? stepladderPlan(names) : consolationPlan(names, state.tournament.thirdPlace ?? true)
+      matches = withCustom({ ...base, groups: [], matches: [], tournament: { ...state.tournament, custom: { [categoryId]: plan } } }).matches
     } else if (system === 'custom') {
       matches = withCustom({ ...base, groups: [], matches: [] }).matches.filter((m) => m.categoryId === categoryId)
     } else {

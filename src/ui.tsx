@@ -68,11 +68,12 @@ export function useLookups(state: State) {
       groupName: (id: string) => group.get(id)?.name ?? '',
       categoryName: (id: string) => category.get(id)?.name ?? '',
       /** Group name, or the knockout round label. */
-      stageName: (m: Match) => m.ko?.label ?? group.get(m.groupId)?.name ?? '',
+      stageName: (m: Match) => m.ko?.label ?? (m.swissRound ? t('Runda {r}', { r: m.swissRound }) : group.get(m.groupId)?.name ?? ''),
       /** Team name, or where the team will come from (e.g. "Zwycięzca: Półfinał 1"). */
       side: (m: Match, s: 'a' | 'b') => {
         const id = s === 'a' ? m.teamA : m.teamB
         if (id) return teamName(id)
+        if (m.bye) return t('wolny los')
         return m.ko ? sourceLabel(state, s === 'a' ? m.ko.srcA : m.ko.srcB) : '—'
       },
     }

@@ -17,14 +17,15 @@ import { nextSlot, toLocalIso } from './schedule'
  * never created; whoever had the bye simply appears in the next match.
  */
 
-export type System = 'groups' | 'knockout' | 'double' | 'custom'
+export type System = 'groups' | 'knockout' | 'double' | 'custom' | 'swiss' | 'stepladder' | 'consolation'
 
 export function systemOf(t: Pick<Tournament, 'system'>): System {
   return t.system ?? 'groups'
 }
 
 export function isElimination(t: Pick<Tournament, 'system'>): boolean {
-  return systemOf(t) !== 'groups'
+  const s = systemOf(t)
+  return s === 'knockout' || s === 'double' || s === 'custom' || s === 'stepladder' || s === 'consolation'
 }
 
 interface PlanItem {

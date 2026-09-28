@@ -204,6 +204,8 @@ export function standings(
   for (const m of finished) {
     const a = rows.get(m.teamA)
     const b = rows.get(m.teamB)
+    // A free round (Swiss system) counts as a win.
+    if (m.bye && a) { a.played++; a.won++; a.tablePoints += rules.pointsWin; continue }
     if (!a || !b) continue
     const t = tally(rules, m.sets)
     a.played++; b.played++
@@ -237,8 +239,13 @@ export function standings(
       case 'setRatio': return ratio(r.setsWon, r.setsLost)
       case 'pointRatio': return ratio(r.pointsWon, r.pointsLost)
       case 'h2h': return miniValue(r.teamId, block)
+      case 'buchholz': return buchholz(r.teamId)
     }
   }
+  // Buchholz: the table points of everyone this team played (Swiss system).
+  const buchholz = (id: string): number => finished
+    .filter((m) => !m.bye && (m.teamA === id || m.teamB === id))
+    .reduce((sum, m) => sum + (rows.get(m.teamA === id ? m.teamB : m.teamA)?.tablePoints ?? 0), 0)
   // Head-to-head: points in the matches between the teams of the block, then the difference
   // in those matches (sets for sets, goals for goals) – one number, points first.
   const miniValue = (id: string, block: StandingRow[]): number => {
@@ -291,4 +298,5 @@ export const TIEBREAK_NAMES: Record<Tiebreak, string> = {
   setRatio: tk('Stosunek setów'),
   setDiff: tk('Różnica setów'),
   pointRatio: tk('Stosunek małych punktów'),
+  buchholz: tk('Buchholz (suma punktów rywali)'),
 }

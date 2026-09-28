@@ -49,9 +49,10 @@ export function NewTournament() {
   const judo = rules.scoring === 'judo' || rules.scoring === 'karate'
   const score = rules.scoring === 'score'
   const [categories, setCategories] = useState('')
-  const [system, setSystem] = useState<'groups' | 'knockout' | 'double' | 'custom'>('groups')
+  const [system, setSystem] = useState<'groups' | 'knockout' | 'double' | 'custom' | 'swiss' | 'stepladder' | 'consolation'>('groups')
   const [thirdPlace, setThirdPlace] = useState(true)
   const [twice, setTwice] = useState(false)
+  const [swissRounds, setSwissRounds] = useState(5)
   const [rest, setRest] = useState(0)
   const [breakFrom, setBreakFrom] = useState('')
   const [breakTo, setBreakTo] = useState('')
@@ -101,7 +102,7 @@ export function NewTournament() {
       })),
     })))
     setTwice(!!d.twice)
-    if (d.system === 'knockout' || d.system === 'double' || d.system === 'groups' || d.system === 'custom') setSystem(d.system)
+    if (d.system && ['knockout', 'double', 'groups', 'custom', 'swiss', 'stepladder', 'consolation'].includes(d.system)) setSystem(d.system)
     if (typeof d.thirdPlace === 'boolean') setThirdPlace(d.thirdPlace)
   }
 
@@ -131,6 +132,7 @@ export function NewTournament() {
       system,
       thirdPlace: system === 'knockout' ? thirdPlace : undefined,
       twice: system === 'groups' && twice ? true : undefined,
+      swissRounds: system === 'swiss' ? swissRounds : undefined,
       rest: rest || undefined,
       breaks: breaks.length ? breaks : undefined,
     })
@@ -285,6 +287,9 @@ export function NewTournament() {
             ['groups', t('Grupy (każdy z każdym), potem drabinka'), t('Najpierw grupy, w których każdy gra z każdym; potem mecze o miejsca.')],
             ['knockout', t('Drabinka pucharowa'), t('Od razu drabinka: przegrany odpada. Przy nieparzystej liczbie część dostaje wolny los.')],
             ['double', t('Podwójna eliminacja (drabinka przegranych)'), t('Po pierwszej porażce spada się do drabinki przegranych, po drugiej odpada. Na koniec wielki finał (z rewanżem, gdy wygra ten z drabinki przegranych).')],
+            ['stepladder', t('Drabinka schodkowa (od najsłabszego do najlepszego)'), t('Wpisz zawodników od najlepszego do najsłabszego. Dwóch najsłabszych gra pierwsze spotkanie, zwycięzca gra z kolejnym wyżej, aż do finału z numerem 1.')],
+            ['consolation', t('Drabinka pucharowa z turniejem pocieszenia'), t('Przegrany odpada z głównej drabinki, ale przegrani z pierwszej rundy grają swoją drabinkę pocieszenia, więc każdy rozegra co najmniej dwa spotkania.')],
+            ['swiss', t('System szwajcarski (szachy, darts)'), t('Wszyscy grają w każdej rundzie, z rywalami o podobnej liczbie punktów, nigdy dwa razy z tym samym. Kolejną rundę losujesz po zakończeniu poprzedniej.')],
           ] as const).map(([id, label, hint]) => (
             <label key={id} className={`system-opt ${system === id ? 'on' : ''}`}>
               <input type="radio" name="system" checked={system === id} onChange={() => setSystem(id)} />
@@ -293,6 +298,11 @@ export function NewTournament() {
           ))}
           {system === 'knockout' && (
             <label className="check"><input type="checkbox" checked={thirdPlace} onChange={(e) => setThirdPlace(e.target.checked)} /> {t('Spotkanie o 3. miejsce')}</label>
+          )}
+          {system === 'swiss' && (
+            <label>{t('Liczba rund')}
+              <NumberField min={1} max={15} value={swissRounds} onChange={setSwissRounds} />
+            </label>
           )}
           {system === 'groups' && (
             <label className="check"><input type="checkbox" checked={twice} onChange={(e) => setTwice(e.target.checked)} /> {t('Każdy z każdym dwa razy (rewanże)')}</label>

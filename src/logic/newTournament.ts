@@ -31,11 +31,13 @@ export interface TournamentDraft {
   preset?: { category: string; teams: string[]; groups: string[][]; matches?: CustomMatch[] }[]
   /** Groups: each pair plays twice. */
   twice?: boolean
+  /** Swiss system: number of rounds. */
+  swissRounds?: number
   /** Rounds a team rests between matches, and times without new matches (lunch). */
   rest?: number
   breaks?: { from: string; to: string }[]
   /** How it is played: groups (default), a knockout bracket, or double elimination. */
-  system?: 'groups' | 'knockout' | 'double' | 'custom'
+  system?: 'groups' | 'knockout' | 'double' | 'custom' | 'swiss' | 'stepladder' | 'consolation'
   thirdPlace?: boolean
 }
 
@@ -92,6 +94,7 @@ export function blankState(draft: TournamentDraft): State {
       ...(draft.system && draft.system !== 'groups' ? { system: draft.system } : {}),
       ...(draft.system === 'knockout' && draft.thirdPlace ? { thirdPlace: true } : {}),
       ...(draft.twice ? { twice: true } : {}),
+      ...(draft.swissRounds ? { swissRounds: draft.swissRounds } : {}),
       ...(draft.rest ? { rest: draft.rest } : {}),
       ...(draft.breaks?.length ? { breaks: draft.breaks } : {}),
     },

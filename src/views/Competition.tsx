@@ -9,6 +9,7 @@ import { useFavorites, toggleFavorite, setFavorites } from '../favorites'
 import { BracketTree } from './BracketTree'
 import { CustomView, EliminationView } from './Elimination'
 import { hasCustom } from '../logic/custom'
+import { hasSwiss } from '../logic/swiss'
 import { hasElimination } from '../logic/elimination'
 import { isUnderway } from '../logic/courtBoard'
 import { CorrectButton } from './Correction'
@@ -68,7 +69,7 @@ export function Competition({ state, route }: { state: State; route: string }) {
 
       {elim && (custom ? <CustomView state={state} categoryId={cat} /> : <EliminationView state={state} categoryId={cat} />)}
 
-      {!elim && <div className="phase" role="tablist" aria-label="Faza">
+      {!elim && !hasSwiss(state, cat) && <div className="phase" role="tablist" aria-label="Faza">
         <button role="tab" aria-selected={phase === 'groups'} className={phase === 'groups' ? 'on' : ''} onClick={() => setPhase('groups')}>{t('Faza grupowa')}</button>
         <button role="tab" aria-selected={phase === 'ko'} className={phase === 'ko' ? 'on' : ''} onClick={() => setPhase('ko')}>{STAGE2[cat] ? t('Drugi etap') : t('Faza pucharowa')}</button>
       </div>}
@@ -223,7 +224,7 @@ function GroupView({ state, groupId }: { state: State; groupId: string }) {
 
       <h3 className="list-title">{t('Mecze grupy')}</h3>
       <div className="cards">
-        {matches.map((m) => <MatchCard key={m.id} state={state} match={m} />)}
+        {matches.map((m) => <MatchCard key={m.id} state={state} match={m} label={m.swissRound ? t('Runda {r}', { r: m.swissRound }) : undefined} />)}
       </div>
     </>
   )
@@ -271,7 +272,7 @@ export function MatchCard({ state, match: m, label }: { state: State; match: Mat
     </>
   )
   const cls = `mcard ${underway ? 'is-live' : ''} ${done ? 'is-done' : ''} ${followed ? 'mine' : ''}`
-  if (!m.start) return <div className={cls}>{body}</div>
+  if (!m.start || m.bye) return <div className={cls}>{body}</div>
   // The chief referee also gets a correction button, kept outside the link.
   if (session?.role === 'admin') {
     return (

@@ -17,7 +17,7 @@ export interface AssistantDraft {
   categories: { name: string; teams: string[]; groups: string[][]; matches?: { name: string; a: string; b: string; place: number; loserPlace: number }[] }[]
   twice?: boolean
   /** How the tournament is played, read from the description. */
-  system?: 'groups' | 'knockout' | 'double' | 'custom'
+  system?: 'groups' | 'knockout' | 'double' | 'custom' | 'swiss' | 'stepladder' | 'consolation'
   thirdPlace?: boolean
   notes: string
 }

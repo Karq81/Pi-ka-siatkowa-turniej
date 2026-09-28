@@ -51,9 +51,9 @@ export interface Rules {
  * h2h: head-to-head – a small table of the matches between the teams still level (points,
  * then difference in those matches); wins: matches won; diff / scored: goal (point)
  * difference and goals scored; setRatio / setDiff: sets won to lost; pointRatio: small points
- * won to lost.
+ * won to lost; buchholz: the sum of the opponents' points (Swiss system).
  */
-export type Tiebreak = 'h2h' | 'wins' | 'diff' | 'scored' | 'setRatio' | 'setDiff' | 'pointRatio'
+export type Tiebreak = 'h2h' | 'wins' | 'diff' | 'scored' | 'setRatio' | 'setDiff' | 'pointRatio' | 'buchholz'
 
 export interface Tournament {
   name: string
@@ -82,7 +82,9 @@ export interface Tournament {
    * a losers' bracket, out after the second loss, a grand final) or 'custom' (only the
    * organiser's own plan, see `custom`).
    */
-  system?: 'groups' | 'knockout' | 'double' | 'custom'
+  system?: 'groups' | 'knockout' | 'double' | 'custom' | 'swiss' | 'stepladder' | 'consolation'
+  /** Swiss system: number of rounds. */
+  swissRounds?: number
   /** Knockout: a match for 3rd place between the semi-final losers. */
   thirdPlace?: boolean
   /** Groups: each pair plays twice (return matches). */
@@ -269,6 +271,10 @@ export interface Match {
   updatedAt: number
   /** When the court moved on to this match (result of the one before, or a time set by hand). */
   calledAt?: number
+  /** Swiss system: the round of this match (1, 2, …). */
+  swissRound?: number
+  /** Swiss system: a free round (teamB empty); counts as a win for teamA. */
+  bye?: boolean
   /**
    * Not played: the grand final's second match after a clear win, or a match left when the
    * chief referee ended its phase. Hidden from courts, boards and lists.
