@@ -1,6 +1,6 @@
 import { t } from '../i18n'
 import type { Group, KoInfo, KoRound, KoSource, Match, State } from '../types'
-import { followOnCourt, toLocalIso } from './schedule'
+import { followOnCourt, toLocalIso, type TimeBreak } from './schedule'
 import { isMatchDecided, standings, tally } from './scoring'
 
 export const ROUND_NAMES: Record<KoRound, string> = {
@@ -194,6 +194,10 @@ export interface KnockoutOptions {
   slotMinutes: number
   /** Courts to use, e.g. [1, 2, 3, 4]. */
   courts: number[]
+  /** The day's last start and the next morning's first (HH:MM), breaks: like the group timetable. */
+  dayEnd?: string
+  dayStart?: string
+  breaks?: TimeBreak[]
 }
 
 /**

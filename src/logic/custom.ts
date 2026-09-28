@@ -2,7 +2,7 @@ import { t } from '../i18n'
 import type { CustomMatch, KoSource, Match, State } from '../types'
 import { koId, propagate } from './knockout'
 import { scheduleOf } from './newTournament'
-import { toLocalIso } from './schedule'
+import { nextSlot } from './schedule'
 
 /*
  * The organiser's own plan: any shape of tournament described in words and turned by the
@@ -128,17 +128,8 @@ export function customMatches(state: State, categoryId: string): Match[] {
   // Times: after the category's last group match (or from the start), round by round.
   const sched = scheduleOf(state.tournament)
   const groupStarts = state.matches.filter((m) => m.categoryId === categoryId && !m.ko).map((m) => m.start).sort()
-  const step = (iso: string) => {
-    const d = new Date(iso)
-    d.setMinutes(d.getMinutes() + sched.slotMinutes)
-    let next = toLocalIso(d)
-    if (next.slice(11) > sched.dayEnd) {
-      const day = new Date(`${iso.slice(0, 10)}T12:00`)
-      day.setDate(day.getDate() + 1)
-      next = `${toLocalIso(day).slice(0, 10)}T${sched.dayStart}`
-    }
-    return next
-  }
+  const step = (iso: string) => nextSlot(iso, sched)
+
   let slot = groupStarts.length ? step(groupStarts[groupStarts.length - 1]) : sched.start
   const n = teams.length
   const result: Match[] = []

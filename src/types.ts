@@ -87,6 +87,10 @@ export interface Tournament {
   thirdPlace?: boolean
   /** Groups: each pair plays twice (return matches). */
   twice?: boolean
+  /** Rounds a team rests between its matches (0: none). */
+  rest?: number
+  /** Times of day without new matches (lunch), HH:MM. */
+  breaks?: { from: string; to: string }[]
   /** Albatros CUP: phases the chief referee has ended, per category. */
   phases?: Record<string, { groupsEnded?: boolean; stage2Ended?: boolean }>
   /**

@@ -31,6 +31,9 @@ export interface TournamentDraft {
   preset?: { category: string; teams: string[]; groups: string[][]; matches?: CustomMatch[] }[]
   /** Groups: each pair plays twice. */
   twice?: boolean
+  /** Rounds a team rests between matches, and times without new matches (lunch). */
+  rest?: number
+  breaks?: { from: string; to: string }[]
   /** How it is played: groups (default), a knockout bracket, or double elimination. */
   system?: 'groups' | 'knockout' | 'double' | 'custom'
   thirdPlace?: boolean
@@ -89,6 +92,8 @@ export function blankState(draft: TournamentDraft): State {
       ...(draft.system && draft.system !== 'groups' ? { system: draft.system } : {}),
       ...(draft.system === 'knockout' && draft.thirdPlace ? { thirdPlace: true } : {}),
       ...(draft.twice ? { twice: true } : {}),
+      ...(draft.rest ? { rest: draft.rest } : {}),
+      ...(draft.breaks?.length ? { breaks: draft.breaks } : {}),
     },
     ...presetTeams(draft),
   }
@@ -135,6 +140,8 @@ function presetTeams(draft: TournamentDraft): Pick<State, 'categories' | 'groups
   const schedule: ScheduleOptions = {
     courts: draft.courts, start: draft.start, slotMinutes: draft.slotMinutes, dayEnd: draft.dayEnd, dayStart: draft.start.slice(11),
     ...(draft.twice ? { twice: true } : {}),
+    ...(draft.rest ? { rest: draft.rest } : {}),
+    ...(draft.breaks?.length ? { breaks: draft.breaks } : {}),
   }
   return { categories, teams, groups, matches: buildGroupSchedule(groups, schedule) }
 }
@@ -154,6 +161,8 @@ export function scheduleOf(t: Tournament): ScheduleOptions & { dayStart: string 
     dayEnd: t.dayEnd ?? DEFAULT_SCHEDULE.dayEnd,
     dayStart: t.dayStart ?? DEFAULT_SCHEDULE.dayStart,
     ...(t.twice ? { twice: true } : {}),
+    ...(t.rest ? { rest: t.rest } : {}),
+    ...(t.breaks?.length ? { breaks: t.breaks } : {}),
   }
 }
 

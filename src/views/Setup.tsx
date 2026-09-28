@@ -1,7 +1,7 @@
 import { TOURNAMENT_ID } from '../config'
 import { AttachButtons, PhotoTip } from './Attach'
 import { t, tk } from '../i18n'
-import { useState, useSyncExternalStore } from 'react'
+import { useMemo, useState, useSyncExternalStore } from 'react'
 import { tournamentUrl } from '../config'
 import { clubOf, drawCategory, shuffle } from '../logic/draw'
 import { createElimination, hasElimination, isElimination, systemOf } from '../logic/elimination'
@@ -9,7 +9,7 @@ import { hasCustom, withCustom } from '../logic/custom'
 import { parseTeamList, scheduleOf, suspiciousNames } from '../logic/newTournament'
 import { SPORTS } from '../logic/sports'
 import { store, useSync } from '../store/store'
-import type { Category, State } from '../types'
+import type { Category, Match, State, Team } from '../types'
 import { NumberField, formatDay, formatTime, PinGate } from '../ui'
 import { AdminPinForm, setupTournament } from './Admin'
 import { CategoryGroups } from './Organizer'
@@ -219,7 +219,7 @@ function CategorySetup({ state, category }: { state: State; category: Category }
         matches: state.matches.filter((m) => m.categoryId !== category.id),
       }
       const courts = Array.from({ length: state.tournament.courts }, (_, i) => i + 1)
-      const matches = createElimination(base, category.id, shuffle(list.map((x) => x.id), Math.random), { start: sched.start, slotMinutes: sched.slotMinutes, courts })
+      const matches = createElimination(base, category.id, shuffle(list.map((x) => x.id), Math.random), { start: sched.start, slotMinutes: sched.slotMinutes, courts, dayEnd: sched.dayEnd, dayStart: sched.dayStart, breaks: sched.breaks })
       setMsg(t('Zapisuję…'))
       if (!(await store.replace({ ...base, matches: [...base.matches, ...matches] }))) {
         setMsg(t('Nie udało się zapisać losowania. Sprawdź internet i kliknij jeszcze raz.'))
@@ -269,6 +269,7 @@ function CategorySetup({ state, category }: { state: State; category: Category }
       <p className="muted small">{t('Zrób zdjęcie kartki z listą, dodaj plik (PDF, CSV) albo napisz, czego potrzebujesz, i kliknij „Uporządkuj z AI”. Sprawdź listę przed losowaniem.')}</p>
       {aiError && <p className="error">{aiError}</p>}
       {!teams.length && <PhotoTip where="teams" />}
+      {teams.length >= 2 && <DrawForecast state={state} categoryId={category.id} teams={teams} groups={groups} />}
       <div className="form-row">
         <span className="muted">{t('Na liście:')} {teams.length}</span>
         {!bracket && (
@@ -329,5 +330,41 @@ function TournamentLinks() {
         ))}
       </ul>
     </section>
+  )
+}
+
+/**
+ * Before the draw: how many matches the list makes and when the last one starts, with a
+ * warning when the tournament runs into the next day (the organiser can then add courts,
+ * shorten the matches, change the number of groups or the system).
+ */
+function DrawForecast({ state, categoryId, teams, groups }: { state: State; categoryId: string; teams: Team[]; groups: number }) {
+  const sched = scheduleOf(state.tournament)
+  const forecast = useMemo(() => {
+    const others = state.teams.filter((t) => t.categoryId !== categoryId)
+    const base: State = { ...state, teams: [...others, ...teams] }
+    let matches: Match[]
+    const system = systemOf(state.tournament)
+    if (system === 'knockout' || system === 'double') {
+      const courts = Array.from({ length: state.tournament.courts }, (_, i) => i + 1)
+      matches = createElimination({ ...base, matches: state.matches.filter((m) => m.categoryId !== categoryId) }, categoryId, teams.map((x) => x.id),
+        { start: sched.start, slotMinutes: sched.slotMinutes, courts, dayEnd: sched.dayEnd, dayStart: sched.dayStart, breaks: sched.breaks })
+    } else if (system === 'custom') {
+      matches = withCustom({ ...base, groups: [], matches: [] }).matches.filter((m) => m.categoryId === categoryId)
+    } else {
+      const count = Math.max(1, Math.min(groups, Math.floor(teams.length / 2)))
+      matches = withCustom(drawCategory(base, categoryId, count, sched, () => 0.5)).matches.filter((m) => m.categoryId === categoryId)
+    }
+    const starts = matches.map((m) => m.start).filter(Boolean).sort()
+    return { n: matches.length, last: starts.at(-1) ?? '' }
+  }, [state, categoryId, teams, groups])
+  if (!forecast.n || !forecast.last) return null
+  const firstDay = sched.start.slice(0, 10)
+  const late = forecast.last.slice(0, 10) !== firstDay
+  return (
+    <p className={`forecast ${late ? 'late' : ''}`}>
+      {t('Po losowaniu: {n} spotkań, ostatnie ok. {when}.', { n: forecast.n, when: `${formatDay(forecast.last)} ${formatTime(forecast.last)}` })}
+      {late && <> <b>{t('Nie zmieści się w jednym dniu (gry do {end}).', { end: sched.dayEnd })}</b> {t('Możesz dodać boisko, skrócić mecze, zmienić liczbę grup albo system turnieju.')}</>}
+    </p>
   )
 }

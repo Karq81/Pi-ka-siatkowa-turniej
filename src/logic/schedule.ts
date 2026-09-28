@@ -31,6 +31,30 @@ export interface ScheduleOptions {
   dayStart?: string
   /** Each pair plays twice, the second time with sides swapped (after all first matches). */
   twice?: boolean
+  /** Rounds a team rests between its matches (0: may play in the next round; 1: sits out at least one). */
+  rest?: number
+  /** Times of day when no match starts (lunch): a round that would start then waits until `to`. */
+  breaks?: TimeBreak[]
+}
+
+export interface TimeBreak {
+  /** HH:MM */
+  from: string
+  to: string
+}
+
+/**
+ * The start of the round after `iso`: `slotMinutes` later, then past any break of the day,
+ * and after `dayEnd` the next morning at `dayStart`.
+ */
+export function nextSlot(iso: string, opts: { slotMinutes: number; dayEnd: string; dayStart: string; breaks?: TimeBreak[] }): string {
+  let next = addMinutes(iso, opts.slotMinutes)
+  for (const b of [...(opts.breaks ?? [])].sort((x, y) => x.from.localeCompare(y.from))) {
+    const at = next.slice(11)
+    if (at >= b.from && at < b.to) next = `${next.slice(0, 10)}T${b.to}`
+  }
+  if (next.slice(11) > opts.dayEnd) next = addMinutes(`${iso.slice(0, 10)}T${opts.dayStart}`, 24 * 60)
+  return next
 }
 
 function addMinutes(iso: string, minutes: number): string {
@@ -70,22 +94,23 @@ export function buildGroupSchedule(groups: Group[], opts: ScheduleOptions): Matc
 
   const result: Match[] = []
   const startTime = opts.dayStart ?? opts.start.slice(11)
+  const rest = Math.max(0, opts.rest ?? 0)
+  // Round in which each team last played, so it rests `rest` rounds before its next match.
+  const lastRound = new Map<string, number>()
+  const rested = (id: string, round: number) => !lastRound.has(id) || round - lastRound.get(id)! > rest
   let slot = opts.start
-  while (queue.length) {
+  for (let round = 0; queue.length; round++) {
     const busy = new Set<string>()
     let court = 1
     for (let i = 0; i < queue.length && court <= opts.courts; ) {
       const m = queue[i]
-      if (busy.has(m.teamA) || busy.has(m.teamB)) { i++; continue }
+      if (busy.has(m.teamA) || busy.has(m.teamB) || !rested(m.teamA, round) || !rested(m.teamB, round)) { i++; continue }
       busy.add(m.teamA); busy.add(m.teamB)
+      lastRound.set(m.teamA, round); lastRound.set(m.teamB, round)
       result.push({ ...m, court: court++, start: slot })
       queue.splice(i, 1)
     }
-    let next = addMinutes(slot, opts.slotMinutes)
-    if (next.slice(11) > opts.dayEnd) {
-      next = addMinutes(`${slot.slice(0, 10)}T${startTime}`, 24 * 60)
-    }
-    slot = next
+    slot = nextSlot(slot, { slotMinutes: opts.slotMinutes, dayEnd: opts.dayEnd, dayStart: startTime, breaks: opts.breaks })
   }
   return result
 }
@@ -97,7 +122,7 @@ export function buildGroupSchedule(groups: Group[], opts: ScheduleOptions): Matc
  * moving to the next morning (`dayStart`) after `dayEnd`. Courts and pairings stay.
  */
 export function retimeSchedule(
-  matches: Match[], opts: { slotMinutes: number; dayEnd: string; dayStart: string },
+  matches: Match[], opts: { slotMinutes: number; dayEnd: string; dayStart: string; breaks?: TimeBreak[] },
 ): Match[] {
   const starts = [...new Set(matches.map((m) => m.start).filter(Boolean))].sort()
   let first = 0
@@ -109,11 +134,8 @@ export function retimeSchedule(
   let time = starts[first]
   moved.set(time, time)
   for (let i = first + 1; i < starts.length; i++) {
-    let next = addMinutes(time, opts.slotMinutes)
-    // Past the day's end: next morning.
-    if (next.slice(11) > opts.dayEnd) {
-      next = `${addMinutes(`${time.slice(0, 10)}T00:00`, 24 * 60).slice(0, 10)}T${opts.dayStart}`
-    }
+    // Past a break and past the day's end (next morning).
+    const next = nextSlot(time, opts)
     moved.set(starts[i], next)
     time = next
   }
@@ -131,10 +153,7 @@ export function buildGroupsOnOwnCourts(groups: Group[], courts: number[], opts: 
   const timeAt = (i: number) => {
     while (times.length <= i) {
       if (!times.length) { times.push(opts.start); continue }
-      const prev = times[times.length - 1]
-      let next = addMinutes(prev, opts.slotMinutes)
-      if (next.slice(11) > opts.dayEnd) next = addMinutes(`${prev.slice(0, 10)}T${startTime}`, 24 * 60)
-      times.push(next)
+      times.push(nextSlot(times[times.length - 1], { slotMinutes: opts.slotMinutes, dayEnd: opts.dayEnd, dayStart: startTime, breaks: opts.breaks }))
     }
     return times[i]
   }

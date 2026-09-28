@@ -1,7 +1,7 @@
 import { t } from '../i18n'
 import type { KoInfo, KoSource, Match, State, Tournament } from '../types'
 import { koId, propagate, placeLabel, type KnockoutOptions } from './knockout'
-import { toLocalIso } from './schedule'
+import { nextSlot, toLocalIso } from './schedule'
 
 /*
  * Knockout from the start, without groups:
@@ -210,7 +210,10 @@ export function createElimination(state: State, categoryId: string, teamIds: str
   const order = { W: 0, L: 1, F: 2, C: 3 }
   const levels = [...new Set(plan.map((p) => depth.get(p.key)!))].sort((a, b) => a - b)
   const result: Match[] = []
-  let slot = new Date(opts.start)
+  const step = (iso: string) => (opts.dayEnd && opts.dayStart
+    ? nextSlot(iso, { slotMinutes: opts.slotMinutes, dayEnd: opts.dayEnd, dayStart: opts.dayStart, breaks: opts.breaks })
+    : toLocalIso(new Date(new Date(iso).getTime() + opts.slotMinutes * 60000)))
+  let slot = opts.start
   for (const level of levels) {
     const items = plan.filter((p) => depth.get(p.key) === level)
       .sort((a, b) => order[a.info.bracket ?? 'W'] - order[b.info.bracket ?? 'W'] || (a.info.col ?? 0) - (b.info.col ?? 0))
@@ -218,15 +221,15 @@ export function createElimination(state: State, categoryId: string, teamIds: str
     for (const p of items) {
       if (court === opts.courts.length) {
         court = 0
-        slot = new Date(slot.getTime() + opts.slotMinutes * 60000)
+        slot = step(slot)
       }
       result.push({
         id: koId(categoryId, p.key), categoryId, groupId: '', ko: p.info,
-        court: opts.courts[court++], start: toLocalIso(slot),
+        court: opts.courts[court++], start: slot,
         teamA: '', teamB: '', sets: [], status: 'scheduled', updatedAt: 0,
       })
     }
-    slot = new Date(slot.getTime() + opts.slotMinutes * 60000)
+    slot = step(slot)
   }
   const withNew: State = { ...state, matches: [...state.matches.filter((m) => m.categoryId !== categoryId), ...result] }
   const filled = propagate(withNew)

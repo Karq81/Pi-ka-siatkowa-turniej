@@ -1569,3 +1569,9 @@ a.btn-back { text-decoration: none; }
 .tiebreak-edit li { padding: 4px 0; }
 .tiebreak-edit .tb-actions { display: inline-flex; gap: 4px; margin-left: 10px; }
 .tiebreak-edit .tb-add { max-width: 360px; }
+.time-range { display: flex; align-items: center; gap: 6px; }
+.time-range input { width: 90px; }
+.slot-calc { margin: 4px 0 8px; }
+.slot-calc summary { cursor: pointer; color: var(--accent); font-weight: 700; }
+.forecast { margin: 6px 0; padding: 8px 12px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--line); font-size: .92rem; }
+.forecast.late { border-color: var(--danger); background: color-mix(in srgb, var(--danger) 8%, var(--surface)); }

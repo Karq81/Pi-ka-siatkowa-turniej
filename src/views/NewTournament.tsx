@@ -52,6 +52,9 @@ export function NewTournament() {
   const [system, setSystem] = useState<'groups' | 'knockout' | 'double' | 'custom'>('groups')
   const [thirdPlace, setThirdPlace] = useState(true)
   const [twice, setTwice] = useState(false)
+  const [rest, setRest] = useState(0)
+  const [breakFrom, setBreakFrom] = useState('')
+  const [breakTo, setBreakTo] = useState('')
   const [preset, setPreset] = useState<TournamentDraft['preset']>()
   const planCount = preset?.reduce((n, p) => n + (p.matches?.length ?? 0), 0) ?? 0
   // Plan sides that do not match the list (a typo, a player left out): shown before saving.
@@ -64,6 +67,7 @@ export function NewTournament() {
   const address = slugEdited ? slug : slugify(name)
   const cats = categories.split(/[\n,;]/).map((c) => c.trim()).filter(Boolean)
   const validTime = (v: string) => /^([01]\d|2[0-3]):[0-5]\d$/.test(v)
+  const breaks = validTime(breakFrom) && validTime(breakTo) && breakFrom < breakTo ? [{ from: breakFrom, to: breakTo }] : []
   // What is still missing, in plain words; shown in red once "Dalej" was pressed.
   const [tried, setTried] = useState(false)
   const missing = {
@@ -127,6 +131,8 @@ export function NewTournament() {
       system,
       thirdPlace: system === 'knockout' ? thirdPlace : undefined,
       twice: system === 'groups' && twice ? true : undefined,
+      rest: rest || undefined,
+      breaks: breaks.length ? breaks : undefined,
     })
     location.href = `${location.pathname}?t=${address}#panel`
   }
@@ -256,6 +262,23 @@ export function NewTournament() {
             {judo && <span className="muted small">{t('Czas walki z zatrzymaniami i przerwą na zmianę zawodników. Zwykle 5–7 minut.')}</span>}
           </label>
         </div>
+        <SlotCalc onSlot={setSlotMinutes} />
+        <div className="form-row">
+          <label>{t('Odpoczynek drużyny')}
+            <select value={rest} onChange={(e) => setRest(Number(e.target.value))}>
+              <option value={0}>{t('Może grać mecz po meczu')}</option>
+              <option value={1}>{t('Co najmniej 1 runda przerwy')}</option>
+              <option value={2}>{t('Co najmniej 2 rundy przerwy')}</option>
+            </select>
+          </label>
+          <label>{t('Przerwa w planie (np. obiad), od–do')}
+            <span className="time-range">
+              <input inputMode="numeric" placeholder="12:00" value={breakFrom} onChange={(e) => setBreakFrom(e.target.value)} aria-label={t('Przerwa od')} />
+              <span>–</span>
+              <input inputMode="numeric" placeholder="13:00" value={breakTo} onChange={(e) => setBreakTo(e.target.value)} aria-label={t('Przerwa do')} />
+            </span>
+          </label>
+        </div>
         <fieldset className="system-pick">
           <legend>{t('System turnieju')}</legend>
           {([
@@ -308,5 +331,32 @@ export function NewTournament() {
       </form>
       </main>
     </div>
+  )
+}
+
+/**
+ * "Mecz co ile minut" from its parts: playing time + the break inside the match + changing
+ * teams on the court. Fills in the interval when all three are typed.
+ */
+export function SlotCalc({ onSlot }: { onSlot: (minutes: number) => void }) {
+  const [play, setPlay] = useState('')
+  const [pause, setPause] = useState('')
+  const [change, setChange] = useState('')
+  const num = (s: string) => Number(s.replace(',', '.')) || 0
+  const total = Math.round(num(play) + num(pause) + num(change))
+  return (
+    <details className="slot-calc">
+      <summary>{t('Policz „co ile minut” z czasu gry')}</summary>
+      <div className="form-row">
+        <label>{t('Czas gry (min), np. 2 × 12 = 24')}<input inputMode="decimal" value={play} onChange={(e) => setPlay(e.target.value)} /></label>
+        <label>{t('Przerwa w meczu (min)')}<input inputMode="decimal" value={pause} onChange={(e) => setPause(e.target.value)} /></label>
+        <label>{t('Zmiana drużyn na boisku (min)')}<input inputMode="decimal" value={change} onChange={(e) => setChange(e.target.value)} /></label>
+      </div>
+      {total > 0 && (
+        <p className="small">{t('Slot meczu: {n} min, czyli ok. {m} meczów na godzinę na jednym boisku.', { n: total, m: (60 / total).toFixed(1).replace('.', ',') })}{' '}
+          <button type="button" className="btn btn-sm btn-primary" onClick={() => onSlot(Math.min(240, Math.max(2, total)))}>{t('Ustaw {n} min', { n: total })}</button>
+        </p>
+      )}
+    </details>
   )
 }

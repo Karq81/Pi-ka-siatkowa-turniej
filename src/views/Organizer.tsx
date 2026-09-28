@@ -1,4 +1,5 @@
 import { EntriesPanel } from './Registration'
+import { SlotCalc } from './NewTournament'
 import { STAGE2 } from '../content/stage2'
 import { openFirstStageMatches, openStage2Matches, stage2Groups } from '../logic/stage2'
 import { downloadResults } from '../logic/export'
@@ -225,11 +226,20 @@ function MatchInterval({ state }: { state: State }) {
   const plan = scheduleOf(state.tournament)
   const current = plan.slotMinutes
   const [minutes, setMinutes] = useState(current)
+  const [rest, setRest] = useState(state.tournament.rest ?? 0)
+  const [breakFrom, setBreakFrom] = useState(state.tournament.breaks?.[0]?.from ?? '')
+  const [breakTo, setBreakTo] = useState(state.tournament.breaks?.[0]?.to ?? '')
+  const okTime = (v: string) => /^([01]\d|2[0-3]):[0-5]\d$/.test(v)
+  const breaks = okTime(breakFrom) && okTime(breakTo) && breakFrom < breakTo ? [{ from: breakFrom, to: breakTo }] : []
+  const changed = minutes !== current || rest !== (state.tournament.rest ?? 0)
+    || JSON.stringify(breaks) !== JSON.stringify(state.tournament.breaks ?? [])
   const [msg, setMsg] = useState('')
   const next = [...new Set(state.matches.filter((m) => m.status === 'scheduled').map((m) => m.start))].sort()[0]
   const save = async () => {
-    const matches = retimeSchedule(state.matches, { slotMinutes: minutes, dayEnd: plan.dayEnd, dayStart: plan.dayStart })
-    await store.replace({ ...state, tournament: { ...state.tournament, slotMinutes: minutes }, matches })
+    const matches = retimeSchedule(state.matches, { slotMinutes: minutes, dayEnd: plan.dayEnd, dayStart: plan.dayStart, breaks })
+    const { breaks: _b, rest: _r, ...base } = state.tournament
+    void _b; void _r
+    await store.replace({ ...state, tournament: { ...base, slotMinutes: minutes, ...(rest ? { rest } : {}), ...(breaks.length ? { breaks } : {}) }, matches })
     const last = matches.map((m) => m.start).sort().at(-1)
     setMsg(t('Zapisano: mecz co {n} min. Ostatni mecz: {last}.', { n: minutes, last: last ? `${formatDay(last)} ${formatTime(last)}` : '–' }))
   }
@@ -246,10 +256,26 @@ function MatchInterval({ state }: { state: State }) {
       <PinGate label={t('Zmiana godzin meczów (sędzia główny)')}>
         <div className="form-row">
           <label>{t('Minut od meczu do meczu')}
-            <NumberField id="slot-minutes" min={2} max={120} value={minutes} onChange={setMinutes} />
+            <NumberField id="slot-minutes" min={2} max={240} value={minutes} onChange={setMinutes} />
+          </label>
+          <label>{t('Przerwa w planie (np. obiad), od–do')}
+            <span className="time-range">
+              <input inputMode="numeric" placeholder="12:00" value={breakFrom} onChange={(e) => setBreakFrom(e.target.value)} aria-label={t('Przerwa od')} />
+              <span>–</span>
+              <input inputMode="numeric" placeholder="13:00" value={breakTo} onChange={(e) => setBreakTo(e.target.value)} aria-label={t('Przerwa do')} />
+            </span>
+          </label>
+          <label>{t('Odpoczynek drużyny')}
+            <select value={rest} onChange={(e) => setRest(Number(e.target.value))}>
+              <option value={0}>{t('Może grać mecz po meczu')}</option>
+              <option value={1}>{t('Co najmniej 1 runda przerwy')}</option>
+              <option value={2}>{t('Co najmniej 2 rundy przerwy')}</option>
+            </select>
+            <span className="muted small">{t('Odpoczynek liczy się przy następnym losowaniu.')}</span>
           </label>
         </div>
-        <button className="btn btn-primary" disabled={minutes === current} onClick={save}>{t('Zapisz i przelicz godziny')}</button>
+        <SlotCalc onSlot={setMinutes} />
+        <button className="btn btn-primary" disabled={!changed} onClick={save}>{t('Zapisz i przelicz godziny')}</button>
         {msg && <p className="ok">{msg}</p>}
       </PinGate>
     </section>

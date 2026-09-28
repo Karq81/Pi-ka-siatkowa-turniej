@@ -103,7 +103,7 @@ export function buildStage2(state: State, categoryId: string): State {
   }
   // Each new group on its own court (more groups than courts: the extra ones share from the first).
   const usable = groups.map((_, i) => courts[i % Math.max(1, courts.length)] ?? i + 1)
-  const made: Match[] = buildGroupsOnOwnCourts(groups, usable, { courts: courts.length, start, slotMinutes: slot, dayEnd, dayStart })
+  const made: Match[] = buildGroupsOnOwnCourts(groups, usable, { courts: courts.length, start, slotMinutes: slot, dayEnd, dayStart, breaks: state.tournament.breaks })
     .map((m, i) => ({ ...m, id: `${categoryId}${STAGE2_TAG}m${i + 1}` }))
   return {
     ...state,
