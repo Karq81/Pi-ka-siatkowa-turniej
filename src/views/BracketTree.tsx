@@ -5,6 +5,7 @@ import { tally } from '../logic/scoring'
 import type { Match, State } from '../types'
 import { courtLabel, formatDay, formatTime, StatusPill, useLookups } from '../ui'
 import { TeamBadge } from './Competition'
+import { koWinner, tieScore } from '../logic/legs'
 
 /**
  * Knockout tier drawn like a tennis draw: rounds side by side, joined by lines.
@@ -113,10 +114,7 @@ function Extra({ state, title, match }: { state: State; title: string; match?: M
 function Champion({ state, match, place }: { state: State; match?: Match; place: number }) {
   const { teamName } = useLookups(state)
   let id = ''
-  if (match?.status === 'finished') {
-    const tl = tally(state.tournament.rules, match.sets)
-    id = tl.setsA > tl.setsB ? match.teamA : tl.setsB > tl.setsA ? match.teamB : ''
-  }
+  if (match) id = koWinner(state, match)
   return (
     <div className={`champ ${id ? 'has' : ''}`}>
       <span className="champ-place">{place === 1 ? '🏆' : `${place}.`}</span>
@@ -134,13 +132,16 @@ export function BMatch({ state, match: m }: { state: State; match?: Match }) {
   const tl = tally(rules, m.sets)
   const cur = m.sets[m.sets.length - 1]
   const single = rules.sets === 1
-  const played = m.status !== 'scheduled' && m.sets.length > 0
-  const done = m.status === 'finished'
+  // Two legs or a series: the pairing's aggregate (or games won) and its winner.
+  const tie = tieScore(state, m)
+  const winner = koWinner(state, m)
+  const played = (m.status !== 'scheduled' && m.sets.length > 0) || !!tie && (tie.a > 0 || tie.b > 0)
+  const done = tie ? !!winner : m.status === 'finished'
   const team = (id: string) => (id ? state.teams.find((x) => x.id === id) : undefined)
   const row = (s: 'a' | 'b') => {
     const id = s === 'a' ? m.teamA : m.teamB
-    const score = single ? (s === 'a' ? cur?.a : cur?.b) : (s === 'a' ? tl.setsA : tl.setsB)
-    const won = done && (s === 'a' ? tl.setsA > tl.setsB : tl.setsB > tl.setsA)
+    const score = tie ? (s === 'a' ? tie.a : tie.b) : single ? (s === 'a' ? cur?.a : cur?.b) : (s === 'a' ? tl.setsA : tl.setsB)
+    const won = done && winner === id
     return (
       <div className={`bm-row ${won ? 'won' : ''} ${done && !won ? 'lost' : ''} ${mine.includes(id) ? 'mine' : ''}`}>
         {id ? <TeamBadge team={team(id)} size="sm" /> : <span className="bm-dot" aria-hidden="true" />}
@@ -152,7 +153,7 @@ export function BMatch({ state, match: m }: { state: State; match?: Match }) {
   const body = (
     <>
       <header>
-        <span>{m.ko!.label}</span>
+        <span>{m.ko!.label}{tie && <> · {tie.kind === 'series' ? t('seria') : t('suma')}</>}</span>
         {m.status === 'live' ? <StatusPill status="live" /> : m.start && <span>{formatDay(m.start)} {formatTime(m.start)} · B{courtLabel(m.court)}</span>}
       </header>
       {row('a')}

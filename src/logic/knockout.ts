@@ -1,7 +1,8 @@
 import { t } from '../i18n'
 import type { Group, KoInfo, KoRound, KoSource, Match, State } from '../types'
 import { followOnCourt, toLocalIso, type TimeBreak } from './schedule'
-import { isMatchDecided, standings, tally } from './scoring'
+import { koWinner, tieScore } from './legs'
+import { standings } from './scoring'
 
 export const ROUND_NAMES: Record<KoRound, string> = {
   QF: t('Ćwierćfinały'),
@@ -111,16 +112,13 @@ export function bracketPlan(categoryId: string, groups: Group[]): PlanItem[] | n
   return plan.length ? plan : null
 }
 
-/** Winner/loser of a finished, decided match, or '' if not known yet. */
+/** Winner/loser of a bracket pairing (a single match, two legs or a series), or '' if not known yet. */
 function outcome(state: State, matchId: string, take: 'winner' | 'loser'): string {
   const m = state.matches.find((x) => x.id === matchId)
-  if (!m || m.status !== 'finished' || !m.teamA || !m.teamB) return ''
-  const rules = state.tournament.rules
-  if (!isMatchDecided(rules, m.sets)) return ''
-  const t = tally(rules, m.sets)
-  if (t.setsA === t.setsB) return ''
-  const aWon = t.setsA > t.setsB
-  return (take === 'winner') === aWon ? m.teamA : m.teamB
+  if (!m || !m.teamA || !m.teamB) return ''
+  const w = koWinner(state, m)
+  if (!w) return ''
+  return take === 'winner' ? w : w === m.teamA ? m.teamB : m.teamA
 }
 
 /**
@@ -290,6 +288,29 @@ export function propagate(state: State): Match[] {
         any = true
         continue
       }
+      if (m.ko?.legOf) {
+        // A further leg or game: the pairing's teams (sides swapped when it says so); a series
+        // game no longer needed is left out, and comes back if a correction reopens the series.
+        const tie = current.matches.find((x) => x.id === m.ko!.legOf)
+        if (!tie) continue
+        const a = m.ko.swap ? tie.teamB : tie.teamA
+        const b = m.ko.swap ? tie.teamA : tie.teamB
+        const series = current.tournament.ties?.kind === 'series'
+        const decided = series && !!tieScore(current, tie)?.winner
+        let next: Match | null = null
+        if (m.status === 'scheduled' && !m.skipped && (a !== m.teamA || b !== m.teamB)) next = { ...m, teamA: a, teamB: b }
+        if (decided && !m.skipped && m.status === 'scheduled') next = { ...m, teamA: a, teamB: b, status: 'finished', skipped: true, sets: [] }
+        if (!decided && m.skipped) next = { ...m, teamA: a, teamB: b, status: 'scheduled', skipped: false }
+        if (next) {
+          const n = next
+          current = { ...current, matches: current.matches.map((x) => (x.id === m.id ? n : x)) }
+          const i = changed.findIndex((x) => x.id === m.id)
+          if (i >= 0) changed[i] = n
+          else changed.push(n)
+          any = true
+        }
+        continue
+      }
       if (!m.ko || m.status !== 'scheduled') continue
       const a = resolveSource(current, m.ko.srcA)
       const b = resolveSource(current, m.ko.srcB)
@@ -315,7 +336,7 @@ export interface BracketSlot {
 
 /** The bracket to display: real knockout matches, or a projection from the current tables. */
 export function bracketView(state: State, categoryId: string): BracketSlot[] | null {
-  const real = state.matches.filter((m) => m.ko && m.categoryId === categoryId)
+  const real = state.matches.filter((m) => m.ko && !m.ko.legOf && m.categoryId === categoryId)
   if (real.length) return real.map((match) => ({ match, projected: false }))
   const plan = bracketPlan(categoryId, groupsOf(state, categoryId))
   if (!plan) return null

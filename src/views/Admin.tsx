@@ -13,7 +13,7 @@ import { courtKeys } from '../logic/pins'
 import type { Match, MatchStatus, Pins, Rules, SetScore, State, Tiebreak } from '../types'
 import { NumberField, BackBar, courtLabel, formatDay, formatTime, PinGate, useLookups } from '../ui'
 import { CourtCard, MatchList } from './Public'
-import { ResultForm, withDecided } from './ResultForm'
+import { ResultForm, withDecided, type MatchExtra } from './ResultForm'
 
 const TABS = [
   { id: 'boiska', label: tk('Boiska') },
@@ -113,7 +113,7 @@ function Matches({ state }: { state: State }) {
 
 function MatchEditor({ state, match, onClose }: { state: State; match: Match; onClose: () => void }) {
   const { side } = useLookups(state)
-  const save = (status: MatchStatus, sets: SetScore[] = [], decidedBy?: Match['decidedBy']) => {
+  const save = (status: MatchStatus, sets: SetScore[] = [], decidedBy?: MatchExtra) => {
     store.updateMatch(match.id, (m) => ({ ...withDecided(m, decidedBy), status, sets }))
     onClose()
   }

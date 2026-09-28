@@ -184,7 +184,7 @@ export function hasCustom(state: State, categoryId: string): boolean {
 export function customPlaces(state: State, categoryId: string, winnerOf: (m: Match) => string): { place: number; teamId: string }[] {
   const out: { place: number; teamId: string }[] = []
   const add = (place: number, teamId: string) => { if (teamId && !out.some((x) => x.teamId === teamId)) out.push({ place, teamId }) }
-  const done = state.matches.filter((m) => m.categoryId === categoryId && m.ko?.bracket === 'C' && m.status === 'finished')
+  const done = state.matches.filter((m) => m.categoryId === categoryId && m.ko?.bracket === 'C' && !m.ko.legOf)
   // Better places first, so a player keeps the best place they reached.
   for (const m of [...done].sort((a, b) => (a.ko!.place ?? 99) - (b.ko!.place ?? 99))) {
     const w = winnerOf(m)

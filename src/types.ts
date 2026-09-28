@@ -124,6 +124,12 @@ export interface Tournament {
    * from the next place (compared by points per match). Missing: everybody plays for places.
    */
   advance?: { perGroup: number; best?: number }
+  /**
+   * Bracket pairings: 'one' match (default), 'two' legs (aggregate; `awayGoals` optional) or
+   * a 'series' to the best of `n` games. `finalSingle`: the final and the matches for places
+   * are one match.
+   */
+  ties?: { kind: 'one' | 'two' | 'series'; n?: number; awayGoals?: boolean; finalSingle?: boolean }
   /** Groups: each pair plays twice (return matches). */
   twice?: boolean
   /** Rounds a team rests between its matches (0: none). */
@@ -296,6 +302,11 @@ export interface KoInfo {
   resetOf?: Id
   /** Place of the loser when it is not place + 1 (the losers' bracket final: 3). */
   loserPlace?: number
+  /** Two legs or a series: this match is game `leg` (2, 3…) of the pairing whose first match is `legOf`. */
+  legOf?: Id
+  leg?: number
+  /** This game is played with the sides the other way round (the pairing's teamB at home). */
+  swap?: boolean
 }
 
 export interface Match {
@@ -319,6 +330,8 @@ export interface Match {
   calledAt?: number
   /** How the match was decided, for table points (hockey: overtime and shootout give 2 and 1). Missing: regular time. */
   decidedBy?: 'regulation' | 'overtime' | 'shootout' | 'walkover' | 'retirement'
+  /** Penalties (shootout) after a level knockout match or two-legged tie; not counted as goals. */
+  penalties?: SetScore
   /** Swiss system: the round of this match (1, 2, …). */
   swissRound?: number
   /** Swiss system: a free round (teamB empty); counts as a win for teamA. */

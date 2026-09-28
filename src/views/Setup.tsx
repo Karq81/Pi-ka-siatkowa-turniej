@@ -5,6 +5,7 @@ import { useMemo, useState, useSyncExternalStore } from 'react'
 import { tournamentUrl } from '../config'
 import { clubOf, drawCategory, shuffle } from '../logic/draw'
 import { nextSlot } from '../logic/schedule'
+import { withLegs } from '../logic/legs'
 import { arrangeSeeds, createElimination, hasElimination, isElimination, systemOf } from '../logic/elimination'
 import { consolationPlan, groupPlayoffPlan, hasCustom, knockoutPlan, stepladderPlan, withCustom } from '../logic/custom'
 import { defaultSwissRounds, hasSwiss, startSwiss } from '../logic/swiss'
@@ -143,6 +144,7 @@ function SystemSetting({ state }: { state: State }) {
         </>
       )}
       {system === 'knockout' && <FinishSetting state={state} />}
+      {(['knockout', 'double', 'consolation', 'custom'].includes(system) || (system === 'groups' && T.advance)) && !IS_ALBATROS && <TieSetting state={state} />}
       {system === 'swiss' && (
         <label>{t('Liczba rund')}
           <NumberField lazy min={1} max={15} value={state.tournament.swissRounds ?? defaultSwissRounds(state.teams.length)} onChange={(v) => store.updateTournament({ swissRounds: v })} />
@@ -178,6 +180,37 @@ function FinishSetting({ state }: { state: State }) {
         <option value="none">{t('Tylko finał')}</option>
       </select>
     </label>
+  )
+}
+
+/** How a bracket pairing is played: one match, two legs (aggregate) or a series. */
+function TieSetting({ state }: { state: State }) {
+  const ties = state.tournament.ties ?? { kind: 'one' as const }
+  const set = (patch: Partial<typeof ties>) => store.updateTournament({ ties: { ...ties, ...patch } })
+  return (
+    <>
+      <label>{t('Pary w drabince grają')}
+        <select value={ties.kind} onChange={(e) => {
+          const kind = e.target.value as 'one' | 'two' | 'series'
+          set({ kind, n: kind === 'series' ? ties.n ?? 3 : ties.n, finalSingle: kind === 'two' })
+        }}>
+          <option value="one">{t('Jeden mecz')}</option>
+          <option value="two">{t('Dwumecz: mecz i rewanż, liczy się suma')}</option>
+          <option value="series">{t('Serię meczów, do określonej liczby zwycięstw')}</option>
+        </select>
+      </label>
+      {ties.kind === 'series' && (
+        <label>{t('Najwięcej meczów w serii (np. 3 = do 2 zwycięstw, 7 = do 4)')}
+          <NumberField lazy min={2} max={9} value={ties.n ?? 3} onChange={(v) => set({ n: v })} />
+        </label>
+      )}
+      {ties.kind === 'two' && (
+        <label className="check"><input type="checkbox" checked={!!ties.awayGoals} onChange={(e) => set({ awayGoals: e.target.checked })} /> {t('Przy remisie w sumie decydują bramki na wyjeździe (potem karne)')}</label>
+      )}
+      {ties.kind !== 'one' && (
+        <label className="check"><input type="checkbox" checked={!!ties.finalSingle} onChange={(e) => set({ finalSingle: e.target.checked })} /> {t('Finał i mecze o miejsca: jeden mecz')}</label>
+      )}
+    </>
   )
 }
 
@@ -282,12 +315,12 @@ function CategorySetup({ state, category }: { state: State; category: Category }
         : sys === 'knockout' ? knockoutPlan(names.map((x) => `team:${x}`), { allPlaces: true }).map((m) => ({ ...m, auto: true }))
           : consolationPlan(names, state.tournament.thirdPlace ?? true)
       const others = state.teams.filter((t) => t.categoryId !== category.id)
-      const next = withCustom({
+      const next = withLegs(withCustom({
         ...state, teams: [...others, ...list],
         groups: state.groups.filter((g) => g.categoryId !== category.id),
         matches: state.matches.filter((m) => m.categoryId !== category.id),
         tournament: { ...state.tournament, custom: { ...(state.tournament.custom ?? {}), [category.id]: plan } },
-      })
+      }), category.id, scheduleOf(state.tournament))
       setMsg(t('Zapisuję…'))
       if (!(await store.replace(next))) {
         setMsg(t('Nie udało się zapisać losowania. Sprawdź internet i kliknij jeszcze raz.'))
@@ -305,7 +338,7 @@ function CategorySetup({ state, category }: { state: State; category: Category }
         groups: state.groups.filter((g) => g.categoryId !== category.id),
         matches: state.matches.filter((m) => m.categoryId !== category.id),
       }
-      const next = withCustom(base)
+      const next = withLegs(withCustom(base), category.id, scheduleOf(state.tournament))
       const made = next.matches.filter((m) => m.categoryId === category.id).length
       setMsg(t('Zapisuję…'))
       if (!(await store.replace(next))) {
@@ -334,12 +367,13 @@ function CategorySetup({ state, category }: { state: State; category: Category }
       }
       const matches = createElimination(base, category.id, seeded(state, list).map((x) => x.id), { start: sched.start, slotMinutes: sched.slotMinutes, courts, dayEnd: sched.dayEnd, dayStart: sched.dayStart, breaks: sched.breaks })
       setMsg(t('Zapisuję…'))
-      if (!(await store.replace({ ...base, matches: [...base.matches, ...matches] }))) {
+      const next = withLegs({ ...base, matches: [...base.matches, ...matches] }, category.id, sched)
+      if (!(await store.replace(next))) {
         setMsg(t('Nie udało się zapisać losowania. Sprawdź internet i kliknij jeszcze raz.'))
         return
       }
       try { sessionStorage.removeItem(draftKey) } catch { /* no storage */ }
-      setMsg(`${t('Rozlosowano drabinkę: {n} uczestników, {m} spotkań.', { n: list.length, m: matches.length })} ${t('Terminarz gotowy.')}`)
+      setMsg(`${t('Rozlosowano drabinkę: {n} uczestników, {m} spotkań.', { n: list.length, m: next.matches.filter((m) => m.categoryId === category.id).length })} ${t('Terminarz gotowy.')}`)
       return
     }
     // At least two teams per group.
@@ -357,7 +391,7 @@ function CategorySetup({ state, category }: { state: State; category: Category }
       delete tour.custom[category.id]
     }
     // The organiser's own plan (matches after the groups) is made again for the new groups.
-    const next = withCustom(drawCategory({ ...state, tournament: tour, teams: [...others, ...list] }, category.id, count, scheduleOf(state.tournament)))
+    const next = withLegs(withCustom(drawCategory({ ...state, tournament: tour, teams: [...others, ...list] }, category.id, count, scheduleOf(state.tournament))), category.id, scheduleOf(state.tournament))
     setGroups(count)
     setMsg(t('Zapisuję…'))
     if (!(await store.replace(next))) {

@@ -1,11 +1,11 @@
 import { t } from '../i18n'
 import { eliminationPlaces } from '../logic/elimination'
 import { customPlaces } from '../logic/custom'
-import { tally } from '../logic/scoring'
 import type { Match, State } from '../types'
 import { useLookups } from '../ui'
 import { BMatch } from './BracketTree'
 import { MatchList } from './Public'
+import { koWinner } from '../logic/legs'
 
 /** Column title in the winners' bracket, from how many matches the round has in a full draw. */
 function winnersTitle(col: number, rounds: number, double: boolean): string {
@@ -24,7 +24,7 @@ function winnersTitle(col: number, rounds: number, double: boolean): string {
  */
 export function EliminationView({ state, categoryId, schedule = true }: { state: State; categoryId: string; schedule?: boolean }) {
   const { teamName } = useLookups(state)
-  const ms = state.matches.filter((m) => m.categoryId === categoryId && m.ko?.bracket)
+  const ms = state.matches.filter((m) => m.categoryId === categoryId && m.ko?.bracket && !m.ko.legOf)
   if (!ms.length) return <p className="notice-inline">{t('Drabinka pojawi się po losowaniu.')}</p>
   const double = ms.some((m) => m.ko!.bracket === 'L' || m.ko!.resetOf)
   const winners = ms.filter((m) => m.ko!.bracket === 'W')
@@ -41,7 +41,7 @@ export function EliminationView({ state, categoryId, schedule = true }: { state:
     return [...byCol.entries()].sort((a, b) => a[0] - b[0])
   }
   const lCols = cols(losers)
-  const winnerOf = (m: Match) => { const tl = tally(state.tournament.rules, m.sets); return tl.setsA > tl.setsB ? m.teamA : tl.setsB > tl.setsA ? m.teamB : '' }
+  const winnerOf = (m: Match) => koWinner(state, m)
   const places = eliminationPlaces(state, categoryId, winnerOf)
   return (
     <div className="elim">
@@ -111,12 +111,12 @@ function Columns({ state, columns }: { state: State; columns: [string, Match[]][
  */
 export function CustomView({ state, categoryId, schedule = true }: { state: State; categoryId: string; schedule?: boolean }) {
   const { teamName } = useLookups(state)
-  const ms = state.matches.filter((m) => m.categoryId === categoryId && m.ko?.bracket === 'C')
+  const ms = state.matches.filter((m) => m.categoryId === categoryId && m.ko?.bracket === 'C' && !m.ko.legOf)
   if (!ms.length) return null
   const byCol = new Map<number, Match[]>()
   for (const m of ms) byCol.set(m.ko!.col ?? 1, [...(byCol.get(m.ko!.col ?? 1) ?? []), m])
   const columns = [...byCol.entries()].sort((a, b) => a[0] - b[0])
-  const winnerOf = (m: Match) => { const tl = tally(state.tournament.rules, m.sets); return tl.setsA > tl.setsB ? m.teamA : tl.setsB > tl.setsA ? m.teamB : '' }
+  const winnerOf = (m: Match) => koWinner(state, m)
   const places = customPlaces(state, categoryId, winnerOf)
   return (
     <div className="elim">

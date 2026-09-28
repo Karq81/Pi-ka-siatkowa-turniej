@@ -2,6 +2,7 @@ import { t } from '../i18n'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { isMatchDecided, isScore, resultProblem, scoreUnit, setCap, setProblem, setTarget, tally } from '../logic/scoring'
 import { describeSets } from '../logic/sports'
+import { isTwoLegged, needsPenalties } from '../logic/legs'
 import type { Match, SetScore, State } from '../types'
 import { ConfirmDialog, useLookups } from '../ui'
 import { JudoResultForm } from './JudoScoring'
@@ -26,16 +27,25 @@ export function parseFields(fields: Field[]): SetScore[] {
  */
 type DecidedBy = NonNullable<Match['decidedBy']>
 
-/** The match with how it was decided, when the form asked (hockey: overtime, shootout). */
-export function withDecided(m: Match, decidedBy?: DecidedBy): Match {
-  return decidedBy ? { ...m, decidedBy } : m
+/** What the form asked besides the score: how the match was decided, penalties. */
+export interface MatchExtra {
+  decidedBy?: DecidedBy
+  penalties?: SetScore
+}
+
+/** The match with the form's extras (decided by, penalties); penalties no longer needed go away. */
+export function withDecided(m: Match, extra?: MatchExtra): Match {
+  if (!extra) return m
+  const { penalties: _old, ...rest } = m
+  void _old
+  return { ...rest, ...(extra.decidedBy ? { decidedBy: extra.decidedBy } : {}), ...(extra.penalties ? { penalties: extra.penalties } : {}) }
 }
 
 export function ResultForm({ state, match, submitLabel, onSubmit, children }: {
   state: State
   match: Match
   submitLabel: string
-  onSubmit: (sets: SetScore[], decidedBy?: DecidedBy) => void
+  onSubmit: (sets: SetScore[], extra?: MatchExtra) => void
   children?: ReactNode
 }) {
   if (state.tournament.rules.scoring === 'judo') {
@@ -54,7 +64,7 @@ function SetsResultForm({ state, match, submitLabel, onSubmit: save, children }:
   state: State
   match: Match
   submitLabel: string
-  onSubmit: (sets: SetScore[], decidedBy?: DecidedBy) => void
+  onSubmit: (sets: SetScore[], extra?: MatchExtra) => void
   children?: ReactNode
 }) {
   const { side } = useLookups(state)
@@ -67,15 +77,25 @@ function SetsResultForm({ state, match, submitLabel, onSubmit: save, children }:
     ...(rules.pointsWalkoverLoss !== undefined ? [['walkover', t('walkower')]] as [DecidedBy, string][] : []),
   ]
   const [decidedBy, setDecidedBy] = useState<DecidedBy>(match.decidedBy ?? 'regulation')
-  const onSubmit = (sets: SetScore[]) => save(sets, ways.length ? decidedBy : undefined)
+  const [pens, setPens] = useState({ a: match.penalties ? String(match.penalties.a) : '', b: match.penalties ? String(match.penalties.b) : '' })
+  const onSubmit = (sets: SetScore[]) => {
+    const penalties = needsPenalties(state, match, sets) && pens.a !== '' && pens.b !== '' ? { a: Number(pens.a), b: Number(pens.b) } : undefined
+    save(sets, { ...(ways.length ? { decidedBy } : {}), ...(penalties ? { penalties } : {}) })
+  }
   // Goals and points can have three digits (basketball); set points two; games in tennis one.
   const digitsFor = (i: number) => (score ? 3 : Math.max(setTarget(rules, i), setCap(rules, i) ?? 0) < 10 ? 1 : 2)
   const [fields, setFields] = useState<Field[]>(() => toFields(match.sets, rules.sets))
   const inputs = useRef<(HTMLInputElement | null)[]>([])
   const sets = parseFields(fields)
   const tl = tally(rules, sets)
-  const decided = isMatchDecided(rules, sets)
-  const problem = resultProblem(rules, sets)
+  // A leg of a two-legged tie may end level; so may a match that goes to penalties.
+  const formRules = isTwoLegged(state, match) ? { ...rules, draws: true } : rules
+  const penaltiesNeeded = needsPenalties(state, match, sets)
+  const penaltiesOk = pens.a !== '' && pens.b !== '' && pens.a !== pens.b
+  const decided = isMatchDecided(formRules, sets) || (penaltiesNeeded && penaltiesOk)
+  const problem = penaltiesNeeded
+    ? (penaltiesOk ? null : t('Remis: wpisz wynik rzutów karnych (nie liczą się do bramek).'))
+    : resultProblem(formRules, sets)
 
   useEffect(() => {
     inputs.current[0]?.focus()
@@ -151,15 +171,27 @@ function SetsResultForm({ state, match, submitLabel, onSubmit: save, children }:
               )
             }),
             <span key={`c${i}`} className={`rf-check ${!filled ? '' : p ? 'warn' : 'ok'}`}>
-              {!filled ? '' : p === 'impossible' ? t('niemożliwy wynik') : p === 'unfinished' ? t('set niedokończony') : score && !rules.draws && f.a === f.b ? t('remis niemożliwy') : '✓'}
+              {!filled ? '' : p === 'impossible' ? t('niemożliwy wynik') : p === 'unfinished' ? t('set niedokończony') : score && !formRules.draws && f.a === f.b && !penaltiesNeeded ? t('remis niemożliwy') : '✓'}
             </span>,
           ]
         })}
       </div>
       <p className="rf-total">
         {t('Wynik:')} <b>{score ? `${sets[0]?.a ?? 0}:${sets[0]?.b ?? 0}` : `${tl.setsA}:${tl.setsB}`}</b>
+        {penaltiesNeeded && penaltiesOk && <> {t('karne {a}:{b}', { a: pens.a, b: pens.b })}</>}
         {sets.length > 0 && !decided && <span className="muted small"> {t('· mecz jeszcze nierozstrzygnięty')}</span>}
       </p>
+      {penaltiesNeeded && (
+        <div className="rf-grid rf-pens" role="group" aria-label={t('Rzuty karne')}>
+          <span className="rf-label">{t('Rzuty karne')}<small>{t('nie liczą się do bramek')}</small></span>
+          {(['a', 'b'] as const).map((sd) => (
+            <input key={sd} className="rf-input" inputMode="numeric" pattern="[0-9]*" autoComplete="off"
+              aria-label={`${t('Rzuty karne')}, ${side(match, sd)}`} value={pens[sd]}
+              onChange={(e) => { const v = e.target.value.replace(/\D/g, '').slice(0, 2); setPens((x) => ({ ...x, [sd]: v })) }} />
+          ))}
+          <span className={`rf-check ${penaltiesOk ? 'ok' : 'warn'}`}>{penaltiesOk ? '✓' : ''}</span>
+        </div>
+      )}
       {ways.length > 0 && (
         <div className="chips rf-decided" role="group" aria-label={t('Jak rozstrzygnięto mecz')}>
           {ways.map(([id, label]) => (

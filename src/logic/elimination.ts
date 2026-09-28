@@ -300,7 +300,7 @@ export function hasElimination(state: State, categoryId: string): boolean {
  * or the losers' final, two 3rd places with two bronzes.
  */
 export function eliminationPlaces(state: State, categoryId: string, winnerOf: (m: Match) => string): { place: number; teamId: string }[] {
-  const ms = state.matches.filter((m) => m.categoryId === categoryId && m.ko?.bracket && m.ko.bracket !== 'C' && m.status === 'finished' && !m.skipped)
+  const ms = state.matches.filter((m) => m.categoryId === categoryId && m.ko?.bracket && m.ko.bracket !== 'C' && !m.ko.legOf && !m.skipped)
   const out: { place: number; teamId: string }[] = []
   const add = (place: number, teamId: string) => {
     if (!teamId) return

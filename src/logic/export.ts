@@ -6,6 +6,7 @@ import { sportLabelOf } from './sports'
 import { eliminationPlaces, hasElimination } from './elimination'
 import { customPlaces, hasCustom } from './custom'
 import { xlsx, type Cell, type Sheet } from './xlsx'
+import { koWinner } from './legs'
 
 /*
  * The tournament as an Excel file, at any moment: every match with its time, court and
@@ -71,7 +72,7 @@ export function resultSheets(state: State): Sheet[] {
 
   // Final places: the winner and the loser of each finished match for a place.
   const places: Cell[][] = [[t('Kategoria'), t('Miejsce'), t('Drużyna'), t('Klub')]]
-  const winnerOf = (m: Match) => { const tl = tally(rules, m.sets); return tl.setsA > tl.setsB ? m.teamA : tl.setsB > tl.setsA ? m.teamB : '' }
+  const winnerOf = (m: Match) => koWinner(state, m)
   for (const c of state.categories) {
     if (hasCustom(state, c.id)) {
       customPlaces(state, c.id, winnerOf).forEach(({ place, teamId }) => places.push([c.name, place, teamName(teamId), club(teamId)]))

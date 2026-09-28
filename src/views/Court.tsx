@@ -14,6 +14,7 @@ import { canScore } from '../logic/pins'
 import { store, useSession, useStore } from '../store/store'
 import type { Match, State } from '../types'
 import { ResultForm, withDecided } from './ResultForm'
+import { isTwoLegged } from '../logic/legs'
 import { Upcoming } from './Public'
 import { BackBar, ConfirmButton, courtLabel, courtMatch, formatTime, PinGate, StatusPill, useLookups, useNow } from '../ui'
 
@@ -297,7 +298,8 @@ export function UndoMatch({ match }: { match: Match }) {
 
 function LiveScoring({ state, match, meta, onFinish }: { state: State; match: Match; meta: string; onFinish: () => void }) {
   const { side } = useLookups(state)
-  const rules = state.tournament.rules
+  // A leg of a two-legged tie may end level (the aggregate decides).
+  const rules = isTwoLegged(state, match) ? { ...state.tournament.rules, draws: true } : state.tournament.rules
   const idx = match.sets.length - 1
   const set = match.sets[idx]
   const winner = setWinner(rules, idx, set)
