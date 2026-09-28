@@ -34,8 +34,8 @@ export interface Store {
   clock(court: number): LiveClock | null
   /** Time (ms) that clocks are compared with: the server's where there is one. */
   now(): number
-  /** Admin: replace the whole tournament (teams, groups, schedule). */
-  replace(state: State): Promise<void>
+  /** Admin: replace the whole tournament (teams, groups, schedule); false when the database refused it. */
+  replace(state: State): Promise<boolean>
   /** Admin: change tournament settings only. */
   updateTournament(patch: Partial<State['tournament']>): void
   /** Admin: read the current keys (null if not set or not allowed). */

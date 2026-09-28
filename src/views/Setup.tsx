@@ -1,10 +1,10 @@
 import { TOURNAMENT_ID } from '../config'
 import { AttachButtons, PhotoTip } from './Attach'
 import { t, tk } from '../i18n'
-import { useState } from 'react'
+import { useState, useSyncExternalStore } from 'react'
 import { tournamentUrl } from '../config'
 import { clubOf, drawCategory } from '../logic/draw'
-import { parseTeamList, scheduleOf } from '../logic/newTournament'
+import { parseTeamList, scheduleOf, suspiciousNames } from '../logic/newTournament'
 import { SPORTS } from '../logic/sports'
 import { store, useSync } from '../store/store'
 import type { Category, State } from '../types'
@@ -73,6 +73,16 @@ function entrantsLabel(state: State): string {
 
 /** The last draw's message per category: it stays when the list redraws after the draw. */
 const drawMessages = new Map<string, string>()
+const drawListeners = new Set<() => void>()
+function setDrawMessage(key: string, m: string) {
+  drawMessages.set(key, m)
+  drawListeners.forEach((l) => l())
+}
+/** Read live, so the list drawn again after the draw (a new component) shows the final message too. */
+function useDrawMessage(key: string): string {
+  return useSyncExternalStore((l) => { drawListeners.add(l); return () => drawListeners.delete(l) }, () => drawMessages.get(key) ?? '')
+}
+
 
 /** One category: its team list and the draw into groups. */
 function CategorySetup({ state, category }: { state: State; category: Category }) {
@@ -95,8 +105,9 @@ function CategorySetup({ state, category }: { state: State; category: Category }
   const [chosenGroups, setGroups] = useState<number | null>(drawn || null)
   const groups = chosenGroups ?? Math.max(1, Math.min(12, Math.round(teams.length / 5)))
   const msgKey = `${TOURNAMENT_ID}:${category.id}`
-  const [msg, setMsgState] = useState(() => drawMessages.get(msgKey) ?? '')
-  const setMsg = (m: string) => { drawMessages.set(msgKey, m); setMsgState(m) }
+  const msg = useDrawMessage(msgKey)
+  const setMsg = (m: string) => setDrawMessage(msgKey, m)
+  const [odd, setOdd] = useState<string[] | null>(null)
   const [aiBusy, setAiBusy] = useState(false)
   const [aiError, setAiError] = useState('')
 
@@ -118,17 +129,33 @@ function CategorySetup({ state, category }: { state: State; category: Category }
   }
   const played = state.matches.some((m) => m.status !== 'scheduled')
 
-  const draw = async () => {
+  const draw = async (list = teams, checked = false) => {
+    // Pasted notes: lines that are not names are shown first, so they do not end up in the groups.
+    if (!checked) {
+      const strange = suspiciousNames(list.map((x) => x.name))
+      if (strange.length) { setOdd(strange); return }
+    }
     if (played && !confirm(t('Są już wpisane wyniki. Nowe losowanie ułoży terminarz od nowa i usunie wszystkie wyniki. Losować?'))) return
     // At least two teams per group.
-    const count = Math.max(1, Math.min(groups, Math.floor(teams.length / 2)))
+    const count = Math.max(1, Math.min(groups, Math.floor(list.length / 2)))
     const others = state.teams.filter((t) => t.categoryId !== category.id)
-    const next = drawCategory({ ...state, teams: [...others, ...teams] }, category.id, count, scheduleOf(state.tournament))
+    const next = drawCategory({ ...state, teams: [...others, ...list] }, category.id, count, scheduleOf(state.tournament))
     setGroups(count)
     setMsg(t('Zapisuję…'))
-    await store.replace(next)
+    if (!(await store.replace(next))) {
+      setMsg(t('Nie udało się zapisać losowania. Sprawdź internet i kliknij jeszcze raz.'))
+      return
+    }
     try { sessionStorage.removeItem(draftKey) } catch { /* no storage */ }
-    setMsg(`${t('Rozlosowano zespoły: {n}.', { n: teams.length })} ${t('Grup: {n}.', { n: count })} ${t('Terminarz gotowy.')}`)
+    setMsg(`${t('Rozlosowano zespoły: {n}.', { n: list.length })} ${t('Grup: {n}.', { n: count })} ${t('Terminarz gotowy.')}`)
+  }
+  /** Takes the strange lines out of the list and draws the rest. */
+  const dropOddAndDraw = () => {
+    const strange = new Set(odd ?? [])
+    const kept = text.split('\n').filter((line) => !parseTeamList(line, category.id).some((x) => strange.has(x.name)))
+    setOdd(null)
+    setText(kept.join('\n'))
+    void draw(parseTeamList(kept.join('\n'), category.id), true)
   }
 
   return (
@@ -157,6 +184,23 @@ function CategorySetup({ state, category }: { state: State; category: Category }
       <button className="btn btn-primary" disabled={teams.length < 2} onClick={() => void draw()}>
         {drawn ? t('Zapisz zespoły i losuj grupy od nowa') : t('Zapisz zespoły i losuj grupy')}
       </button>
+      {odd && (
+        <div className="confirm-back" role="presentation" onClick={() => setOdd(null)}>
+          <div className="confirm-box" role="alertdialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+            <div className="confirm-q">
+              <b>{t('Te linie nie wyglądają na nazwy zawodników ani drużyn:')}</b>
+              <ul className="odd-lines">{odd.slice(0, 12).map((n) => <li key={n}>{n}</li>)}</ul>
+              {odd.length > 12 && <p className="muted small">{t('…i jeszcze {n}.', { n: odd.length - 12 })}</p>}
+              <p>{t('To chyba opis turnieju albo zasady. Usunąć je z listy przed losowaniem?')}</p>
+            </div>
+            <div className="confirm-actions odd-actions">
+              <button type="button" className="btn btn-primary btn-lg" autoFocus onClick={dropOddAndDraw}>{t('Usuń je i losuj ({n})', { n: teams.length - teams.filter((x) => odd.includes(x.name)).length })}</button>
+              <button type="button" className="btn btn-lg" onClick={() => setOdd(null)}>{t('Wrócę i poprawię listę')}</button>
+              <button type="button" className="btn btn-sm linklike" onClick={() => { setOdd(null); void draw(teams, true) }}>{t('Losuj wszystko bez zmian')}</button>
+            </div>
+          </div>
+        </div>
+      )}
       {msg && <p className="ok">{msg}</p>}
     </section>
   )

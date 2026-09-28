@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { drawCategory } from './draw'
-import { blankState, parseTeamList, replanTimetable, scheduleOf, slugify } from './newTournament'
+import { blankState, parseTeamList, replanTimetable, scheduleOf, slugify, suspiciousNames } from './newTournament'
 
 const draft = {
   name: 'Halówka Mielno 2027', start: '2027-01-16T09:00', courts: 3, slotMinutes: 20, dayEnd: '17:00',
@@ -84,5 +84,15 @@ describe('assistant preset', () => {
     // Names that match go by name, whatever the order.
     const swapped = blankState({ ...draft, categories: ['Chłopcy', 'Dziewczęta'], preset: [{ category: 'Dziewczęta', teams: ['A', 'B'], groups: [] }, { category: 'Chłopcy', teams: ['C', 'D'], groups: [] }] })
     expect(swapped.teams.map((t) => `${t.categoryId}:${t.name}`)).toEqual(['k1:C', 'k1:D', 'k2:A', 'k2:B'])
+  })
+})
+
+describe('pasted notes before the draw', () => {
+  it('spots lines that are sentences, not names', () => {
+    expect(suspiciousNames([
+      'Adam Nowak', 'Łukasz Piotrowski', 'UKS Orzeł 1', 'AZS AGH Kraków',
+      '4 walki.', 'Lista zawodników (do losowania):', 'Przegrani z tej rundy idą do looser bracket.',
+      'Zawodników jest 17, a pierwsza runda winner bracket jest na pary', 'WIELKI FINAŁ', 'WINNER BRACKET', 'AZS AGH', 'UKS MOS 2',
+    ])).toEqual(['4 walki.', 'Lista zawodników (do losowania):', 'Przegrani z tej rundy idą do looser bracket.', 'Zawodników jest 17, a pierwsza runda winner bracket jest na pary', 'WIELKI FINAŁ', 'WINNER BRACKET'])
   })
 })

@@ -85,6 +85,7 @@ export function createLocalStore(tournamentId: string, initial: State): Store {
     },
     async replace(next) {
       commit(next)
+      return true
     },
     updateTournament(patch) {
       commit({ ...state, tournament: { ...state.tournament, ...patch } })

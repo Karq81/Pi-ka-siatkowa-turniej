@@ -174,3 +174,16 @@ export function replanTimetable(state: State): State {
     }),
   }
 }
+
+/**
+ * Lines that look like sentences rather than names (pasted notes, rules): long, many words,
+ * ending like a sentence, or a heading in capitals ("WIELKI FINAŁ"; short club names like
+ * "AZS AGH" pass). They are shown before the draw so they do not become teams.
+ */
+export function suspiciousNames(names: string[]): string[] {
+  const heading = (n: string) => {
+    const words = n.trim().split(/\s+/)
+    return words.length >= 2 && n === n.toUpperCase() && n !== n.toLowerCase() && !/\d/.test(n) && words.some((w) => w.length >= 5)
+  }
+  return names.filter((n) => n.length > 40 || n.trim().split(/\s+/).length >= 5 || /[.:!?]$/.test(n.trim()) || heading(n))
+}

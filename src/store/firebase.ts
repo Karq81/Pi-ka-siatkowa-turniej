@@ -399,8 +399,10 @@ export function createFirebaseStore(config: FirebaseOptions, tournamentId: strin
           await b.commit()
         }
         publishBoards(allCourts(next), next)
+        return true
       } catch (e) {
         fail(tk('Zapis turnieju'))(e)
+        return false
       }
     },
     updateTournament(patch) {
