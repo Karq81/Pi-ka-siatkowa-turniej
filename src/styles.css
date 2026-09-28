@@ -1247,3 +1247,19 @@ label.lang-pick select { width: auto; min-height: 0; font: inherit; border: 0; b
 .confirm-actions .btn { width: 100%; }
 button.btn-correct { font: inherit; cursor: pointer; }
 .confirm-actions .btn-danger { background: var(--danger); color: #fff; }
+
+/* ── Streaming guide ── */
+.btn-guide { width: 100%; margin: 6px 0 10px; font-size: 1.05rem; }
+.guide-box { width: min(640px, 100%); max-height: calc(100vh - 32px); overflow-y: auto; background: var(--surface); color: var(--ink); border-radius: 18px; padding: 20px; box-shadow: 0 24px 60px #0008; display: grid; gap: 12px; }
+.guide-box header { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.guide-box header h2 { margin: 0; }
+.guide-box h3 { margin: 12px 0 4px; }
+.guide-tabs { flex-wrap: wrap; }
+.guide-tabs button { flex: 1 1 160px; }
+.guide-lead { margin: 4px 0; padding: 10px 12px; border-radius: 12px; background: var(--surface-2); font-weight: 600; }
+.guide-steps { margin: 0; padding-left: 24px; display: grid; gap: 8px; line-height: 1.45; }
+.guide-steps li::marker { font-weight: 800; color: var(--accent); }
+.larix { display: grid; gap: 8px; margin-top: 12px; padding: 12px; border: 1px dashed var(--line); border-radius: 12px; }
+.larix-qr { width: 220px; max-width: 100%; margin: 0 auto; background: #fff; padding: 8px; border-radius: 8px; }
+.larix-url { word-break: break-all; font-size: 0.85rem; }
+.guide-tips ul { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
