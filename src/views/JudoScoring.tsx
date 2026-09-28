@@ -7,7 +7,7 @@ import {
 } from '../logic/judo'
 import { store } from '../store/store'
 import type { JudoScore, JudoSide, Match, Rules, SetScore, State } from '../types'
-import { useLookups, useNow } from '../ui'
+import { ConfirmDialog, NumberField, useLookups, useNow } from '../ui'
 
 /*
  * Judo on the referee's phone, laid out like a judo scoreboard: the contest clock
@@ -118,6 +118,20 @@ export function JudoScoring({ state, match, meta, onFinish }: { state: State; ma
             : <button type="button" className="btn btn-primary btn-lg jd-hajime" onClick={hajime}>▶ {t('Hajime (start)')}</button>
         )}
       </div>
+      <details className="jd-fix">
+        <summary>{t('Popraw czas')}</summary>
+        <div className="jd-fix-row">
+          {[-10, -1, 1, 10].map((d) => (
+            <button key={d} type="button" className="btn btn-sm" onClick={() => setClock(j.golden
+              ? { ...c, golden: Math.max(0, c.golden + d * 1000) }
+              // Regular time shows what is left: +10 s gives 10 s more to fight.
+              : { ...c, used: Math.max(0, Math.min(fightMs, c.used - d * 1000)) })}>
+              {d > 0 ? `+${d}` : d} s
+            </button>
+          ))}
+          <button type="button" className="btn btn-sm" onClick={() => setClock({ ...c, used: 0, golden: 0, since: c.since === null ? null : Date.now() })}>{t('Od nowa')}</button>
+        </div>
+      </details>
       {c.hold && (
         <div className="jd-hold">
           <span>{t('Osaekomi')}: <b>{side(match, c.hold.side)}</b> · <b className="jd-hold-time">{Math.floor(holdSec)} s</b>
@@ -223,14 +237,14 @@ export function JudoResultForm({ state, match, submitLabel, onSubmit, children }
   const { side } = useLookups(state)
   const [j, setJ] = useState<JudoScore>(() => judoOf(match.sets[0]))
   const [tried, setTried] = useState(false)
+  const [asking, setAsking] = useState(false)
   const result = judoResult(j)
   const num = (s: 'a' | 'b', k: keyof JudoSide, max: number) => (
-    <input type="number" inputMode="numeric" min={0} max={max} value={j[s][k]}
-      aria-label={`${k}, ${side(match, s)}`}
-      onChange={(e) => setJ({ ...j, [s]: { ...j[s], [k]: Math.max(0, Math.min(max, Number(e.target.value) || 0)) } })} />
+    <NumberField min={0} max={max} value={j[s][k]} ariaLabel={`${k}, ${side(match, s)}`}
+      onChange={(v) => setJ({ ...j, [s]: { ...j[s], [k]: v } })} />
   )
   return (
-    <form className="result-form jd-form" onSubmit={(e) => { e.preventDefault(); setTried(true); if (result) onSubmit([judoSet(j)]) }}>
+    <form className="result-form jd-form" onSubmit={(e) => { e.preventDefault(); setTried(true); if (result) onSubmit([judoSet(j)]); else setAsking(true) }}>
       <table className="jd-form-table">
         <thead>
           <tr><th /><th>{t('Ippon')}</th><th>{t('Waza-ari')}</th><th>{t('Yuko')}</th><th>{t('Shido')}</th></tr>
@@ -266,6 +280,14 @@ export function JudoResultForm({ state, match, submitLabel, onSubmit, children }
         <button className="btn btn-primary btn-lg" type="submit">{submitLabel}</button>
         {children}
       </div>
+      {asking && (
+        <ConfirmDialog
+          question={<><b>{t('Ten wynik jest niezgodny z zasadami turnieju.')}</b><br />{t('W judo nie ma remisów: przy równym wyniku jest golden score albo decyzja sędziów.')}<br />{t('Zapisać go mimo to?')}</>}
+          yes={t('Tak, zapisz tak jak jest')}
+          onYes={() => { setAsking(false); onSubmit([judoSet(j)]) }}
+          onNo={() => setAsking(false)}
+        />
+      )}
       <p className="muted small">{t('Dwa waza-ari to ippon. Yuko nie sumują się w waza-ari. Trzecie shido to przegrana (hansoku-make).')}</p>
     </form>
   )

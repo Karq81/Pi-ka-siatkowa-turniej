@@ -3,6 +3,7 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { LANGS } from './i18n'
 import { SPORT_TEXTS } from './logic/sports'
+import { TERM_LABELS } from './logic/terms'
 import cs from './locales/cs'
 import de from './locales/de'
 import en from './locales/en'
@@ -35,6 +36,7 @@ function keys(): Map<string, boolean> {
     for (const m of readFileSync(file, 'utf8').matchAll(call)) found.set(unescape(m[2]), !!m[1])
   }
   for (const text of SPORT_TEXTS) found.set(text, false)
+  for (const text of TERM_LABELS) found.set(text, false)
   return found
 }
 

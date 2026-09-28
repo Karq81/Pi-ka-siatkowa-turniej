@@ -1,6 +1,6 @@
 // Firestore security rules tests. Run with: npm run test:rules (starts the Firebase emulator).
 import { assertFails, assertSucceeds, initializeTestEnvironment, type RulesTestEnvironment } from '@firebase/rules-unit-testing'
-import { deleteDoc, doc, FieldPath, getDoc, increment, setDoc, updateDoc } from 'firebase/firestore'
+import { addDoc, collection, deleteDoc, doc, FieldPath, getDoc, getDocs, increment, setDoc, updateDoc } from 'firebase/firestore'
 import { readFileSync } from 'node:fs'
 import { afterAll, beforeAll, beforeEach, describe, it } from 'vitest'
 
@@ -143,5 +143,19 @@ describe('firestore rules', () => {
     await assertFails(setDoc(doc(as(null), `${T}/usage/2026-10-24`), { views: increment(-1) }, { merge: true }))
     // No counters for tournaments that do not exist.
     await assertFails(setDoc(doc(as(null), 'tournaments/nope/usage/2026-10-24'), { views: increment(1) }, { merge: true }))
+  })
+
+  it('takes sign-ups only while they are open, and shows them only to the admin', async () => {
+    const entry = { name: 'UKS Orzeł', categoryId: 'k1', contact: 'Jan', phone: '600100200', status: 'nowe', createdAt: 1 }
+    await assertFails(addDoc(collection(as('fan'), `${T}/entries`), entry))
+    await env.withSecurityRulesDisabled(async (ctx) => { await setDoc(doc(ctx.firestore(), T), { tournament: { name: 'x', registration: true } }) })
+    await assertSucceeds(addDoc(collection(as('fan'), `${T}/entries`), entry))
+    await assertFails(addDoc(collection(as(null), `${T}/entries`), entry))
+    await assertFails(addDoc(collection(as('fan'), `${T}/entries`), { ...entry, status: 'przyjęte' }))
+    await assertFails(addDoc(collection(as('fan'), `${T}/entries`), { ...entry, hack: 1 }))
+    await assertFails(addDoc(collection(as('fan'), `${T}/entries`), { ...entry, logo: 'x'.repeat(70000) }))
+    await assertFails(getDocs(collection(as('fan'), `${T}/entries`)))
+    await login('boss', '1234')
+    await assertSucceeds(getDocs(collection(as('boss'), `${T}/entries`)))
   })
 })

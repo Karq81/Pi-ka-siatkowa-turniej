@@ -1,3 +1,4 @@
+import { NumberField } from '../ui'
 import { t, tp } from '../i18n'
 import { useState } from 'react'
 import { ALBATROS_ALIAS, TOURNAMENT_SLUG } from '../config'
@@ -30,18 +31,21 @@ export function NewTournament() {
   const sport = sportById(sportId)
   const [format, setFormat] = useState(sport.formats[0].id)
   const [setPoints, setSetPoints] = useState(25)
+  // "Inna dyscyplina": its real name, e.g. Zapasy.
+  const [customName, setCustomName] = useState('')
   // Judo: contest minutes typed by the organiser ('' = the format's time).
   const [fightMinutes, setFightMinutes] = useState('')
   const pickSport = (id: string) => {
     const next = sportById(id)
     setSportId(id)
     setFormat(next.formats[0].id)
-    setSlotMinutes(next.slot)
+    setSlotMinutes(next.formats[0].slot ?? next.slot)
     setFightMinutes('')
   }
   const fightSeconds = fightMinutes ? Math.round(Number(fightMinutes.replace(',', '.')) * 60) || undefined : undefined
   const rules = sportRules(sport, format, setPoints, fightSeconds)
-  const judo = rules.scoring === 'judo'
+  // Judo and karate: a bout of fixed time, on mats.
+  const judo = rules.scoring === 'judo' || rules.scoring === 'karate'
   const score = rules.scoring === 'score'
   const [categories, setCategories] = useState('')
   const [preset, setPreset] = useState<TournamentDraft['preset']>()
@@ -51,14 +55,25 @@ export function NewTournament() {
   const address = slugEdited ? slug : slugify(name)
   const cats = categories.split(/[\n,;]/).map((c) => c.trim()).filter(Boolean)
   const validTime = (v: string) => /^([01]\d|2[0-3]):[0-5]\d$/.test(v)
-  const ready = name.trim().length >= 3 && TOURNAMENT_SLUG.test(address) && /^\d{4}-\d{2}-\d{2}$/.test(date)
-    && validTime(time) && validTime(dayEnd)
+  // What is still missing, in plain words; shown in red once "Dalej" was pressed.
+  const [tried, setTried] = useState(false)
+  const missing = {
+    name: name.trim().length < 3 ? t('Wpisz nazwę turnieju (co najmniej 3 znaki).') : '',
+    address: name.trim().length >= 3 && !TOURNAMENT_SLUG.test(address) ? t('Link dla kibiców: tylko małe litery, cyfry i myślniki (3–40 znaków).') : '',
+    date: !/^\d{4}-\d{2}-\d{2}$/.test(date) ? t('Wybierz dzień pierwszego meczu.') : '',
+    time: !validTime(time) ? t('Godzina startu w formacie GG:MM, np. 09:00.') : '',
+    dayEnd: !validTime(dayEnd) ? t('Godzina ostatniego meczu w formacie GG:MM, np. 18:00.') : '',
+  }
+  const problems = Object.values(missing).filter(Boolean)
+  const ready = problems.length === 0
+  const bad = (k: keyof typeof missing) => (tried && missing[k] ? 'field-bad' : undefined)
 
   /** Fills the form with the AI assistant's draft; teams and groups go with the tournament. */
   const applyDraft = (d: AssistantDraft) => {
     const s = sportById(d.sport)
     setSportId(s.id)
     setFormat(s.formats.some((f) => f.id === d.format) ? d.format : s.formats[0].id)
+    setCustomName(s.custom ? d.sportName?.trim() ?? '' : '')
     if (d.name) { setName(d.name); setSlugEdited(false) }
     if (/^\d{4}-\d{2}-\d{2}$/.test(d.date)) setDate(d.date)
     if (validTime(d.time)) setTime(d.time)
@@ -71,6 +86,7 @@ export function NewTournament() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setTried(true)
     if (!ready) return
     setBusy(true)
     setError('')
@@ -89,6 +105,7 @@ export function NewTournament() {
       name: name.trim(), start: `${date}T${time}`, courts, slotMinutes, dayEnd,
       categories: cats.length ? cats : [t('Turniej')], sport: sportId, format, setPoints: sport.custom ? setPoints : undefined,
       fightSeconds: judo ? rules.fightSeconds : undefined,
+      sportName: sport.custom && customName.trim() ? customName.trim() : undefined,
       preset,
     })
     location.href = `${location.pathname}?t=${address}#panel`
@@ -129,9 +146,20 @@ export function NewTournament() {
             ))}
           </select>
         </label>
+        {sport.custom && (
+          <label>{t('Nazwa dyscypliny')}
+            <input value={customName} onChange={(e) => setCustomName(e.target.value)} placeholder={t('np. Zapasy, Boks, Siatkonoga')} maxLength={40} />
+            <span className="muted small">{t('Taka nazwa pokaże się na stronie turnieju.')}</span>
+          </label>
+        )}
         <div className="form-row">
           <label>{t('Format meczu')}
-            <select value={format} onChange={(e) => { setFormat(e.target.value); setFightMinutes('') }}>
+            <select value={format} onChange={(e) => {
+              setFormat(e.target.value)
+              setFightMinutes('')
+              const f = sport.formats.find((x) => x.id === e.target.value)
+              setSlotMinutes(f?.slot ?? sport.slot)
+            }}>
               {sport.formats.map((f) => <option key={f.id} value={f.id}>{f.label}</option>)}
             </select>
           </label>
@@ -139,21 +167,24 @@ export function NewTournament() {
             <label>{t('Czas walki (minuty)')}
               <input inputMode="decimal" value={fightMinutes || String((rules.fightSeconds ?? 240) / 60).replace('.', ',')}
                 onChange={(e) => setFightMinutes(e.target.value.replace(/[^\d.,]/g, '').slice(0, 4))} />
-              <span className="muted small">{t('Np. 4, 3, 2 albo 1,5. Po czasie przy remisie: golden score.')}</span>
+              <span className="muted small">{rules.scoring === 'judo' ? t('Np. 4, 3, 2 albo 1,5. Po czasie przy remisie: golden score.') : t('Np. 3, 2 albo 1,5.')}</span>
             </label>
           )}
           {sport.custom && !score && !judo && (
             <label>{t('Set do punktów')}
-              <input type="number" min={3} max={99} value={setPoints}
-                onChange={(e) => setSetPoints(Math.max(3, Math.min(99, Number(e.target.value) || 25)))} />
+              <NumberField min={3} max={99} value={setPoints} onChange={setSetPoints} />
             </label>
           )}
         </div>
         <div className="sport-note">
           <p>{sport.note}</p>
           <p className="muted small">
-            {judo
+            {rules.scoring === 'judo'
               ? `${t('Czas walki: {time}, przy remisie golden score (bez limitu czasu).', { time: clock(rules.fightSeconds ?? 240) })}`
+              : rules.scoring === 'karate'
+                ? `${t('Czas walki: {time}, przy remisie senshu albo decyzja sędziów.', { time: clock(rules.fightSeconds ?? 180) })}`
+                : rules.scoring === 'chess'
+                  ? t('Wynik partii: 1–0, ½–½ albo 0–1.')
               : score
                 ? `${t('Wynik:')} ${t(rules.unit ?? 'punkty')}, ${rules.draws ? t('remis możliwy') : t('bez remisów')}.`
                 : `${t('Zasady:')} ${describeSets(rules)}.`}
@@ -163,16 +194,17 @@ export function NewTournament() {
             {' '}{t('Uczestnicy:')} {t(sport.entrants)}.
           </p>
         </div>
-        <label>{t('Nazwa turnieju')}
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder={t('np. Halówka Mielno 2027')} required />
+        <label className={bad('name')}>{t('Nazwa turnieju')} <span className="req">*</span>
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder={t('np. Halówka Mielno 2027')} />
+          {tried && missing.name && <span className="error small">{missing.name}</span>}
         </label>
         {slugEdited ? (
-          <label>{t('Link dla kibiców')}
+          <label className={bad('address')}>{t('Link dla kibiców')}
             <span className="new-t-address">
               <span className="muted">{location.host}/?t=</span>
               <input value={address} onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-').slice(0, 40))} />
             </span>
-            <span className="muted small">{t('Małe litery, cyfry i myślniki.')}</span>
+            {tried && missing.address ? <span className="error small">{missing.address}</span> : <span className="muted small">{t('Małe litery, cyfry i myślniki.')}</span>}
           </label>
         ) : (
           <p className="new-t-link muted small">
@@ -182,24 +214,25 @@ export function NewTournament() {
           </p>
         )}
         <div className="form-row">
-          <label>{t('Dzień pierwszego meczu')}
-            <input type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
+          <label className={bad('date')}>{t('Dzień pierwszego meczu')} <span className="req">*</span>
+            <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+            {tried && missing.date && <span className="error small">{missing.date}</span>}
           </label>
-          <label>{t('Godzina (GG:MM)')}
+          <label className={bad('time')}>{t('Godzina (GG:MM)')} <span className="req">*</span>
             <input inputMode="numeric" value={time} onChange={(e) => setTime(e.target.value)} placeholder="09:00" />
+            {tried && missing.time && <span className="error small">{missing.time}</span>}
           </label>
-          <label>{t('Ostatni mecz dnia najpóźniej o')}
+          <label className={bad('dayEnd')}>{t('Ostatni mecz dnia najpóźniej o')} <span className="req">*</span>
             <input inputMode="numeric" value={dayEnd} onChange={(e) => setDayEnd(e.target.value)} placeholder="18:00" />
+            {tried && missing.dayEnd && <span className="error small">{missing.dayEnd}</span>}
           </label>
         </div>
         <div className="form-row">
           <label>{judo ? t('Liczba mat') : t('Liczba boisk (kortów, stołów)')}
-            <input type="number" min={1} max={MAX_COURTS} value={courts}
-              onChange={(e) => setCourts(Math.max(1, Math.min(MAX_COURTS, Number(e.target.value) || 1)))} />
+            <NumberField min={1} max={MAX_COURTS} value={courts} onChange={setCourts} />
           </label>
           <label>{judo ? t('Walka co ile minut (z przerwą)') : t('Mecz co ile minut')}
-            <input type="number" min={2} max={120} step={1} value={slotMinutes}
-              onChange={(e) => setSlotMinutes(Math.max(2, Math.min(120, Number(e.target.value) || 2)))} />
+            <NumberField min={2} max={120} value={slotMinutes} onChange={setSlotMinutes} />
             {judo && <span className="muted small">{t('Czas walki z zatrzymaniami i przerwą na zmianę zawodników. Zwykle 5–7 minut.')}</span>}
           </label>
         </div>
@@ -208,9 +241,16 @@ export function NewTournament() {
             placeholder={t('np. Dziewczęta U12\nChłopcy U12')} />
           <span className="muted small">{t('Puste pole: jedna kategoria dla wszystkich drużyn.')}</span>
         </label>
+        {tried && problems.length > 0 && (
+          <div className="error form-missing" role="alert">
+            <b>{t('Zanim przejdziesz dalej, uzupełnij pola zaznaczone na czerwono:')}</b>
+            <ul>{problems.map((p) => <li key={p}>{p}</li>)}</ul>
+          </div>
+        )}
         {error && <p className="error">{error}</p>}
+        <p className="muted small"><span className="req">*</span> {t('pole obowiązkowe')}</p>
         <div className="actions">
-          <button className="btn btn-primary btn-lg" type="submit" disabled={!ready || busy}>
+          <button className="btn btn-primary btn-lg" type="submit" disabled={busy}>
             {busy ? t('Sprawdzam adres…') : t('Dalej: ustaw PIN')}
           </button>
         </div>

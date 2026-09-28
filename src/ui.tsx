@@ -218,3 +218,82 @@ export function ConfirmButton({ className, label, question, yes, onYes }: {
     </>
   )
 }
+
+/**
+ * A number box that lets people type freely: deleting the last digit leaves the box empty
+ * (instead of snapping back to the smallest value or the old one), and the value is taken
+ * only when it is a proper number within the limits. Leaving an empty or wrong box brings
+ * the current value back.
+ */
+export function NumberField({ value, onChange, min, max, step, decimals = false, id, disabled, ariaLabel, lazy = false }: {
+  value: number
+  onChange: (v: number) => void
+  /** Take the value only on leaving the box or Enter (for settings saved to the database). */
+  lazy?: boolean
+  min?: number
+  max?: number
+  step?: number
+  /** Allow 1,5 or 1.5. */
+  decimals?: boolean
+  id?: string
+  disabled?: boolean
+  ariaLabel?: string
+}) {
+  const show = (v: number) => (decimals ? String(v).replace('.', ',') : String(v))
+  const [text, setText] = useState(show(value))
+  const [focused, setFocused] = useState(false)
+  useEffect(() => { if (!focused) setText(show(value)) }, [value, focused])
+  const parse = (s: string) => {
+    if (!s.trim()) return null
+    const n = Number(s.replace(',', '.'))
+    if (!Number.isFinite(n) || (!decimals && !Number.isInteger(n))) return null
+    if ((min !== undefined && n < min) || (max !== undefined && n > max)) return null
+    return n
+  }
+  const bad = focused && text.trim() !== '' && parse(text) === null
+  return (
+    <input
+      id={id}
+      type="text"
+      inputMode={decimals ? 'decimal' : 'numeric'}
+      autoComplete="off"
+      aria-label={ariaLabel}
+      aria-invalid={bad}
+      className={bad ? 'num-bad' : undefined}
+      disabled={disabled}
+      value={text}
+      data-step={step}
+      onFocus={(e) => { setFocused(true); e.target.select() }}
+      onChange={(e) => {
+        const s = e.target.value.replace(decimals ? /[^\d.,-]/g : /[^\d-]/g, '')
+        setText(s)
+        const n = parse(s)
+        if (!lazy && n !== null && n !== value) onChange(n)
+      }}
+      onKeyDown={(e) => { if (lazy && e.key === 'Enter') (e.target as HTMLInputElement).blur() }}
+      onBlur={() => {
+        setFocused(false)
+        const n = parse(text)
+        if (lazy && n !== null && n !== value) { onChange(n); setText(show(n)) } else setText(show(value))
+      }}
+    />
+  )
+}
+
+/**
+ * "This breaks the rules, save anyway?": the window of ConfirmButton, opened by the caller
+ * (e.g. after the save button when the result does not follow the rules).
+ */
+export function ConfirmDialog({ question, yes, onYes, onNo }: { question: ReactNode; yes: string; onYes: () => void; onNo: () => void }) {
+  return (
+    <div className="confirm-back" role="presentation" onClick={onNo}>
+      <div className="confirm-box" role="alertdialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+        <div className="confirm-q">{question}</div>
+        <div className="confirm-actions">
+          <button type="button" className="btn btn-lg" autoFocus onClick={onNo}>{t('Nie, poprawię')}</button>
+          <button type="button" className="btn btn-danger btn-lg" onClick={onYes}>{yes}</button>
+        </div>
+      </div>
+    </div>
+  )
+}

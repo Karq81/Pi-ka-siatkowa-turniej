@@ -1,4 +1,4 @@
-import { t } from '../i18n'
+import { t, tk } from '../i18n'
 import type { Rules } from '../types'
 
 /**
@@ -10,12 +10,15 @@ import type { Rules } from '../types'
  */
 
 type MatchRules = Pick<Rules,
-  'scoring' | 'setsMode' | 'sets' | 'setPoints' | 'lastSetPoints' | 'winBy' | 'cap' | 'lastSetCap' | 'draws' | 'unit' | 'fightSeconds'>
+  'scoring' | 'setsMode' | 'sets' | 'setPoints' | 'lastSetPoints' | 'winBy' | 'cap' | 'lastSetCap' | 'draws' | 'unit' | 'fightSeconds'
+  | 'periods' | 'periodMinutes' | 'scoreButtons'>
 
 export interface SportFormat {
   id: string
   label: string
   rules: MatchRules
+  /** Minutes from one match to the next, when not the discipline's usual (chess time controls). */
+  slot?: number
 }
 
 export interface Sport {
@@ -59,6 +62,14 @@ function score(unit: string, draws: boolean): MatchRules {
 function judo(seconds: number): MatchRules {
   return { scoring: 'judo', setsMode: 'fixed', sets: 1, setPoints: 0, lastSetPoints: 0, winBy: 1, draws: false, fightSeconds: seconds }
 }
+
+/** A karate kumite bout (WKF) of `seconds`. */
+function karate(seconds: number): MatchRules {
+  return { scoring: 'karate', setsMode: 'fixed', sets: 1, setPoints: 0, lastSetPoints: 0, winBy: 1, draws: false, fightSeconds: seconds }
+}
+
+/** A chess game: 1–0, ½–½, 0–1. */
+const CHESS: MatchRules = { scoring: 'chess', setsMode: 'fixed', sets: 1, setPoints: 0, lastSetPoints: 0, winBy: 1, draws: true }
 
 /** Goals or points: draws allowed or decided by extra time / penalties. */
 function scoreFormats(unit: string, drawsFirst: boolean): SportFormat[] {
@@ -239,6 +250,26 @@ export const SPORTS: Sport[] = [
     ],
   },
   {
+    id: 'karate', label: 'Karate (kumite WKF)', group: 'Sporty walki', entrants: 'zawodnicy', table: [1, 0, 0], slot: 5,
+    note: t('Punktacja WKF: yuko 1 pkt, waza-ari 2 pkt, ippon 3 pkt, punkty się sumują. Przewaga 8 punktów kończy walkę. Po czasie wygrywa więcej punktów, przy remisie senshu (pierwszy punkt), a bez senshu decyzja sędziów. Kary: chui 1–3, hansoku-chui, hansoku (dyskwalifikacja).'),
+    formats: [
+      { id: '3min', label: t('Seniorzy: 3 minuty'), rules: karate(180) },
+      { id: '2min', label: t('Seniorki, juniorzy i kadeci: 2 minuty'), rules: karate(120) },
+      { id: '90s', label: t('Dzieci i młodzicy: 1,5 minuty'), rules: karate(90) },
+    ],
+  },
+  {
+    id: 'szachy', label: 'Szachy', group: 'Inne', entrants: 'zawodnicy', table: [1, 0.5, 0], slot: 30,
+    note: t('Partia kończy się 1–0, ½–½ albo 0–1: wygrana to 1 pkt, remis ½, porażka 0. Tempo gry decyduje, co ile minut kolejna runda.'),
+    formats: [
+      { id: 'rapid10', label: t('Szachy szybkie 10 min + 5 s na ruch'), rules: CHESS, slot: 35 },
+      { id: 'rapid15', label: t('Szachy szybkie 15 min + 10 s na ruch'), rules: CHESS, slot: 50 },
+      { id: 'blitz', label: t('Błyskawiczne 3 min + 2 s na ruch'), rules: CHESS, slot: 12 },
+      { id: 'blitz5', label: t('Błyskawiczne 5 minut'), rules: CHESS, slot: 15 },
+      { id: 'klasyczne', label: t('Klasyczne 90 min + 30 s na ruch'), rules: CHESS, slot: 240 },
+    ],
+  },
+  {
     id: 'dart', label: 'Dart', group: 'Inne', entrants: 'zawodnicy', table: [2, 0, 0], slot: 20,
     note: t('Wynik w legach (np. 3:1). Bez remisów: gra się do wygrania określonej liczby legów.'),
     formats: [{ id: 'legi', label: t('Wynik w legach'), rules: score('legi', false) }],
@@ -285,7 +316,7 @@ export function sportRules(sport: Sport, formatId?: string, setPoints?: number, 
   const f = formatById(sport, formatId).rules
   const [pointsWin, pointsDraw, pointsLoss] = sport.table
   const rules: Rules = { ...f, pointsWin, pointsDraw, pointsLoss, sport: sport.label, tieBreakSplit: sport.tieBreakSplit }
-  if (f.scoring === 'judo' && fightSeconds && fightSeconds >= 30) rules.fightSeconds = Math.round(fightSeconds)
+  if ((f.scoring === 'judo' || f.scoring === 'karate') && fightSeconds && fightSeconds >= 30) rules.fightSeconds = Math.round(fightSeconds)
   if (sport.custom && f.scoring === 'sets' && setPoints) {
     return { ...rules, setPoints, lastSetPoints: setPoints }
   }
@@ -307,6 +338,53 @@ export function describeSets(rules: Rules): string {
   }
   parts.push(t('przewaga {n}', { n: rules.winBy }))
   return parts.join(', ')
+}
+
+/**
+ * How a timed game is played, for the referee's panel: parts and their length (official
+ * rules for seniors; the organiser can change them), scoring buttons, timed penalties.
+ */
+export interface PlayRules {
+  periods: number
+  periodMinutes: number
+  part: 'połowa' | 'kwarta' | 'tercja' | 'część'
+  buttons?: { points: number; label: string }[]
+  /** A timed suspension (handball, hockey: 2 minutes; water polo: 20 s). */
+  penaltySeconds?: number
+}
+
+const PLAY: Record<string, PlayRules> = {
+  'Piłka nożna': { periods: 2, periodMinutes: 45, part: 'połowa' },
+  'Futsal / halówka': { periods: 2, periodMinutes: 20, part: 'połowa' },
+  'Piłka ręczna': { periods: 2, periodMinutes: 30, part: 'połowa', penaltySeconds: 120 },
+  'Koszykówka': { periods: 4, periodMinutes: 10, part: 'kwarta', buttons: [{ points: 1, label: tk('rzut wolny') }, { points: 2, label: tk('za 2') }, { points: 3, label: tk('za 3') }] },
+  'Koszykówka 3x3': { periods: 1, periodMinutes: 10, part: 'część', buttons: [{ points: 1, label: tk('z łuku i wolny') }, { points: 2, label: tk('zza łuku') }] },
+  'Hokej na lodzie': { periods: 3, periodMinutes: 20, part: 'tercja', penaltySeconds: 120 },
+  'Unihokej (floorball)': { periods: 3, periodMinutes: 20, part: 'tercja', penaltySeconds: 120 },
+  'Hokej na trawie': { periods: 4, periodMinutes: 15, part: 'kwarta' },
+  'Piłka wodna': { periods: 4, periodMinutes: 8, part: 'kwarta', penaltySeconds: 20 },
+  'Rugby 7': { periods: 2, periodMinutes: 7, part: 'połowa', buttons: [{ points: 5, label: tk('przyłożenie') }, { points: 2, label: tk('podwyższenie') }, { points: 3, label: tk('karny / drop') }] },
+  'Korfball': { periods: 2, periodMinutes: 25, part: 'połowa' },
+}
+
+/** The discipline's way of play, with the organiser's own game time when set. */
+export function playOf(rules: Rules): PlayRules | null {
+  const base = rules.sport ? PLAY[rules.sport] : undefined
+  if (!base && !rules.periods) return null
+  const p: PlayRules = base ?? { periods: 1, periodMinutes: 10, part: 'część' }
+  return { ...p, periods: rules.periods ?? p.periods, periodMinutes: rules.periodMinutes ?? p.periodMinutes }
+}
+
+/** "1. połowa", "3. kwarta"… */
+export function partLabel(part: PlayRules['part'], n: number): string {
+  return part === 'połowa' ? t('{n}. połowa', { n }) : part === 'kwarta' ? t('{n}. kwarta', { n }) : part === 'tercja' ? t('{n}. tercja', { n }) : t('Część {n}', { n })
+}
+
+/** A tournament's discipline as shown: the catalogue's name translated, or the organiser's own name. */
+export function sportLabelOf(rules: Pick<Rules, 'sport'>): string {
+  if (!rules.sport) return ''
+  const known = SPORTS.find((s) => s.label === rules.sport)
+  return known ? t(known.label) : rules.sport
 }
 
 /** Name of a discipline in the visitor's language (the Polish name is what tournaments store). */

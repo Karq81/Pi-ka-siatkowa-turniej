@@ -1,3 +1,4 @@
+import { TOURNAMENT_ID } from '../config'
 import { AttachButtons, PhotoTip } from './Attach'
 import { t, tk } from '../i18n'
 import { useState } from 'react'
@@ -7,7 +8,7 @@ import { parseTeamList, scheduleOf } from '../logic/newTournament'
 import { SPORTS } from '../logic/sports'
 import { store, useSync } from '../store/store'
 import type { Category, State } from '../types'
-import { formatDay, formatTime, PinGate } from '../ui'
+import { NumberField, formatDay, formatTime, PinGate } from '../ui'
 import { AdminPinForm, setupTournament } from './Admin'
 import { CategoryGroups } from './Organizer'
 
@@ -45,7 +46,7 @@ export function Setup({ state }: { state: State }) {
       </div>
       <PinGate label={t('Zespoły i losowanie (sędzia główny)')}>
         <div className="setup-cats">
-          {state.categories.map((c) => <CategorySetup key={c.id} state={state} category={c} />)}
+          {state.categories.map((c) => <CategorySetup key={`${c.id}:${state.teams.filter((x) => x.categoryId === c.id).length}`} state={state} category={c} />)}
         </div>
       </PinGate>
       {state.groups.length > 0 && (
@@ -73,9 +74,18 @@ function entrantsLabel(state: State): string {
 /** One category: its team list and the draw into groups. */
 function CategorySetup({ state, category }: { state: State; category: Category }) {
   const current = state.teams.filter((t) => t.categoryId === category.id)
-  const [text, setText] = useState(() =>
+  // What is typed stays on this device until the draw, so a reload (or the panel redrawing
+  // while the tournament is being created) never loses the list.
+  const draftKey = `sla:teams:${TOURNAMENT_ID}:${category.id}:${current.length}`
+  const [text, setTextState] = useState(() => {
+    try { const d = sessionStorage.getItem(draftKey); if (d !== null) return d } catch { /* no storage */ }
     // "Klub: Drużyna" only where the club is not already part of the team's name.
-    current.map((t) => (t.name.startsWith(clubOf(t)) ? t.name : `${clubOf(t)}: ${t.name}`)).join('\n'))
+    return current.map((t) => (t.name.startsWith(clubOf(t)) ? t.name : `${clubOf(t)}: ${t.name}`)).join('\n')
+  })
+  const setText = (v: string) => {
+    setTextState(v)
+    try { sessionStorage.setItem(draftKey, v) } catch { /* no storage */ }
+  }
   const teams = parseTeamList(text, category.id)
   const drawn = state.groups.filter((g) => g.categoryId === category.id).length
   // Suggested from the list (about 5 per group) until the organiser sets it.
@@ -112,6 +122,7 @@ function CategorySetup({ state, category }: { state: State; category: Category }
     setGroups(count)
     setMsg(t('Zapisuję…'))
     await store.replace(next)
+    try { sessionStorage.removeItem(draftKey) } catch { /* no storage */ }
     setMsg(`${t('Rozlosowano zespoły: {n}.', { n: teams.length })} ${t('Grup: {n}.', { n: count })} ${t('Terminarz gotowy.')}`)
   }
 
@@ -135,8 +146,7 @@ function CategorySetup({ state, category }: { state: State; category: Category }
       <div className="form-row">
         <span className="muted">{t('Na liście:')} {teams.length}</span>
         <label>{t('Liczba grup')}
-          <input type="number" min={1} max={12} value={groups}
-            onChange={(e) => setGroups(Math.max(1, Math.min(12, Number(e.target.value) || 1)))} />
+          <NumberField min={1} max={12} value={groups} onChange={setGroups} />
         </label>
       </div>
       <button className="btn btn-primary" disabled={teams.length < 2} onClick={() => void draw()}>

@@ -1374,3 +1374,53 @@ button.btn-correct { font: inherit; cursor: pointer; }
 .jd-form-table input[type=checkbox] { width: 22px; height: 22px; }
 .jd-clock .jd-matte { background: #fff; color: #111827; border-color: #fff; }
 .jd-pad .jd-osae { background: #fff; color: #111827; border: 1px solid #d1d5db; }
+input.num-bad { border-color: #dc2626; box-shadow: 0 0 0 3px #dc262622; }
+.jd-fix summary { cursor: pointer; color: var(--muted); font-size: 0.9rem; text-align: center; }
+.jd-fix-row { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-top: 6px; }
+.new-t-form .field-bad input, .new-t-form .field-bad select { border-color: #dc2626; box-shadow: 0 0 0 3px #dc262622; }
+.new-t-form .field-bad { color: #b91c1c; }
+.req { color: #dc2626; font-weight: 800; }
+.form-missing ul { margin: 6px 0 0; padding-left: 20px; }
+
+/* Karate (aka red, ao blue) and chess */
+.jd-pad.kr-aka { background: #dc2626; color: #fff; border: 2px solid #991b1b; }
+.jd-pad.kr-ao { background: #1d4ed8; color: #fff; border: 2px solid #1e40af; }
+.jd-pad.kr-aka .muted, .jd-pad.kr-ao .muted, .jd-pad.kr-aka .linklike, .jd-pad.kr-ao .linklike { color: #fee2e2; }
+.kr-flags { display: flex; gap: 6px; justify-content: center; min-height: 1.4em; }
+.kr-senshu { background: #facc15; color: #422006; border-radius: 6px; padding: 0 8px; font-size: 0.85rem; }
+.kr-pen { background: #111827; color: #fff; border-radius: 6px; padding: 0 8px; font-size: 0.85rem; }
+.kr-senshu-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: center; }
+.chess-results { display: grid; gap: 10px; }
+.chess-results .btn { display: grid; gap: 2px; font-size: 1.4rem; }
+.chess-results small { font-size: 0.85rem; font-weight: 600; }
+.chess-pick { display: grid; gap: 12px; }
+.contest-clock .cc-part { font-weight: 700; color: #cbd5e1; }
+.contest-clock .cc-over { color: #fca5a5; font-weight: 700; }
+
+/* Tennis game score, scoring buttons with points, timed penalties */
+.tn-game { text-align: center; font-size: 1.2rem; margin: 4px 0; }
+.tn-game b { font-family: var(--display); font-size: 1.6rem; }
+.tn-games { display: flex; gap: 12px; justify-content: center; }
+.pts-buttons { display: grid; grid-auto-flow: column; gap: 6px; width: 100%; }
+.btn-pts { display: grid; justify-items: center; gap: 0; padding-left: 4px; padding-right: 4px; }
+.btn-pts small { font-size: 0.7rem; font-weight: 600; opacity: 0.9; line-height: 1.1; }
+.pen-timers { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+.pen-timer { font: inherit; font-weight: 800; background: #fef3c7; color: #78350f; border: 1px solid #f59e0b; border-radius: 8px; padding: 4px 8px; cursor: pointer; font-variant-numeric: tabular-nums; }
+.court-game { margin: 4px 0 0; text-align: center; font-size: 0.9rem; color: var(--muted); }
+.form-inline { display: flex; gap: 6px; align-items: center; } .form-inline input { width: 5em; }
+
+/* Sign-ups */
+.reg-page { max-width: 720px; }
+.reg-form { display: grid; gap: 14px; }
+.reg-contact { border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; display: grid; gap: 10px; }
+.reg-contact legend { font-weight: 700; padding: 0 6px; }
+.reg-logo { display: flex; gap: 10px; align-items: center; }
+.reg-logo img, .entry-logo { width: 56px; height: 56px; object-fit: contain; border-radius: 8px; border: 1px solid var(--line); background: #fff; }
+.entry-list { list-style: none; padding: 0; margin: 12px 0 0; display: grid; gap: 10px; }
+.entry { border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; background: var(--surface); }
+.entry-new { border-color: var(--accent); }
+.entry-no { opacity: 0.6; }
+.entry-head { display: flex; gap: 10px; align-items: center; }
+.entry-head > div { flex: 1; min-width: 0; }
+.entry-players { white-space: pre-wrap; font: inherit; font-size: 0.9rem; margin: 6px 0 0; }
+.reg-cta { text-align: center; }

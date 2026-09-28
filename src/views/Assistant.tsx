@@ -6,6 +6,8 @@ import { useState } from 'react'
 export interface AssistantDraft {
   name: string
   sport: string
+  /** A discipline outside the catalogue ("Inna dyscyplina"): its real name, e.g. "Zapasy". */
+  sportName?: string
   format: string
   date: string
   time: string

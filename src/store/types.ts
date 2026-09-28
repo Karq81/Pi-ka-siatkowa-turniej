@@ -1,4 +1,4 @@
-import type { Match, Pins, Session, State } from '../types'
+import type { Entry, Match, Pins, Session, State, Team } from '../types'
 
 export interface SyncInfo {
   /** 'local' = data only in this browser; 'online' = shared database. */
@@ -40,6 +40,13 @@ export interface Store {
   cameraKey(): Promise<string | null>
   /** The chief referee: turns the camera apps on with a new key (the old one stops working). */
   newCameraKey(): Promise<string | null>
+  /** Anyone: sends a sign-up (only while the organiser has sign-ups open). */
+  submitEntry(entry: Omit<Entry, 'id' | 'status' | 'createdAt'>): Promise<void>
+  /** Admin: the sign-ups, newest first. */
+  listEntries(): Promise<Entry[]>
+  setEntryStatus(id: string, status: Entry['status']): Promise<void>
+  /** Admin: adds teams to the tournament (without drawing again). */
+  addTeams(teams: Team[]): Promise<void>
   /** Whether a tournament with this address is already saved (for "Załóż turniej"). */
   tournamentExists(id: string): Promise<boolean>
   clearError(): void

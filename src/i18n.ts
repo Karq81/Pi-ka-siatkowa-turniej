@@ -102,9 +102,27 @@ function fill(text: string, vars?: Record<string, string | number>): string {
   return text.replace(/\{(\w+)\}/g, (all, k: string) => (k in vars ? String(vars[k]) : all))
 }
 
+/**
+ * The words of the tournament's discipline: Polish text → the same text with "mata",
+ * "walka"… (see logic/terms.ts). Null: the usual "boisko" and "mecz".
+ */
+let variants: Record<string, string> | null = null
+
+export function setTermVariants(v: Record<string, string> | null) {
+  variants = v
+}
+
+/** The text to translate: the discipline's variant when there is one (and it is translated). */
+function source(pl: string): string {
+  const v = variants?.[pl]
+  if (!v) return dict[pl] ?? pl
+  if (lang === 'pl') return v
+  return dict[v] ?? dict[pl] ?? pl
+}
+
 /** Translation of a Polish text; {name} parts are filled from `vars`. */
 export function t(pl: string, vars?: Record<string, string | number>): string {
-  return fill(dict[pl] ?? pl, vars)
+  return fill(source(pl), vars)
 }
 
 /** Plural category order of each language's forms, separated by "|" in the text. */
@@ -125,9 +143,11 @@ const PLURAL_FORMS: Record<Lang, string[]> = {
  * its own forms (Polish: 1 / 2–4 / 5+; English: 1 / other).
  */
 export function tp(n: number, pl: string, vars?: Record<string, string | number>): string {
-  const forms = (dict[pl] ?? pl).split('|')
-  const order = PLURAL_FORMS[dict[pl] ? lang : 'pl']
-  const cat = new Intl.PluralRules(dict[pl] ? locale() : 'pl-PL').select(n)
+  const text = source(pl)
+  const polish = lang === 'pl' || text === pl || text === variants?.[pl]
+  const forms = text.split('|')
+  const order = PLURAL_FORMS[polish ? 'pl' : lang]
+  const cat = new Intl.PluralRules(polish ? 'pl-PL' : locale()).select(n)
   const i = order.indexOf(cat)
   const form = forms[i >= 0 ? i : forms.length - 1] ?? forms[forms.length - 1]
   return fill(form, { n, ...vars })

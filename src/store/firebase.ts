@@ -2,13 +2,13 @@ import { t, tk } from '../i18n'
 import { initializeApp, type FirebaseOptions } from 'firebase/app'
 import { connectAuthEmulator, getAuth, signInAnonymously, type Auth } from 'firebase/auth'
 import {
-  collection, connectFirestoreEmulator, doc, FieldPath, getDoc, getFirestore, increment, initializeFirestore, onSnapshot, persistentLocalCache,
+  addDoc, collection, connectFirestoreEmulator, doc, FieldPath, getDoc, getDocs, getFirestore, increment, initializeFirestore, onSnapshot, persistentLocalCache,
   persistentMultipleTabManager, setDoc, updateDoc, writeBatch, type Firestore,
 } from 'firebase/firestore'
 import { applyMatchUpdate } from '../logic/knockout'
 import { boardKey, publicBoard } from '../logic/publicBoard'
 import { dayKey } from '../logic/usage'
-import type { Match, Pins, Session, State } from '../types'
+import type { Entry, Match, Pins, Session, State } from '../types'
 import type { Store, SyncInfo } from './types'
 import { backups, backupScore, dropBackup, openLive, type LiveChannel, type LiveEntry } from './live'
 
@@ -428,6 +428,23 @@ export function createFirebaseStore(config: FirebaseOptions, tournamentId: strin
         const stop = ch.followStreamKey((k) => { resolve(k); setTimeout(() => stop(), 0) })
         setTimeout(() => resolve(null), 8000)
       })
+    },
+    async submitEntry(entry) {
+      await currentUser()
+      const clean = Object.fromEntries(Object.entries(entry).filter(([, v]) => v !== undefined && v !== ''))
+      await addDoc(collection(tRef, 'entries'), { ...clean, status: 'nowe', createdAt: Date.now() })
+    },
+    async listEntries() {
+      const snap = await getDocs(collection(tRef, 'entries'))
+      return snap.docs.map((d) => ({ ...(d.data() as Omit<Entry, 'id'>), id: d.id })).sort((a, b) => b.createdAt - a.createdAt)
+    },
+    async setEntryStatus(id, status) {
+      await updateDoc(doc(tRef, 'entries', id), { status })
+    },
+    async addTeams(teams) {
+      state = { ...state, teams: [...state.teams, ...teams] }
+      notify()
+      await updateDoc(tRef, { teams: state.teams }).catch(fail(tk('Zapis turnieju')))
     },
     async tournamentExists(id) {
       const snap = await getDoc(doc(db, 'tournaments', id))

@@ -1,3 +1,4 @@
+import { NumberField } from '../ui'
 import { locale, t, tk } from '../i18n'
 import { useEffect, useState } from 'react'
 import { ALBATROS_ALIAS, IS_PLATFORM_HOST } from '../config'
@@ -429,10 +430,10 @@ export function Credits({ account }: { account: Account }) {
         <h2>{t('Ile to będzie kosztować?')}</h2>
         <div className="form-row">
           <label>{t('Wejść kibiców dziennie')}
-            <input type="number" min={0} step={500} value={views} onChange={(e) => setViews(Math.max(0, Number(e.target.value) || 0))} />
+            <NumberField min={0} max={10000000} value={views} onChange={setViews} />
           </label>
           <label>{t('Dni turnieju')}
-            <input type="number" min={1} max={30} value={days} onChange={(e) => setDays(Math.max(1, Math.min(30, Number(e.target.value) || 1)))} />
+            <NumberField min={1} max={30} value={days} onChange={setDays} />
           </label>
         </div>
         <p>

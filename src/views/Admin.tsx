@@ -7,10 +7,11 @@ import { initialState, restoreTimetable } from '../logic/demo'
 import { blankState, readDraft, replanTimetable } from '../logic/newTournament'
 import { resetResults } from '../logic/draw'
 import { setsText, tally } from '../logic/scoring'
+import { playOf } from '../logic/sports'
 import { store, useStore, useSync } from '../store/store'
 import { courtKeys } from '../logic/pins'
 import type { Match, MatchStatus, Pins, SetScore, State } from '../types'
-import { BackBar, courtLabel, formatDay, formatTime, PinGate, useLookups } from '../ui'
+import { NumberField, BackBar, courtLabel, formatDay, formatTime, PinGate, useLookups } from '../ui'
 import { CourtCard, MatchList } from './Public'
 import { ResultForm } from './ResultForm'
 
@@ -247,7 +248,6 @@ function Settings({ state }: { state: State }) {
   const r = tour.rules
   const update = (patch: Partial<State['tournament']>) => store.updateTournament(patch)
   const rules = (patch: Partial<typeof r>) => update({ rules: { ...r, ...patch } })
-  const num = (v: string, min = 0) => Math.max(min, Number(v) || 0)
   return (
     <div className="data">
       <section className="panel">
@@ -255,7 +255,7 @@ function Settings({ state }: { state: State }) {
         <div className="form-grid">
           <label>{t('Nazwa')}<input id="set-name" value={tour.name} onChange={(e) => update({ name: e.target.value })} /></label>
           <label>{t('Podtytuł')}<input id="set-subtitle" value={tour.subtitle} onChange={(e) => update({ subtitle: e.target.value })} /></label>
-          <label>{r.scoring === 'judo' ? t('Liczba mat') : t('Liczba boisk')}<input id="set-courts" type="number" min={1} value={tour.courts} onChange={(e) => update({ courts: num(e.target.value, 1) })} /></label>
+          <label>{t('Liczba boisk')}<NumberField lazy id="set-courts" min={1} max={40} value={tour.courts} onChange={(v) => update({ courts: v })} /></label>
         </div>
       </section>
       {/* Changing the admin PIN is switched off while the organisers test the app, so nobody locks the others out. */}
@@ -263,33 +263,44 @@ function Settings({ state }: { state: State }) {
       <section className="panel">
         <h2>{t('Zasady meczu')}</h2>
         <div className="form-grid">
-          {r.scoring === 'judo' ? (
+          {r.scoring === 'judo' || r.scoring === 'karate' ? (
             <label>{t('Czas walki (minuty)')}
-              <input id="set-fight" type="number" min={0.5} max={10} step={0.5} value={(r.fightSeconds ?? 240) / 60}
-                onChange={(e) => rules({ fightSeconds: Math.round(Math.max(0.5, Math.min(10, Number(e.target.value) || 4)) * 60) })} />
+              <NumberField lazy decimals id="set-fight" min={0.5} max={10} value={(r.fightSeconds ?? 240) / 60}
+                onChange={(v) => rules({ fightSeconds: Math.round(v * 60) })} />
             </label>
-          ) : r.scoring === 'score' ? (
+          ) : r.scoring === 'score' ? (<>
+            {playOf(r) && (
+              <label>{t('Czas gry: części × minuty')}
+                <span className="form-inline">
+                  <NumberField lazy min={1} max={8} value={playOf(r)!.periods} onChange={(v) => rules({ periods: v })} ariaLabel={t('Liczba części gry')} />
+                  ×
+                  <NumberField lazy decimals min={1} max={90} value={playOf(r)!.periodMinutes} onChange={(v) => rules({ periodMinutes: v })} ariaLabel={t('Minuty jednej części')} />
+                  {t('min')}
+                </span>
+                <span className="muted small">{t('Dla zegara sędziego. Domyślnie zasady dla seniorów; w turniejach dzieci zwykle krócej.')}</span>
+              </label>
+            )}
             <label>{t('Remis możliwy')}
               <select id="set-draws" value={r.draws ? 'tak' : 'nie'} onChange={(e) => rules({ draws: e.target.value === 'tak' })}>
                 <option value="tak">{t('Tak')}</option>
                 <option value="nie">{t('Nie (dogrywka / karne)')}</option>
               </select>
             </label>
-          ) : (<>
+          </>) : (<>
           <label>{t('System setów')}
             <select id="set-mode" value={r.setsMode} onChange={(e) => rules({ setsMode: e.target.value as typeof r.setsMode })}>
               <option value="bestOf">{t('Do wygranych setów (np. 2 z 3)')}</option>
               <option value="fixed">{t('Stała liczba setów (możliwy remis)')}</option>
             </select>
           </label>
-          <label>{t('Liczba setów')}<input id="set-sets" type="number" min={1} value={r.sets} onChange={(e) => rules({ sets: num(e.target.value, 1) })} /></label>
-          <label>{t('Set do (pkt)')}<input id="set-points" type="number" min={1} value={r.setPoints} onChange={(e) => rules({ setPoints: num(e.target.value, 1) })} /></label>
-          <label>{t('Decydujący set do (pkt)')}<input id="set-tiebreak" type="number" min={1} value={r.lastSetPoints} disabled={r.setsMode === 'fixed'} onChange={(e) => rules({ lastSetPoints: num(e.target.value, 1) })} /></label>
-          <label>{t('Przewaga do wygrania seta')}<input id="set-winby" type="number" min={1} value={r.winBy} onChange={(e) => rules({ winBy: num(e.target.value, 1) })} /></label>
+          <label>{t('Liczba setów')}<NumberField lazy id="set-sets" min={1} max={9} value={r.sets} onChange={(v) => rules({ sets: v })} /></label>
+          <label>{t('Set do (pkt)')}<NumberField lazy id="set-points" min={1} max={999} value={r.setPoints} onChange={(v) => rules({ setPoints: v })} /></label>
+          <label>{t('Decydujący set do (pkt)')}<NumberField lazy id="set-tiebreak" min={1} max={999} value={r.lastSetPoints} disabled={r.setsMode === 'fixed'} onChange={(v) => rules({ lastSetPoints: v })} /></label>
+          <label>{t('Przewaga do wygrania seta')}<NumberField lazy id="set-winby" min={1} max={9} value={r.winBy} onChange={(v) => rules({ winBy: v })} /></label>
           </>)}
-          <label>{t('Pkt w tabeli za wygraną')}<input id="set-pwin" type="number" value={r.pointsWin} onChange={(e) => rules({ pointsWin: num(e.target.value) })} /></label>
-          <label>{t('Pkt za remis')}<input id="set-pdraw" type="number" value={r.pointsDraw} onChange={(e) => rules({ pointsDraw: num(e.target.value) })} /></label>
-          <label>{t('Pkt za przegraną')}<input id="set-ploss" type="number" value={r.pointsLoss} onChange={(e) => rules({ pointsLoss: num(e.target.value) })} /></label>
+          <label>{t('Pkt w tabeli za wygraną')}<NumberField lazy decimals id="set-pwin" min={0} max={99} value={r.pointsWin} onChange={(v) => rules({ pointsWin: v })} /></label>
+          <label>{t('Pkt za remis')}<NumberField lazy decimals id="set-pdraw" min={0} max={99} value={r.pointsDraw} onChange={(v) => rules({ pointsDraw: v })} /></label>
+          <label>{t('Pkt za przegraną')}<NumberField lazy decimals id="set-ploss" min={0} max={99} value={r.pointsLoss} onChange={(v) => rules({ pointsLoss: v })} /></label>
         </div>
         <p className="muted small">{t('Zasady do potwierdzenia z organizatorem. Zmiana od razu przelicza wszystkie tabele.')}</p>
       </section>

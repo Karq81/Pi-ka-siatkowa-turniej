@@ -1,3 +1,4 @@
+import { SPORTS } from '../logic/sports'
 import { CorrectButton } from './Correction'
 import { StreamPlayer } from './Stream'
 import { LangPicker } from './LangPicker'
@@ -6,11 +7,14 @@ import { useState } from 'react'
 import { BRAND, IS_PLATFORM_HOST } from '../config'
 import { formatRatio, isJudo, isScore, scoreUnit, setsText, setText, standings, tally } from '../logic/scoring'
 import { JudoNote } from './JudoScoring'
+import { KarateNote } from './KarateScoring'
+import { ChessNote } from './ChessScoring'
+import { gameText, inTieBreak, isGameSet } from '../logic/tennis'
 import { judoOf, judoSideText } from '../logic/judo'
 import { useFavorites } from '../favorites'
 import { courtBoard, upcomingMatches } from '../logic/courtBoard'
 import { useStore } from '../store/store'
-import type { Match, State } from '../types'
+import type { Match, Rules, State } from '../types'
 import { Competition, NextMatch, TeamBadge, TeamPage } from './Competition'
 import { MatchPage } from './Groups'
 import { CourtQueue } from './CourtQueue'
@@ -122,10 +126,13 @@ export function CourtCard({ state, court, big = false, referee = false }: { stat
       </header>
       <p className="court-meta">{categoryName(current.categoryId)} · {stageName(current)} · {formatTime(current.start)}</p>
       <a className="board" href={`#mecz-${current.id}`}>
-        <TeamRow name={side(current, 'a')} sets={multi ? tl.setsA : undefined} points={judo && cur ? judoSideText(judoOf(cur).a) : cur?.a} shido={judo && cur ? judoOf(cur).a.shido : undefined} live={shown} win={winA} mine={mine.includes(current.teamA)} />
-        <TeamRow name={side(current, 'b')} sets={multi ? tl.setsB : undefined} points={judo && cur ? judoSideText(judoOf(cur).b) : cur?.b} shido={judo && cur ? judoOf(cur).b.shido : undefined} live={shown} win={winB} mine={mine.includes(current.teamB)} />
+        <TeamRow name={side(current, 'a')} sets={multi ? tl.setsA : undefined} points={judo && cur ? judoSideText(judoOf(cur).a) : cur?.a === 0.5 ? '½' : cur?.a} shido={judo && cur ? judoOf(cur).a.shido : undefined} live={shown} win={winA} mine={mine.includes(current.teamA)} />
+        <TeamRow name={side(current, 'b')} sets={multi ? tl.setsB : undefined} points={judo && cur ? judoSideText(judoOf(cur).b) : cur?.b === 0.5 ? '½' : cur?.b} shido={judo && cur ? judoOf(cur).b.shido : undefined} live={shown} win={winB} mine={mine.includes(current.teamB)} />
       </a>
       {judo && cur && shown && <JudoNote rules={rules} set={cur} live={live} />}
+      {cur && shown && <KarateNote rules={rules} set={cur} />}
+      {cur && shown && <ChessNote rules={rules} set={cur} />}
+      {live && cur?.game && isGameSet(rules, current.sets.length - 1) && <p className="court-game">{inTieBreak(rules, current.sets.length - 1, cur) ? t('Tie-break') : t('Gem')}: <b>{gameText(rules, current.sets.length - 1, cur)}</b></p>}
       {live && !current.sets.length && <p className="court-sets muted">{t('Mecz trwa. Wynik pojawi się po meczu.')}</p>}
       {board.mode === 'next' && current.start && (() => {
         const mins = Math.ceil((new Date(current.start).getTime() - now) / 60000)
@@ -274,6 +281,12 @@ function CategoryChips({ state, value, onChange }: { state: State; value: string
   )
 }
 
+/** Players rather than teams: judo, karate, chess, tennis… (by the discipline's entrants). */
+function individual(rules: Rules): boolean {
+  const e = SPORTS.find((x) => x.label === rules.sport)?.entrants
+  return !!e && e !== 'drużyny'
+}
+
 /** `title`: show the group name linking to its page (off on the group page itself). */
 export function GroupTable({ state, groupId, title = true }: { state: State; groupId: string; title?: boolean }) {
   const { teamName } = useLookups(state)
@@ -291,7 +304,7 @@ export function GroupTable({ state, groupId, title = true }: { state: State; gro
         <table>
           <thead>
             <tr>
-              <th>#</th><th className="left">{rules.scoring === 'judo' ? t('Zawodnik') : t('Drużyna')}</th><th title={t('Mecze')}>{t('M')}</th><th title={t('Wygrane')}>{t('W')}</th>
+              <th>#</th><th className="left">{individual(rules) ? t('Zawodnik') : t('Drużyna')}</th><th title={t('Mecze')}>{t('M')}</th><th title={t('Wygrane')}>{t('W')}</th>
               {draws && <th title={t('Remisy')}>{t('R')}</th>}<th title={t('Przegrane')}>{t('P')}</th><th title={t('Punkty')}>{t('Pkt')}</th>{multi && <th title={t('Sety')}>{t('Sety')}</th>}
               <th title={score ? t('Zdobyte i stracone') : t('Stosunek: {unit}', { unit })}>{!score && rules.unit !== 'gemy' ? t('Małe pkt') : unit[0].toUpperCase() + unit.slice(1)}</th>
             </tr>

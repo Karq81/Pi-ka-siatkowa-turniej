@@ -3,6 +3,11 @@ import { t, tp } from '../i18n'
 import { useEffect, useState } from 'react'
 import { canAddPoint, isJudo, isMatchDecided, isScore, scoreUnit, setCap, setsText, setTarget, setText, setWinner, tally } from '../logic/scoring'
 import { JudoScoring } from './JudoScoring'
+import { KarateScoring } from './KarateScoring'
+import { clearContestClock, ContestClock, PenaltyTimers } from './ContestClock'
+import { partLabel, playOf } from '../logic/sports'
+import { addTennisPoint, gameText, inTieBreak, isGameSet, removeTennisPoint } from '../logic/tennis'
+import { ChessScoring } from './ChessScoring'
 import { courtBoard } from '../logic/courtBoard'
 import { setNextOnCourt } from '../logic/schedule'
 import { canScore } from '../logic/pins'
@@ -109,10 +114,16 @@ function NextTimeForm({ state, court }: { state: State; court: number }) {
         <input
           id={`next-time-${court}`} type="text" inputMode="numeric" placeholder="15:45" maxLength={5} value={time} disabled={live}
           onChange={(e) => {
-            // 24-hour HH:MM whatever the phone's settings; "1545" becomes "15:45".
-            const d = e.target.value.replace(/\D/g, '').slice(0, 4)
-            setTime(d.length > 2 ? `${d.slice(0, 2)}:${d.slice(2)}` : d)
+            // 24-hour HH:MM whatever the phone's settings. Typed text stays as typed (deleting
+            // the colon does not bring it back); four digits "1545" become "15:45".
+            const raw = e.target.value.replace(/[^\d:]/g, '').slice(0, 5)
+            const d = raw.replace(/\D/g, '')
+            setTime(!raw.includes(':') && d.length === 4 ? `${d.slice(0, 2)}:${d.slice(2)}` : raw)
             setMsg('')
+          }}
+          onBlur={() => {
+            const d = time.replace(/\D/g, '')
+            if (d.length === 3 || d.length === 4) setTime(`${d.slice(0, -2).padStart(2, '0')}:${d.slice(-2)}`)
           }}
         />
       </label>
@@ -219,7 +230,8 @@ function CourtPanel({ state, court, manualFirst }: { state: State; court: number
           onClick={() => store.updateMatch(current.id, (m) => ({ ...m, status: 'live', sets: [{ a: 0, b: 0 }] }))}
         >
           {!known ? t('Czekamy na wyniki poprzednich meczów')
-            : isJudo(state.tournament.rules) ? t('Rozpocznij walkę')
+            : isJudo(state.tournament.rules) || state.tournament.rules.scoring === 'karate' ? t('Rozpocznij walkę')
+              : state.tournament.rules.scoring === 'chess' ? t('Rozpocznij partię')
               : t('Rozpocznij mecz i licz: {unit}', { unit: isScore(state.tournament.rules) ? scoreUnit(state.tournament.rules) : t('punkty') })}
         </button>
         {manualLink}
@@ -253,7 +265,11 @@ function CourtPanel({ state, court, manualFirst }: { state: State; court: number
     <>
       {isJudo(state.tournament.rules)
         ? <JudoScoring state={state} match={current} meta={meta} onFinish={() => setJustFinished(current.id)} />
-        : <LiveScoring state={state} match={current} meta={meta} onFinish={() => setJustFinished(current.id)} />}
+        : state.tournament.rules.scoring === 'karate'
+          ? <KarateScoring state={state} match={current} meta={meta} onFinish={() => setJustFinished(current.id)} />
+          : state.tournament.rules.scoring === 'chess'
+            ? <ChessScoring state={state} match={current} meta={meta} onFinish={() => setJustFinished(current.id)} />
+            : <LiveScoring state={state} match={current} meta={meta} onFinish={() => setJustFinished(current.id)} />}
       <button className="btn btn-lg" onClick={() => setManual(current.id)}>{t('Nie liczę na żywo, podaj wynik z kartki')}</button>
       <UndoMatch match={current} />
     </>
@@ -298,12 +314,24 @@ function LiveScoring({ state, match, meta, onFinish }: { state: State; match: Ma
       return { ...m, sets }
     })
 
+  // Tennis and padel: point by point (15, 30, 40…), games add up by themselves.
+  const gameSet = isGameSet(rules, idx)
+  const tennis = (side: 'a' | 'b', add: boolean) => store.updateMatch(match.id, (m) => {
+    const cur = m.sets[idx]
+    if (!cur) return m
+    const next = add ? addTennisPoint(rules, idx, cur, side) : removeTennisPoint(cur, side)
+    return next === cur ? m : { ...m, sets: m.sets.map((s, i) => (i === idx ? next : s)) }
+  })
+  // Timed team games: the match clock, scoring buttons (basketball 1/2/3, rugby 5/2/3), timed penalties.
+  const play = rules.scoring === 'score' ? playOf(rules) : null
+
   const nextSet = () => store.updateMatch(match.id, (m) =>
     setWinner(rules, m.sets.length - 1, m.sets[m.sets.length - 1]) && !isMatchDecided(rules, m.sets)
       ? { ...m, sets: [...m.sets, { a: 0, b: 0 }] }
       : m)
   const finish = () => {
     store.updateMatch(match.id, (m) => (isMatchDecided(rules, m.sets) ? { ...m, status: 'finished' } : m))
+    clearContestClock(match.id)
     onFinish()
   }
 
@@ -321,17 +349,52 @@ function LiveScoring({ state, match, meta, onFinish }: { state: State; match: Ma
                 ...(setCap(rules, idx) ? [t('maks. {n}', { n: setCap(rules, idx)! })] : []),
               ].join(' · ')}
       </p>
+      {play && play.periodMinutes > 0 && (
+        <ContestClock id={match.id} seconds={play.periodMinutes * 60} parts={play.periods} partName={(n) => partLabel(play.part, n)} />
+      )}
+      {gameSet && (
+        <p className="tn-game">
+          {inTieBreak(rules, idx, set) ? t('Tie-break') : t('Gem')}: <b>{gameText(rules, idx, set)}</b>
+        </p>
+      )}
       <div className="pads">
         {(['a', 'b'] as const).map((s) => (
           <div key={s} className={`pad ${!score && winner === s ? 'pad-won' : ''}`}>
             <span className="pad-team">{side(match, s)}</span>
             <span className="pad-score">{set[s]}</span>
-            <button className="btn-plus" onClick={() => change(s, 1)} disabled={!canAddPoint(rules, idx, set)} aria-label={t('Punkt dla: {team}', { team: side(match, s) })}>
-              +1
-            </button>
-            <button className="btn-minus" onClick={() => change(s, -1)} disabled={set[s] === 0}>
-              −1 {t('cofnij')}
-            </button>
+            {gameSet ? (
+              <>
+                <button className="btn-plus" onClick={() => tennis(s, true)} disabled={!canAddPoint(rules, idx, set)} aria-label={t('Punkt dla: {team}', { team: side(match, s) })}>
+                  {t('Punkt')}
+                </button>
+                <button className="btn-minus" onClick={() => tennis(s, false)} disabled={!set.game?.[s]}>−1 {t('pkt')}</button>
+                <span className="tn-games">
+                  <button type="button" className="linklike small" onClick={() => change(s, 1)} disabled={!canAddPoint(rules, idx, set)}>+1 {t('gem')}</button>
+                  <button type="button" className="linklike small" onClick={() => change(s, -1)} disabled={set[s] === 0}>−1 {t('gem')}</button>
+                </span>
+              </>
+            ) : play?.buttons ? (
+              <>
+                <span className="pts-buttons">
+                  {play.buttons.map((b) => (
+                    <button key={b.points} className="btn-plus btn-pts" onClick={() => change(s, b.points)} aria-label={`+${b.points} ${t(b.label)}, ${side(match, s)}`}>
+                      +{b.points}<small>{t(b.label)}</small>
+                    </button>
+                  ))}
+                </span>
+                <button className="btn-minus" onClick={() => change(s, -1)} disabled={set[s] === 0}>−1 {t('cofnij')}</button>
+              </>
+            ) : (
+              <>
+                <button className="btn-plus" onClick={() => change(s, 1)} disabled={!canAddPoint(rules, idx, set)} aria-label={t('Punkt dla: {team}', { team: side(match, s) })}>
+                  +1
+                </button>
+                <button className="btn-minus" onClick={() => change(s, -1)} disabled={set[s] === 0}>
+                  −1 {t('cofnij')}
+                </button>
+              </>
+            )}
+            {play?.penaltySeconds && <PenaltyTimers id={`${match.id}-${s}`} seconds={play.penaltySeconds} />}
           </div>
         ))}
       </div>

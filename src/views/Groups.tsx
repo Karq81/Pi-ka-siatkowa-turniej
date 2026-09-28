@@ -2,6 +2,8 @@ import { t } from '../i18n'
 import { isJudo, setsText, tally } from '../logic/scoring'
 import { judoOf, judoSideText } from '../logic/judo'
 import { JudoNote } from './JudoScoring'
+import { KarateNote } from './KarateScoring'
+import { ChessNote } from './ChessScoring'
 import type { Match, State } from '../types'
 import { CorrectButton } from './Correction'
 import { CourtQueue } from './CourtQueue'
@@ -20,8 +22,9 @@ export function MatchPage({ state, matchId }: { state: State; matchId: string })
   const single = rules.sets === 1
   const back = m.groupId ? `#grupa-${m.groupId}` : '#drabinka'
   const judo = isJudo(rules)
-  const scoreA = judo && cur ? judoSideText(judoOf(cur).a) : single ? cur?.a : tl.setsA
-  const scoreB = judo && cur ? judoSideText(judoOf(cur).b) : single ? cur?.b : tl.setsB
+  const half = (x: number | undefined) => (x === 0.5 ? '½' : x)
+  const scoreA = judo && cur ? judoSideText(judoOf(cur).a) : single ? half(cur?.a) : tl.setsA
+  const scoreB = judo && cur ? judoSideText(judoOf(cur).b) : single ? half(cur?.b) : tl.setsB
   return (
     <>
       <BackBar fallback={back.slice(1)} />
@@ -42,6 +45,8 @@ export function MatchPage({ state, matchId }: { state: State; matchId: string })
           <p className="center muted">{t('Sety:')} {setsText(rules, m.sets)}</p>
         )}
         {judo && cur && m.status !== 'scheduled' && <JudoNote rules={rules} set={cur} live={m.status === 'live'} />}
+        {cur && m.status !== 'scheduled' && <KarateNote rules={rules} set={cur} />}
+        {cur && m.status !== 'scheduled' && <ChessNote rules={rules} set={cur} />}
         {m.status === 'live' && <p className="center muted small">{t('Wynik zmienia się na bieżąco.')}</p>}
         {m.status === 'scheduled' && !isUnderway(m, now) && <p className="center muted">{t('Mecz jeszcze się nie zaczął.')}</p>}
       </article>

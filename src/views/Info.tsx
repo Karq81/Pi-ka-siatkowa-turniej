@@ -1,3 +1,4 @@
+import { sportLabelOf } from '../logic/sports'
 import { StreamPlayer } from './Stream'
 import { LangPicker } from './LangPicker'
 import { t } from '../i18n'
@@ -17,7 +18,7 @@ export function InfoHero({ nav }: { nav: ReactNode }) {
       <header className="info-hero">
         <div className="info-hero-inner">
           <div>
-            <p className="eyebrow">{t('Wyniki na żywo')}</p>
+            <p className="eyebrow">{[sportLabelOf(state.tournament.rules), t('Wyniki na żywo')].filter(Boolean).join(' · ')}</p>
             <h1>{state.tournament.name}</h1>
             {state.tournament.subtitle && <p className="info-when">{state.tournament.subtitle}</p>}
           </div>
@@ -65,6 +66,13 @@ function TournamentStart() {
   return (
     <div className="info">
       <StreamPlayer link={state.tournament.stream} title={t('Transmisja na żywo')} />
+      {state.tournament.registration && (
+        <section className="panel reg-cta">
+          <h2>📝 {t('Zgłoszenia są otwarte')}</h2>
+          <p>{t('Zgłoś drużynę albo zawodnika: nazwa, kategoria, skład i kontakt. Organizator potwierdzi zgłoszenie.')}</p>
+          <a className="btn btn-primary btn-lg" href="#zgloszenie">{t('Zgłoś drużynę')}</a>
+        </section>
+      )}
       {state.teams.length > 0 && <MyTeams state={state} />}
       <section className="info-live">
         <div className="info-live-text">

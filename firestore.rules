@@ -75,6 +75,25 @@ service cloud.firestore {
           && request.resource.data.views == resource.data.views + 1;
       }
 
+      // Sign-ups from the tournament's page (#zgloszenie): anyone sends one while the organiser
+      // keeps sign-ups open; the contact details are read only by the organiser.
+      match /entries/{e} {
+        allow read, update, delete: if isAdmin();
+        allow create: if request.auth != null
+          && get(/databases/$(database)/documents/tournaments/$(t)).data.tournament.get('registration', false) == true
+          && request.resource.data.keys().hasOnly(['name', 'categoryId', 'club', 'contact', 'phone', 'email', 'players', 'logo', 'note', 'status', 'createdAt'])
+          && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 80
+          && request.resource.data.contact is string && request.resource.data.contact.size() > 0 && request.resource.data.contact.size() <= 80
+          && request.resource.data.categoryId is string && request.resource.data.categoryId.size() <= 40
+          && request.resource.data.get('club', '').size() <= 80
+          && request.resource.data.get('phone', '').size() <= 30
+          && request.resource.data.get('email', '').size() <= 120
+          && request.resource.data.get('players', '').size() <= 4000
+          && request.resource.data.get('note', '').size() <= 1000
+          && request.resource.data.get('logo', '').size() <= 60000
+          && request.resource.data.status == 'nowe' && request.resource.data.createdAt is int;
+      }
+
       match /private/{d} {
         allow read: if isAdmin();
         // The first setup creates the keys; after that only the admin can change them.

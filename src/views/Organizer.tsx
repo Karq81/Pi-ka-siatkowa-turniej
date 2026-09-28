@@ -1,3 +1,5 @@
+import { EntriesPanel } from './Registration'
+import { sportLabelOf } from '../logic/sports'
 import { StreamSettings } from './Stream'
 import { t, tk, tp } from '../i18n'
 import { useState } from 'react'
@@ -7,7 +9,7 @@ import { retimeSchedule } from '../logic/schedule'
 import { store, useSession, useStore, useSync } from '../store/store'
 import { AdminPinForm, PinSettings, ResetPanel, setupTournament } from './Admin'
 import type { Category, State } from '../types'
-import { courtLabel, formatDay, formatTime, PinGate, useLookups } from '../ui'
+import { NumberField, courtLabel, formatDay, formatTime, PinGate, useLookups } from '../ui'
 import { CourtList } from './Court'
 import { Setup } from './Setup'
 import { IS_ALBATROS, IS_PLATFORM_HOST } from '../config'
@@ -37,7 +39,7 @@ export function Organizer({ route }: { route: string }) {
       <header className="org-head">
         <div>
           <p className="eyebrow">
-            {t('Panel organizatora')}
+            {t('Panel organizatora')}{state.tournament.rules.sport ? ` · ${sportLabelOf(state.tournament.rules)}` : ''}
             {account.status === 'signed-in' && <> · <a className="plain-link" href={IS_PLATFORM_HOST ? '/#moje-turnieje' : '#moje-turnieje'}>← {t('Moje turnieje')}</a></>}
           </p>
           <h1>{state.tournament.name}</h1>
@@ -48,6 +50,7 @@ export function Organizer({ route }: { route: string }) {
           ))}
         </nav>
       </header>
+      {tab === 'panel' && !IS_ALBATROS && <PinGate label={t('Zgłoszenia drużyn (sędzia główny)')}><EntriesPanel state={state} /></PinGate>}
       {tab === 'panel' && (IS_ALBATROS ? <TeamsAndDraw state={state} /> : <Setup state={state} />)}
       {tab === 'panel-grupy' && (
         state.groups.length ? <Competition state={state} route="grupy" /> : <Empty />
@@ -143,8 +146,7 @@ function MatchInterval({ state }: { state: State }) {
       <PinGate label={t('Zmiana godzin meczów (sędzia główny)')}>
         <div className="form-row">
           <label>{t('Minut od meczu do meczu')}
-            <input id="slot-minutes" type="number" min={2} max={120} step={1} value={minutes}
-              onChange={(e) => setMinutes(Math.max(2, Math.min(120, Number(e.target.value) || current)))} />
+            <NumberField id="slot-minutes" min={2} max={120} value={minutes} onChange={setMinutes} />
           </label>
         </div>
         <button className="btn btn-primary" disabled={minutes === current} onClick={save}>{t('Zapisz i przelicz godziny')}</button>

@@ -17,7 +17,7 @@ export interface Rules {
    * 'sets' (default: volleyball, badminton, table tennis…) or 'score': one score per match,
    * goals or points (football, handball, basketball…), kept as the match's only "set".
    */
-  scoring?: 'sets' | 'score' | 'judo'
+  scoring?: 'sets' | 'score' | 'judo' | 'karate' | 'chess'
   /** Score mode: whether a match may end level. */
   draws?: boolean
   /** Score mode: what the score counts, e.g. "bramki" or "punkty". */
@@ -31,8 +31,13 @@ export interface Rules {
   cap?: number
   /** The same for a deciding set of its own length (e.g. none for a super tie-break to 10). */
   lastSetCap?: number
-  /** Judo: regular contest time in seconds (seniors 240); golden score follows a level result. */
+  /** Judo, karate: regular contest time in seconds (judo seniors 240); judo: golden score follows a level result. */
   fightSeconds?: number
+  /** Timed games: parts (2 halves, 4 quarters, 3 periods) and minutes of each, for the referee's clock. */
+  periods?: number
+  periodMinutes?: number
+  /** Scoring buttons (basketball 1, 2, 3; rugby 5, 2, 3). Missing: +1 only. */
+  scoreButtons?: number[]
   /** Volleyball: a match won in the deciding set gives the winner one point less and the loser one more (3:2 → 2 and 1 points). */
   tieBreakSplit?: boolean
 }
@@ -56,6 +61,27 @@ export interface Tournament {
   stream?: string
   /** Live video of single courts: court number → link. */
   courtStreams?: Record<string, string>
+  /** Teams can sign up on the tournament's page (#zgloszenie). */
+  registration?: boolean
+}
+
+/** A team's (or player's) sign-up sent from the tournament's page; only the organiser reads it. */
+export interface Entry {
+  id: string
+  name: string
+  categoryId: string
+  club?: string
+  /** Captain or contact person. */
+  contact: string
+  phone?: string
+  email?: string
+  /** Squad, one player per line. */
+  players?: string
+  /** Small logo, a data: URL (about 20 KB). */
+  logo?: string
+  note?: string
+  status: 'nowe' | 'przyjęte' | 'odrzucone'
+  createdAt: number
 }
 
 export interface Category {
@@ -86,7 +112,26 @@ export interface SetScore {
    * points, 100 for ippon, 10 per waza-ari and 1 per yuko, for tables and old screens.
    */
   judo?: JudoScore
+  /** Karate (WKF kumite): points, penalties, senshu. `a` and `b` hold the points. */
+  karate?: KarateScore
+  /** Chess: how the game ended (a and b are 1, 0.5 or 0). */
+  chess?: ChessEnd
+  /** Tennis, padel: points of the game in progress (0, 1, 2, 3… = 0, 15, 30, 40; tie-break points). */
+  game?: { a: number; b: number }
 }
+
+export interface KarateScore {
+  /** Penalties 0–5: chui 1–3, hansoku-chui, hansoku (disqualification). */
+  pa: number
+  pb: number
+  /** Who has senshu (the first unopposed point), if anybody. */
+  senshu?: 'a' | 'b'
+  /** Referees' decision (hantei) or withdrawal. */
+  decision?: 'a' | 'b'
+}
+
+/** mat, czas, poddanie, pat, remis (by agreement, repetition, 50 moves), walkower. */
+export type ChessEnd = 'mat' | 'czas' | 'poddanie' | 'pat' | 'remis' | 'walkower'
 
 /** One judoka's scores and penalties. */
 export interface JudoSide {

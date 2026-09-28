@@ -9,9 +9,12 @@ import { Correction } from './views/Correction'
 import { Organizer } from './views/Organizer'
 import { Tv } from './views/Tv'
 import { CameraBoards, Scoreboard } from './views/Scoreboard'
+import { RegistrationPage } from './views/Registration'
 import { useEffect } from 'react'
 import { SyncBanner, useRoute } from './ui'
 import { HelpBot } from './views/HelpBot'
+import { useStore } from './store/store'
+import { useTermsOf } from './logic/terms'
 
 /**
  * Phones show the public pages and the organiser panel laid out like the desktop view,
@@ -21,7 +24,7 @@ import { HelpBot } from './views/HelpBot'
  * result entry, corrections) keep the normal phone layout with big buttons.
  */
 const DESKTOP_LIKE_WIDTH = 640
-const PHONE_LAYOUT = /^(boisko-\d+|tablica-\d+|kamera|wynik-\d+|korekta-.+|sedzia|kartki|o-systemie|nowy-turniej|konto|rejestracja|moje-turnieje|kredyty)$/
+const PHONE_LAYOUT = /^(zgloszenie|boisko-\d+|tablica-\d+|kamera|wynik-\d+|korekta-.+|sedzia|kartki|o-systemie|nowy-turniej|konto|rejestracja|moje-turnieje|kredyty)$/
 
 function isPhone() {
   const touch = matchMedia('(pointer: coarse)').matches
@@ -63,6 +66,10 @@ const PLATFORM_ROUTES = ['o-systemie', 'nowy-turniej', 'konto', 'rejestracja', '
 
 export function App() {
   const route = useRoute()
+  const state = useStore()
+  // The discipline's words (mata, kort, walka…) on this tournament's pages; the service's own
+  // pages (front page, new tournament, account) keep the usual ones.
+  useTermsOf(IS_LANDING || PLATFORM_ROUTES.includes(route) ? undefined : state.tournament.rules.sport)
   return (
     <>
       {/* The service pages show no tournament, so no connection notices either. */}
@@ -93,6 +100,7 @@ function Screen({ route }: { route: string }) {
   const board = /^tablica-(\d+)$/.exec(route)
   if (board) return <Scoreboard court={Number(board[1])} />
   if (route === 'kamera') return <CameraBoards />
+  if (route === 'zgloszenie') return <RegistrationPage />
   if (route === 'o-systemie') return <About />
   if (route === 'nowy-turniej') return <NewTournament />
   if (route === 'konto' || route === 'rejestracja' || route === 'moje-turnieje' || route === 'kredyty') return <AccountPage key={route} view={route} />

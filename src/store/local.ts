@@ -88,6 +88,10 @@ export function createLocalStore(tournamentId: string, initial: State): Store {
       commit({ ...state, tournament: { ...state.tournament, ...patch } })
     },
     async cameraKey() { return null },
+    async submitEntry() { throw new Error('offline') },
+    async listEntries() { return [] },
+    async setEntryStatus() {},
+    async addTeams(teams) { commit({ ...state, teams: [...state.teams, ...teams] }) },
     async newCameraKey() { return null },
     async getPins() {
       return session?.role === 'admin' ? pins : null

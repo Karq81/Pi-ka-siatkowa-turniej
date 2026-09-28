@@ -1,10 +1,12 @@
 import { t } from '../i18n'
 import type { Group, Match, Rules, SetScore, Team } from '../types'
 import { judoLine, judoOf, judoResult, judoStopped } from './judo'
+import { karateResult, karateStopped } from './karate'
+import { chessText } from './chess'
 
 /** One score per match (goals, points, or a judo contest) instead of sets. */
 export function isScore(rules: Rules): boolean {
-  return rules.scoring === 'score' || rules.scoring === 'judo'
+  return rules.scoring === 'score' || rules.scoring === 'judo' || rules.scoring === 'karate' || rules.scoring === 'chess'
 }
 
 /** Judo contests: ippon, waza-ari, yuko and shido (see judo.ts). */
@@ -15,12 +17,16 @@ export function isJudo(rules: Rules): boolean {
 /** What the small numbers in the table count: "małe punkty", or the score's unit ("bramki"). */
 export function scoreUnit(rules: Rules): string {
   if (isJudo(rules)) return t('punkty techniczne')
+  if (rules.scoring === 'karate') return t('punkty')
+  if (rules.scoring === 'chess') return t('punkty')
   return t(isScore(rules) ? rules.unit ?? 'bramki' : rules.unit === 'gemy' ? 'gemy' : 'małe punkty')
 }
 
 /** A set (or a whole score, or a judo contest) as shown to people: "25:20", "W1 Y2 : Y1". */
 export function setText(rules: Rules, s: SetScore): string {
-  return isJudo(rules) ? judoLine(s) : `${s.a}:${s.b}`
+  if (isJudo(rules)) return judoLine(s)
+  if (rules.scoring === 'chess') return chessText(s)
+  return `${s.a}:${s.b}`
 }
 
 /** All sets of a match in one line. */
@@ -46,6 +52,7 @@ export function setCap(rules: Rules, index: number): number | undefined {
 /** Winner of a single set, or null while it is still in play. */
 export function setWinner(rules: Rules, index: number, s: SetScore): 'a' | 'b' | null {
   if (isJudo(rules)) return judoResult(judoOf(s))?.winner ?? null
+  if (rules.scoring === 'karate') return karateResult(s, true)?.winner ?? null
   if (isScore(rules)) return s.a > s.b ? 'a' : s.b > s.a ? 'b' : null
   const target = setTarget(rules, index)
   const cap = setCap(rules, index)
@@ -76,6 +83,7 @@ export function setProblem(rules: Rules, index: number, s: SetScore): 'unfinishe
 /** Whether another point can be added to this set (false once the set is won). */
 export function canAddPoint(rules: Rules, index: number, s: SetScore): boolean {
   if (isJudo(rules)) return !judoStopped(judoOf(s))
+  if (rules.scoring === 'karate') return !karateStopped(s)
   if (isScore(rules)) return true
   return setWinner(rules, index, s) === null
 }
@@ -85,6 +93,17 @@ export function resultProblem(rules: Rules, sets: SetScore[]): string | null {
   if (isJudo(rules)) {
     if (!sets.length) return t('Wpisz wynik walki.')
     if (!judoResult(judoOf(sets[0]))) return t('Walka nie jest rozstrzygnięta. Przy równym wyniku jest golden score: wygrywa pierwsza ocena. Możesz też zaznaczyć decyzję sędziów.')
+    return null
+  }
+  if (rules.scoring === 'karate') {
+    if (!sets.length) return t('Wpisz wynik walki.')
+    if (!karateResult(sets[0], true)) return t('Walka nie jest rozstrzygnięta: równy wynik bez senshu. Zaznacz decyzję sędziów (hantei).')
+    return null
+  }
+  if (rules.scoring === 'chess') {
+    if (!sets.length) return t('Wpisz wynik partii.')
+    const s = sets[0]
+    if (s.a + s.b !== 1 || ![0, 0.5, 1].includes(s.a)) return t('Partia kończy się 1–0, ½–½ albo 0–1.')
     return null
   }
   if (isScore(rules)) {
@@ -132,6 +151,8 @@ export function tally(rules: Rules, sets: SetScore[]): MatchTally {
 /** True once the match result is decided under the rules. */
 export function isMatchDecided(rules: Rules, sets: SetScore[]): boolean {
   if (isJudo(rules)) return sets.length > 0 && !!judoResult(judoOf(sets[0]))
+  if (rules.scoring === 'karate') return sets.length > 0 && !!karateResult(sets[0], true)
+  if (rules.scoring === 'chess') return sets.length > 0 && sets[0].a + sets[0].b === 1
   if (isScore(rules)) return sets.length > 0 && (!!rules.draws || sets[0].a !== sets[0].b)
   const t = tally(rules, sets)
   if (rules.setsMode === 'fixed') return t.completeSets >= rules.sets
