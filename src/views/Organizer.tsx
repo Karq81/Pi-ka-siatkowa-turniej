@@ -135,32 +135,36 @@ function DeleteTournament({ state }: { state: State }) {
  */
 function Stage2Panel({ state }: { state: State }) {
   const { teamName, groupName } = useLookups(state)
+  const [show, setShow] = useState(false)
+  const cats = state.categories.filter((c) => STAGE2[c.id]).map((c) => {
+    const has2 = stage2Groups(state, c.id).length > 0
+    return { c, phase: has2 ? t('drugi etap') : t('faza grupowa'), open: has2 ? openStage2Matches(state, c.id) : openFirstStageMatches(state, c.id) }
+  })
+  const total = cats.reduce((n, x) => n + x.open.length, 0)
   return (
     <section className="panel stage2-panel">
       <h2>🏐 {t('Mecze do rozegrania')}</h2>
-      {state.categories.filter((c) => STAGE2[c.id]).map((c) => {
-        const has2 = stage2Groups(state, c.id).length > 0
-        const open = has2 ? openStage2Matches(state, c.id) : openFirstStageMatches(state, c.id)
-        const phase = has2 ? t('drugi etap') : t('faza grupowa')
-        return (
-          <div key={c.id} className="stage2-cat">
-            <p><b>{c.name}</b> · {phase}: {open.length ? tp(open.length, 'został {n} mecz|zostały {n} mecze|zostało {n} meczów') : t('wszystkie mecze rozegrane')}</p>
-            {open.length > 0 && (
-              <details className="open-matches" open={open.length <= 5}>
-                <summary>{t('Które mecze zostały?')}</summary>
-                <ul className="stage2-open">
-                  {open.map((m) => (
-                    <li key={m.id}>
-                      <span>{groupName(m.groupId)} · {t('Boisko {n}', { n: courtLabel(m.court) })} · {formatTime(m.start)}: <b>{teamName(m.teamA)}</b> – <b>{teamName(m.teamB)}</b></span>
-                      <a className="btn btn-sm btn-primary" href={`#korekta-${m.id}`}>{t('Wpisz wynik')}</a>
-                    </li>
-                  ))}
-                </ul>
-              </details>
-            )}
-          </div>
-        )
-      })}
+      {cats.map(({ c, phase, open }) => (
+        <p key={c.id} className="stage2-cat"><b>{c.name}</b> · {phase}: {open.length ? tp(open.length, 'został {n} mecz|zostały {n} mecze|zostało {n} meczów') : t('wszystkie mecze rozegrane')}</p>
+      ))}
+      {total > 0 && (
+        <button type="button" className="btn btn-primary" aria-expanded={show} onClick={() => setShow(!show)}>
+          {show ? t('Ukryj listę') : t('Które mecze zostały?')} ({total})
+        </button>
+      )}
+      {show && cats.filter((x) => x.open.length).map(({ c, phase, open }) => (
+        <div key={c.id} className="open-by-cat">
+          <h3>{c.name} <span className="muted small">· {phase} · {tp(open.length, 'został {n} mecz|zostały {n} mecze|zostało {n} meczów')}</span></h3>
+          <ul className="stage2-open">
+            {open.map((m) => (
+              <li key={m.id}>
+                <span>{groupName(m.groupId)} · {t('Boisko {n}', { n: courtLabel(m.court) })} · {formatTime(m.start)}: <b>{teamName(m.teamA)}</b> – <b>{teamName(m.teamB)}</b></span>
+                <a className="btn btn-sm btn-primary" href={`#korekta-${m.id}`}>{t('Wpisz wynik')}</a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
       <p className="muted small">{t('Kolejny etap uruchamiasz przyciskiem pod napisem „Faza grupowa” albo „Drugi etap” niżej.')}</p>
     </section>
   )

@@ -822,6 +822,7 @@ const dict: Record<string, string> = {
   "Tylko gdy Twój kanał YouTube ma co najmniej 50 subskrybentów. Jeśli ma mniej, wybierz „YouTube bez subskrybentów”.": "Nur wenn dein YouTube-Kanal mindestens 50 Abonnenten hat. Hat er weniger, wähle „YouTube ohne Abonnenten“.",
   "Uczestnicy:": "Teilnehmer:",
   "Udostępnij link": "Link teilen",
+  "Ukryj listę": "Liste ausblenden",
   "Unihokej (floorball)": "Floorball (Unihockey)",
   "Uporządkuj z AI": "Mit KI ordnen",
   "Ustaw": "Setzen",
