@@ -92,7 +92,7 @@ export function formatDay(iso: string) {
 /** The match a court is playing now, or the next one waiting for it. */
 export function courtMatch(state: State, court: number): { current?: Match; next?: Match } {
   const onCourt = state.matches
-    .filter((m) => m.court === court)
+    .filter((m) => m.court === court && !m.skipped)
     .sort((a, b) => a.start.localeCompare(b.start))
   const live = onCourt.find((m) => m.status === 'live')
   const waiting = onCourt.filter((m) => m.status === 'scheduled')

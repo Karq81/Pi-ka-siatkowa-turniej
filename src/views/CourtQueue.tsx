@@ -11,7 +11,7 @@ import { formatDay, formatTime, useLookups } from '../ui'
 export function CourtQueue({ state, court, skip }: { state: State; court: number; skip?: string }) {
   const mine = useFavorites()
   const { side } = useLookups(state)
-  const onCourt = state.matches.filter((m) => m.court === court).sort((a, b) => a.start.localeCompare(b.start))
+  const onCourt = state.matches.filter((m) => m.court === court && !m.skipped).sort((a, b) => a.start.localeCompare(b.start))
   const queue = onCourt.filter((m) => m.status === 'scheduled' && m.id !== skip)
   const slot = state.tournament.slotMinutes ?? 15
   return (

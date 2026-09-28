@@ -3,6 +3,7 @@ import type { Match, State } from '../types'
 import { sourceLabel } from './knockout'
 import { isScore, scoreUnit, setText, setsText, standings, tally } from './scoring'
 import { sportLabelOf } from './sports'
+import { eliminationPlaces, hasElimination } from './elimination'
 import { xlsx, type Cell, type Sheet } from './xlsx'
 
 /*
@@ -36,6 +37,7 @@ export function resultSheets(state: State): Sheet[] {
     score ? t('Wynik') : t('Wynik w setach'), t('Status'),
   ]]
   for (const m of [...state.matches].sort(byTime)) {
+    if (m.skipped) continue
     const started = m.status !== 'scheduled' && m.sets.length > 0
     const tl = started ? tally(rules, m.sets) : null
     const a = !tl ? null : score ? m.sets[0].a : tl.setsA
@@ -68,7 +70,12 @@ export function resultSheets(state: State): Sheet[] {
 
   // Final places: the winner and the loser of each finished match for a place.
   const places: Cell[][] = [[t('Kategoria'), t('Miejsce'), t('Drużyna'), t('Klub')]]
+  const winnerOf = (m: Match) => { const tl = tally(rules, m.sets); return tl.setsA > tl.setsB ? m.teamA : tl.setsB > tl.setsA ? m.teamB : '' }
   for (const c of state.categories) {
+    if (hasElimination(state, c.id)) {
+      eliminationPlaces(state, c.id, winnerOf).forEach(({ place, teamId }) => places.push([c.name, place, teamName(teamId), club(teamId)]))
+      continue
+    }
     const rows: [number, string][] = []
     for (const m of state.matches) {
       if (m.categoryId !== c.id || m.ko?.round !== 'P' || !m.ko.place || m.status !== 'finished' || !m.sets.length) continue

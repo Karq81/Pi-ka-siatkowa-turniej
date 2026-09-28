@@ -84,7 +84,7 @@ function TournamentStart() {
         </div>
         <div className="info-qr" aria-label={t('Kod QR do wyników')} dangerouslySetInnerHTML={{ __html: qr }} />
       </section>
-      {state.groups.length === 0 && <p className="muted">{t('Organizator jeszcze nie rozlosował grup.')}</p>}
+      {state.groups.length === 0 && !state.matches.length && <p className="muted">{t('Organizator jeszcze nie rozlosował grup.')}</p>}
     </div>
   )
 }

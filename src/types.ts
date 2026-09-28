@@ -63,6 +63,14 @@ export interface Tournament {
   courtStreams?: Record<string, string>
   /** Teams can sign up on the tournament's page (#zgloszenie). */
   registration?: boolean
+  /**
+   * How the tournament is played: 'groups' (default: groups, each with each, then a bracket),
+   * 'knockout' (a bracket from the start, the loser is out) or 'double' (double elimination:
+   * a losers' bracket, out after the second loss, a grand final).
+   */
+  system?: 'groups' | 'knockout' | 'double'
+  /** Knockout: a match for 3rd place between the semi-final losers. */
+  thirdPlace?: boolean
 }
 
 /** A team's (or player's) sign-up sent from the tournament's page; only the organiser reads it. */
@@ -171,12 +179,14 @@ export interface LiveClock {
 export type MatchStatus = 'scheduled' | 'live' | 'finished'
 
 /** QF: first round of a tier, SF: second round, P: match for a place (the final is P for place 1). */
-export type KoRound = 'QF' | 'SF' | 'P'
+export type KoRound = 'QF' | 'SF' | 'P' | 'R'
 
 /** Where a knockout team comes from: a group place, or the winner/loser of an earlier match. */
 export type KoSource =
   | { kind: 'group'; groupId: Id; pos: number }
   | { kind: 'match'; matchId: Id; take: 'winner' | 'loser'; label: string }
+  /** A team placed in the bracket by the draw (knockout from the start). */
+  | { kind: 'team'; teamId: Id }
 
 export interface KoInfo {
   round: KoRound
@@ -189,6 +199,14 @@ export interface KoInfo {
   label: string
   srcA: KoSource
   srcB: KoSource
+  /** Knockout from the start: 'W' winners' bracket, 'L' losers' bracket, 'F' the final(s). */
+  bracket?: 'W' | 'L' | 'F'
+  /** Round within its bracket (1, 2, …), for drawing the columns. */
+  col?: number
+  /** The grand final's second match: played only when the losers' bracket winner wins match `resetOf`. */
+  resetOf?: Id
+  /** Place of the loser when it is not place + 1 (the losers' bracket final: 3). */
+  loserPlace?: number
 }
 
 export interface Match {
@@ -210,6 +228,8 @@ export interface Match {
   updatedAt: number
   /** When the court moved on to this match (result of the one before, or a time set by hand). */
   calledAt?: number
+  /** Not played because it was not needed (the grand final's second match after a clear win). */
+  skipped?: boolean
 }
 
 export type Role = 'admin' | 'court'

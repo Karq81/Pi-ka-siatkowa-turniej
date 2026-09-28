@@ -7,6 +7,7 @@ export const ROUND_NAMES: Record<KoRound, string> = {
   QF: t('Ćwierćfinały'),
   SF: t('Półfinały'),
   P: t('Mecze o miejsca'),
+  R: t('Drabinka'),
 }
 
 interface PlanItem {
@@ -122,6 +123,19 @@ function outcome(state: State, matchId: string, take: 'winner' | 'loser'): strin
   return (take === 'winner') === aWon ? m.teamA : m.teamB
 }
 
+/**
+ * Whether the grand final's second match is needed: true once the losers' bracket winner
+ * (side B) has won the first, false once the winners' bracket winner (side A) has, and
+ * undefined while the first is not decided.
+ */
+function resetNeeded(state: State, firstId: string): boolean | undefined {
+  const first = state.matches.find((x) => x.id === firstId)
+  if (!first || first.status !== 'finished') return undefined
+  const winner = outcome(state, firstId, 'winner')
+  if (!winner) return undefined
+  return winner === first.teamB
+}
+
 /** Whether every match of a group has been played. */
 export function groupFinished(state: State, groupId: string): boolean {
   const ms = state.matches.filter((m) => m.groupId === groupId)
@@ -148,11 +162,13 @@ export function tierForGroupPlace(state: State, groupId: string, pos: number): [
 }
 
 export function resolveSource(state: State, src: KoSource): string {
+  if (src.kind === 'team') return src.teamId
   return src.kind === 'group' ? groupPlace(state, src.groupId, src.pos) : outcome(state, src.matchId, src.take)
 }
 
 /** Short description of a source, shown while the team is unknown. */
 export function sourceLabel(state: State, src: KoSource): string {
+  if (src.kind === 'team') return state.teams.find((x) => x.id === src.teamId)?.name ?? ''
   if (src.kind === 'group') {
     const name = state.groups.find((x) => x.id === src.groupId)?.name ?? ''
     return t('{n}. miejsce · {group}', { n: src.pos, group: name })
@@ -227,6 +243,27 @@ export function propagate(state: State): Match[] {
   for (let pass = 0; pass < 5; pass++) {
     let any = false
     for (const m of current.matches) {
+      // The grand final's second match: only when the losers' bracket winner won the first.
+      const reset = m.ko?.resetOf ? resetNeeded(current, m.ko.resetOf) : undefined
+      if (reset === false && !m.skipped && m.status === 'scheduled') {
+        const next: Match = { ...m, teamA: '', teamB: '', status: 'finished', skipped: true, sets: [] }
+        current = { ...current, matches: current.matches.map((x) => (x.id === m.id ? next : x)) }
+        const i = changed.findIndex((x) => x.id === m.id)
+        if (i >= 0) changed[i] = next
+        else changed.push(next)
+        any = true
+        continue
+      }
+      if (reset !== false && m.skipped) {
+        // The first match was corrected: the second is open again.
+        const next: Match = { ...m, status: 'scheduled', skipped: false }
+        current = { ...current, matches: current.matches.map((x) => (x.id === m.id ? next : x)) }
+        const i = changed.findIndex((x) => x.id === m.id)
+        if (i >= 0) changed[i] = next
+        else changed.push(next)
+        any = true
+        continue
+      }
       if (!m.ko || m.status !== 'scheduled') continue
       const a = resolveSource(current, m.ko.srcA)
       const b = resolveSource(current, m.ko.srcB)

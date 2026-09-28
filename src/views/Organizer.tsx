@@ -16,6 +16,7 @@ import { Setup } from './Setup'
 import { IS_ALBATROS, IS_PLATFORM_HOST, TOURNAMENT_ID } from '../config'
 import { deleteTournamentData, forgetTournament, useAccount } from '../store/accounts'
 import { Competition } from './Competition'
+import { isElimination } from '../logic/elimination'
 
 const TABS = [
   { route: 'panel', label: tk('1. Zespoły i grupy') },
@@ -34,7 +35,8 @@ export function Organizer({ route }: { route: string }) {
   const tab = TABS.some((x) => x.route === route) ? route : 'panel'
   const account = useAccount()
   const tabs = IS_ALBATROS ? TABS : TABS.map((x) => (x.route === 'panel' ? { ...x, label: tk('1. Zespoły i losowanie') }
-    : x.route === 'panel-wiecej' ? { ...x, label: tk('Ustawienia i PIN') } : x))
+    : x.route === 'panel-wiecej' ? { ...x, label: tk('Ustawienia i PIN') }
+    : x.route === 'panel-grupy' && isElimination(state.tournament) ? { ...x, label: tk('2. Drabinka') } : x))
   return (
     <div className="page page-wide">
       <header className="org-head">
@@ -58,7 +60,7 @@ export function Organizer({ route }: { route: string }) {
       {tab === 'panel' && !IS_ALBATROS && <PinGate label={t('Zgłoszenia drużyn (sędzia główny)')}><EntriesPanel state={state} /></PinGate>}
       {tab === 'panel' && (IS_ALBATROS ? <TeamsAndDraw state={state} /> : <Setup state={state} />)}
       {tab === 'panel-grupy' && (
-        state.groups.length ? <Competition state={state} route="grupy" /> : <Empty />
+        state.groups.length || state.matches.some((m) => m.ko?.bracket) ? <Competition state={state} route="grupy" /> : <Empty />
       )}
       {tab === 'panel-sedziowie' && (
         <>

@@ -17,6 +17,8 @@ Zasady:
 - Gdy dyscypliny nie ma w katalogu (np. zapasy, boks, taekwondo, siatkonoga), wybierz "inna-wynik" albo "inna-sety" (to, co pasuje do sposobu liczenia) i wpisz prawdziwą nazwę dyscypliny w sportName, np. "Zapasy". Gdy dyscyplina jest w katalogu, sportName zostaw pusty.
 - Przepisz do teams wszystkie drużyny z notatek, a w sportach indywidualnych wszystkich zawodników (imię i nazwisko, samo imię albo pseudonim, tak jak napisano), bez pomijania i bez wymyślania nowych. Organizator nie powinien wpisywać ich drugi raz. Klub, z którego jest kilka drużyn, zapisz przed dwukropkiem, np. "UKS Orzeł: Orzeł 1".
 - Jeśli notatki podają podział na grupy, przepisz go w groups (nazwy dokładnie jak w teams, bez części przed dwukropkiem). Jeśli nie podają, zostaw groups pustą listę: organizator rozlosuje grupy.
+- system: jak rozgrywany jest turniej. "groups" – grupy, każdy z każdym (potem mecze o miejsca); to domyślny wybór, gdy opis nic nie mówi. "knockout" – od razu drabinka pucharowa, przegrany odpada (puchar, system pucharowy, drabinka, eliminacje). "double" – podwójna eliminacja: kto przegra raz, spada do drabinki przegranych (looser/loser bracket, repasaże), kto przegra drugi raz, odpada; wielki finał. Wolne losy przy nieparzystej liczbie strona ustawia sama. thirdPlace: true, gdy w drabince pucharowej ma być mecz o 3. miejsce (przy "knockout" domyślnie true).
+- Opis zasad turnieju (jak ma wyglądać drabinka, kto z kim, rundy) NIE jest listą drużyn: do teams wpisz tylko nazwy drużyn albo zawodników.
 - Kategorie wiekowe lub płci (np. "Dziewczęta U12", "Dwójki") to osobne kategorie. Gdy nie ma podziału, użyj jednej kategorii "Turniej".
 - Brakujące dane: date, time, dayEnd jako pusty tekst; courts i slotMinutes rozsądne dla dyscypliny. Wszystko, co przyjąłeś sam, wymień w notes.
 - Nie zgaduj dat: jeśli podano dzień tygodnia bez daty, zostaw date pustą i napisz o tym w notes. Dzisiaj jest ${new Date().toISOString().slice(0, 10)}.
@@ -30,7 +32,7 @@ export function assistantSchema(): Record<string, unknown> {
   const str = { type: 'string' }
   return {
     type: 'object',
-    required: ['name', 'sport', 'sportName', 'format', 'date', 'time', 'dayEnd', 'courts', 'slotMinutes', 'categories', 'notes'],
+    required: ['name', 'sport', 'sportName', 'format', 'date', 'time', 'dayEnd', 'courts', 'slotMinutes', 'categories', 'system', 'thirdPlace', 'notes'],
     properties: {
       name: { type: 'string', description: 'Nazwa turnieju' },
       sport: { type: 'string', enum: SPORTS.map((s) => s.id) },
@@ -53,6 +55,8 @@ export function assistantSchema(): Record<string, unknown> {
           },
         },
       },
+      system: { type: 'string', enum: ['groups', 'knockout', 'double'], description: 'groups: grupy każdy z każdym; knockout: drabinka pucharowa; double: podwójna eliminacja z drabinką przegranych' },
+      thirdPlace: { type: 'boolean', description: 'Mecz o 3. miejsce w drabince pucharowej' },
       notes: { type: 'string', description: 'Co przyjęto, czego brakuje' },
     },
   }

@@ -3,7 +3,8 @@ import { AttachButtons, PhotoTip } from './Attach'
 import { t, tk } from '../i18n'
 import { useState, useSyncExternalStore } from 'react'
 import { tournamentUrl } from '../config'
-import { clubOf, drawCategory } from '../logic/draw'
+import { clubOf, drawCategory, shuffle } from '../logic/draw'
+import { createElimination, hasElimination, isElimination, systemOf } from '../logic/elimination'
 import { parseTeamList, scheduleOf, suspiciousNames } from '../logic/newTournament'
 import { SPORTS } from '../logic/sports'
 import { store, useSync } from '../store/store'
@@ -35,6 +36,15 @@ export function Setup({ state }: { state: State }) {
     <>
       <TournamentLinks />
       <div className="org-intro">
+        {isElimination(state.tournament) ? (
+          <p className="muted">
+            {t('Wpisz uczestników i rozlosuj drabinkę. Terminarz ułoży się sam: start {start}, stanowisk: {courts}, co {slot} min.', {
+              start: `${formatDay(scheduleOf(state.tournament).start)} ${formatTime(scheduleOf(state.tournament).start)}`,
+              courts: state.tournament.courts,
+              slot: scheduleOf(state.tournament).slotMinutes,
+            })}
+          </p>
+        ) : (
         <p className="muted">
           {t('Wpisz zespoły każdej kategorii i rozlosuj je do grup. Losowanie rozdziela zespoły z tego samego klubu i od razu układa terminarz: start {start}, boisk: {courts}, mecz co {slot} min.', {
             start: `${formatDay(scheduleOf(state.tournament).start)} ${formatTime(scheduleOf(state.tournament).start)}`,
@@ -43,13 +53,25 @@ export function Setup({ state }: { state: State }) {
           })}
           {last && <> {t('Ostatni mecz grupowy:')} <b>{formatDay(last)} {formatTime(last)}</b>.</>}
         </p>
+        )}
       </div>
       <PinGate label={t('Zespoły i losowanie (sędzia główny)')}>
+        <SystemSetting state={state} />
         <div className="setup-cats">
           {state.categories.map((c) => <CategorySetup key={`${c.id}:${state.teams.filter((x) => x.categoryId === c.id).length}`} state={state} category={c} />)}
         </div>
       </PinGate>
-      {state.groups.length > 0 && (
+      {isElimination(state.tournament) && state.categories.some((c) => hasElimination(state, c.id)) && (
+        <section className="panel">
+          <h2>{t('Drabinka')}</h2>
+          <p className="muted">{t('Drabinka jest rozlosowana, terminarz gotowy. Kolejne rundy wypełniają się same po wpisaniu wyników.')}</p>
+          <div className="actions">
+            <a className="btn btn-primary" href="#panel-grupy">{t('Zobacz drabinkę i terminarz')}</a>
+            <a className="btn" href="#panel-sedziowie">{t('Na żywo')}</a>
+          </div>
+        </section>
+      )}
+      {!isElimination(state.tournament) && state.groups.length > 0 && (
         <section className="panel">
           <h2>{t('Grupy')}</h2>
           <div className="org-draws">
@@ -62,6 +84,34 @@ export function Setup({ state }: { state: State }) {
         </section>
       )}
     </>
+  )
+}
+
+/** How the tournament is played; changing it needs a new draw. */
+function SystemSetting({ state }: { state: State }) {
+  const system = systemOf(state.tournament)
+  const options = [
+    ['groups', t('Grupy (każdy z każdym), potem drabinka')],
+    ['knockout', t('Drabinka pucharowa')],
+    ['double', t('Podwójna eliminacja (drabinka przegranych)')],
+  ] as const
+  return (
+    <section className="panel system-setting">
+      <label>{t('System turnieju')}
+        <select value={system} onChange={(e) => store.updateTournament({ system: e.target.value as 'groups' | 'knockout' | 'double' })}>
+          {options.map(([id, label]) => <option key={id} value={id}>{label}</option>)}
+        </select>
+      </label>
+      {system === 'knockout' && (
+        <label className="check"><input type="checkbox" checked={!!state.tournament.thirdPlace} onChange={(e) => store.updateTournament({ thirdPlace: e.target.checked })} /> {t('Spotkanie o 3. miejsce')}</label>
+      )}
+      <p className="muted small">
+        {system === 'groups' ? t('Najpierw grupy, w których każdy gra z każdym; potem mecze o miejsca.')
+          : system === 'knockout' ? t('Od razu drabinka: przegrany odpada. Przy nieparzystej liczbie część dostaje wolny los.')
+            : t('Po pierwszej porażce spada się do drabinki przegranych, po drugiej odpada. Na koniec wielki finał (z rewanżem, gdy wygra ten z drabinki przegranych).')}
+        {' '}{t('Po zmianie systemu kliknij losowanie jeszcze raz.')}
+      </p>
+    </section>
   )
 }
 
@@ -127,7 +177,8 @@ function CategorySetup({ state, category }: { state: State; category: Category }
       setAiBusy(false)
     }
   }
-  const played = state.matches.some((m) => m.status !== 'scheduled')
+  const played = state.matches.some((m) => m.status !== 'scheduled' && !m.skipped)
+  const bracket = isElimination(state.tournament)
 
   const draw = async (list = teams, checked = false) => {
     // Pasted notes: lines that are not names are shown first, so they do not end up in the groups.
@@ -136,6 +187,26 @@ function CategorySetup({ state, category }: { state: State; category: Category }
       if (strange.length) { setOdd(strange); return }
     }
     if (played && !confirm(t('Są już wpisane wyniki. Nowe losowanie ułoży terminarz od nowa i usunie wszystkie wyniki. Losować?'))) return
+    if (bracket) {
+      // Knockout from the start: the players in random order, byes where the bracket needs them.
+      const others = state.teams.filter((t) => t.categoryId !== category.id)
+      const sched = scheduleOf(state.tournament)
+      const base: State = {
+        ...state, teams: [...others, ...list],
+        groups: state.groups.filter((g) => g.categoryId !== category.id),
+        matches: state.matches.filter((m) => m.categoryId !== category.id),
+      }
+      const courts = Array.from({ length: state.tournament.courts }, (_, i) => i + 1)
+      const matches = createElimination(base, category.id, shuffle(list.map((x) => x.id), Math.random), { start: sched.start, slotMinutes: sched.slotMinutes, courts })
+      setMsg(t('Zapisuję…'))
+      if (!(await store.replace({ ...base, matches: [...base.matches, ...matches] }))) {
+        setMsg(t('Nie udało się zapisać losowania. Sprawdź internet i kliknij jeszcze raz.'))
+        return
+      }
+      try { sessionStorage.removeItem(draftKey) } catch { /* no storage */ }
+      setMsg(`${t('Rozlosowano drabinkę: {n} uczestników, {m} spotkań.', { n: list.length, m: matches.length })} ${t('Terminarz gotowy.')}`)
+      return
+    }
     // At least two teams per group.
     const count = Math.max(1, Math.min(groups, Math.floor(list.length / 2)))
     const others = state.teams.filter((t) => t.categoryId !== category.id)
@@ -177,12 +248,16 @@ function CategorySetup({ state, category }: { state: State; category: Category }
       {!teams.length && <PhotoTip where="teams" />}
       <div className="form-row">
         <span className="muted">{t('Na liście:')} {teams.length}</span>
-        <label>{t('Liczba grup')}
-          <NumberField min={1} max={12} value={groups} onChange={setGroups} />
-        </label>
+        {!bracket && (
+          <label>{t('Liczba grup')}
+            <NumberField min={1} max={12} value={groups} onChange={setGroups} />
+          </label>
+        )}
       </div>
       <button className="btn btn-primary" disabled={teams.length < 2} onClick={() => void draw()}>
-        {drawn ? t('Zapisz zespoły i losuj grupy od nowa') : t('Zapisz zespoły i losuj grupy')}
+        {bracket
+          ? (hasElimination(state, category.id) ? t('Zapisz i losuj drabinkę od nowa') : t('Zapisz i losuj drabinkę'))
+          : drawn ? t('Zapisz zespoły i losuj grupy od nowa') : t('Zapisz zespoły i losuj grupy')}
       </button>
       {odd && (
         <div className="confirm-back" role="presentation" onClick={() => setOdd(null)}>

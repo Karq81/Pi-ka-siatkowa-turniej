@@ -126,7 +126,7 @@ function Champion({ state, match, place }: { state: State; match?: Match; place:
 }
 
 /** Compact match box used inside the draw. */
-function BMatch({ state, match: m }: { state: State; match?: Match }) {
+export function BMatch({ state, match: m }: { state: State; match?: Match }) {
   const { side } = useLookups(state)
   const mine = useFavorites()
   if (!m) return <div className="bm bm-empty" />

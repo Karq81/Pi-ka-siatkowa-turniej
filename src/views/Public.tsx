@@ -20,6 +20,7 @@ import { MatchPage } from './Groups'
 import { CourtQueue } from './CourtQueue'
 import { Info, InfoHero } from './Info'
 import { FanClock } from './ContestClock'
+import { isElimination } from '../logic/elimination'
 import { BackBar, courtLabel, formatDay, formatTime, ScoreLine, StatusPill, useLookups, useNow } from '../ui'
 
 /**
@@ -47,7 +48,7 @@ export function Public({ route }: { route: string }) {
     <nav className="tabs" aria-label={t('Sekcje')}>
       {TABS.map((x) => (
         <a key={x.route} href={`#${x.route}`} className={tab === x.route ? 'active' : ''}>
-          {t(x.label)}
+          {x.route === 'grupy' && isElimination(state.tournament) ? t('Drabinka i terminarz') : t(x.label)}
         </a>
       ))}
     </nav>
@@ -179,7 +180,7 @@ function TeamRow({ name, sets, points, shido, live, win = false, mine = false }:
 function CourtPage({ state, court }: { state: State; court: number }) {
   const now = useNow(15000)
   const { categoryName, stageName } = useLookups(state)
-  const onCourt = state.matches.filter((m) => m.court === court).sort((a, b) => a.start.localeCompare(b.start))
+  const onCourt = state.matches.filter((m) => m.court === court && !m.skipped).sort((a, b) => a.start.localeCompare(b.start))
   if (!onCourt.length) return <p className="muted">{t('Na tym boisku nie ma meczów.')}</p>
   const board = courtBoard(state, court, now)
   const played = onCourt.filter((m) => m.status === 'finished').reverse()
@@ -351,6 +352,8 @@ function Tables({ state }: { state: State }) {
 export function MatchList({ state, matches, onPick }: { state: State; matches: Match[]; onPick?: (m: Match) => void }) {
   const { categoryName, stageName, side } = useLookups(state)
   const mine = useFavorites()
+  // A grand final rematch that was not needed is not a match to show.
+  matches = matches.filter((m) => !m.skipped)
   if (!matches.length) return <p className="muted">{t('Brak meczów.')}</p>
   return (
     <ul className="matches">

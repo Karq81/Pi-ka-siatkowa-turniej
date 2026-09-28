@@ -48,6 +48,8 @@ export function NewTournament() {
   const judo = rules.scoring === 'judo' || rules.scoring === 'karate'
   const score = rules.scoring === 'score'
   const [categories, setCategories] = useState('')
+  const [system, setSystem] = useState<'groups' | 'knockout' | 'double'>('groups')
+  const [thirdPlace, setThirdPlace] = useState(true)
   const [preset, setPreset] = useState<TournamentDraft['preset']>()
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -82,6 +84,8 @@ export function NewTournament() {
     setSlotMinutes(d.slotMinutes > 0 ? Math.min(120, d.slotMinutes) : s.slot)
     setCategories(d.categories.map((c) => c.name).join('\n'))
     setPreset(d.categories.map((c) => ({ category: c.name, teams: c.teams, groups: c.groups })))
+    if (d.system === 'knockout' || d.system === 'double' || d.system === 'groups') setSystem(d.system)
+    if (typeof d.thirdPlace === 'boolean') setThirdPlace(d.thirdPlace)
   }
 
   const submit = async (e: React.FormEvent) => {
@@ -107,6 +111,8 @@ export function NewTournament() {
       fightSeconds: judo ? rules.fightSeconds : undefined,
       sportName: sport.custom && customName.trim() ? customName.trim() : undefined,
       preset,
+      system,
+      thirdPlace: system === 'knockout' ? thirdPlace : undefined,
     })
     location.href = `${location.pathname}?t=${address}#panel`
   }
@@ -236,6 +242,22 @@ export function NewTournament() {
             {judo && <span className="muted small">{t('Czas walki z zatrzymaniami i przerwą na zmianę zawodników. Zwykle 5–7 minut.')}</span>}
           </label>
         </div>
+        <fieldset className="system-pick">
+          <legend>{t('System turnieju')}</legend>
+          {([
+            ['groups', t('Grupy (każdy z każdym), potem drabinka'), t('Najpierw grupy, w których każdy gra z każdym; potem mecze o miejsca.')],
+            ['knockout', t('Drabinka pucharowa'), t('Od razu drabinka: przegrany odpada. Przy nieparzystej liczbie część dostaje wolny los.')],
+            ['double', t('Podwójna eliminacja (drabinka przegranych)'), t('Po pierwszej porażce spada się do drabinki przegranych, po drugiej odpada. Na koniec wielki finał (z rewanżem, gdy wygra ten z drabinki przegranych).')],
+          ] as const).map(([id, label, hint]) => (
+            <label key={id} className={`system-opt ${system === id ? 'on' : ''}`}>
+              <input type="radio" name="system" checked={system === id} onChange={() => setSystem(id)} />
+              <span><b>{label}</b><span className="muted small">{hint}</span></span>
+            </label>
+          ))}
+          {system === 'knockout' && (
+            <label className="check"><input type="checkbox" checked={thirdPlace} onChange={(e) => setThirdPlace(e.target.checked)} /> {t('Spotkanie o 3. miejsce')}</label>
+          )}
+        </fieldset>
         <label>{t('Kategorie (każda w osobnej linii lub po przecinku)')}
           <textarea rows={3} value={categories} onChange={(e) => setCategories(e.target.value)}
             placeholder={t('np. Dziewczęta U12\nChłopcy U12')} />

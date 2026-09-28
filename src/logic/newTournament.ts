@@ -28,6 +28,9 @@ export interface TournamentDraft {
    * notes. Groups list team names; empty groups mean the organiser draws them later.
    */
   preset?: { category: string; teams: string[]; groups: string[][] }[]
+  /** How it is played: groups (default), a knockout bracket, or double elimination. */
+  system?: 'groups' | 'knockout' | 'double'
+  thirdPlace?: boolean
 }
 
 export const MAX_COURTS = 20
@@ -80,6 +83,8 @@ export function blankState(draft: TournamentDraft): State {
       start: draft.start,
       dayEnd: draft.dayEnd,
       dayStart: draft.start.slice(11),
+      ...(draft.system && draft.system !== 'groups' ? { system: draft.system } : {}),
+      ...(draft.system === 'knockout' && draft.thirdPlace ? { thirdPlace: true } : {}),
     },
     ...presetTeams(draft),
   }
@@ -99,8 +104,10 @@ function presetTeams(draft: TournamentDraft): Pick<State, 'categories' | 'groups
     presets.find((p) => key(p.category) === key(name))
     ?? (presets.length === categories.length && !presets.some((p) => categories.some((c) => key(c.name) === key(p.category))) ? presets[i] : undefined)
     ?? (categories.length === 1 ? { category: name, teams: presets.flatMap((p) => p.teams), groups: presets.flatMap((p) => p.groups) } : undefined)
+  const bracket = !!draft.system && draft.system !== 'groups'
   for (const [i, c] of categories.entries()) {
-    const preset = presetFor(c.name, i)
+    const found = presetFor(c.name, i)
+    const preset = found && bracket ? { ...found, groups: [] } : found
     if (!preset || !preset.teams.length) continue
     const own = parseTeamList(preset.teams.join('\n'), c.id)
     teams.push(...own)

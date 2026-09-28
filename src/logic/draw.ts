@@ -10,7 +10,7 @@ export function rng(seed: number): () => number {
   }
 }
 
-function shuffle<T>(items: T[], rand: () => number): T[] {
+export function shuffle<T>(items: T[], rand: () => number): T[] {
   const a = [...items]
   for (let i = a.length - 1; i > 0; i--) {
     const j = Math.floor(rand() * (i + 1))

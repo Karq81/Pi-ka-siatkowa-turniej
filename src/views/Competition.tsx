@@ -6,6 +6,8 @@ import { clubOf } from '../logic/draw'
 import { bracketView, groupFinished, tierForGroupPlace } from '../logic/knockout'
 import { useFavorites, toggleFavorite, setFavorites } from '../favorites'
 import { BracketTree } from './BracketTree'
+import { EliminationView } from './Elimination'
+import { hasElimination } from '../logic/elimination'
 import { isUnderway } from '../logic/courtBoard'
 import { CorrectButton } from './Correction'
 import { useSession } from '../store/store'
@@ -36,7 +38,8 @@ export function Competition({ state, route }: { state: State; route: string }) {
     if (start) { setCat(start.categoryId); setGroupId(start.id); setPhase('groups') }
   }, [start?.id])
 
-  if (!state.groups.length) {
+  const elim = hasElimination(state, cat)
+  if (!state.groups.length && !state.matches.some((m) => m.ko?.bracket)) {
     return <p className="notice-inline">{t('Grupy pojawią się tutaj wkrótce.')}</p>
   }
 
@@ -58,12 +61,14 @@ export function Competition({ state, route }: { state: State; route: string }) {
 
       <NextMatch state={state} categoryId={cat} />
 
-      <div className="phase" role="tablist" aria-label="Faza">
+      {elim && <EliminationView state={state} categoryId={cat} />}
+
+      {!elim && <div className="phase" role="tablist" aria-label="Faza">
         <button role="tab" aria-selected={phase === 'groups'} className={phase === 'groups' ? 'on' : ''} onClick={() => setPhase('groups')}>{t('Faza grupowa')}</button>
         <button role="tab" aria-selected={phase === 'ko'} className={phase === 'ko' ? 'on' : ''} onClick={() => setPhase('ko')}>{STAGE2[cat] ? t('Drugi etap') : t('Faza pucharowa')}</button>
-      </div>
+      </div>}
 
-      {phase === 'groups' && group && (
+      {!elim && phase === 'groups' && group && (
         <>
           <div className="seg seg-groups" role="tablist" aria-label="Grupa">
             {groups.map((g) => {
@@ -79,7 +84,7 @@ export function Competition({ state, route }: { state: State; route: string }) {
           <GroupView state={state} groupId={group.id} />
         </>
       )}
-      {phase === 'ko' && (STAGE2[cat] ? <Stage2View categoryId={cat} /> : <KnockoutView state={state} categoryId={cat} />)}
+      {!elim && phase === 'ko' && (STAGE2[cat] ? <Stage2View categoryId={cat} /> : <KnockoutView state={state} categoryId={cat} />)}
     </div>
   )
 }

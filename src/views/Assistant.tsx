@@ -15,6 +15,9 @@ export interface AssistantDraft {
   courts: number
   slotMinutes: number
   categories: { name: string; teams: string[]; groups: string[][] }[]
+  /** How the tournament is played, read from the description. */
+  system?: 'groups' | 'knockout' | 'double'
+  thirdPlace?: boolean
   notes: string
 }
 

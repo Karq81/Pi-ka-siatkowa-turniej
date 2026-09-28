@@ -29,7 +29,8 @@ export interface CourtBoard {
  * result, until 5 minutes before the next match; then that next match.
  */
 export function courtBoard(state: State, court: number, now: number): CourtBoard {
-  const onCourt = state.matches.filter((m) => m.court === court).sort((a, b) => a.start.localeCompare(b.start))
+  // A grand final rematch that was not needed is not on the board.
+  const onCourt = state.matches.filter((m) => m.court === court && !m.skipped).sort((a, b) => a.start.localeCompare(b.start))
   const upcoming = onCourt.filter((m) => m.status !== 'finished')
   const playing = upcoming.find((m) => isUnderway(m, now))
   if (playing) return { mode: 'live', match: playing, next: upcoming.find((m) => m !== playing && at(m) >= at(playing)) }
