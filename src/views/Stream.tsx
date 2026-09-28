@@ -69,7 +69,7 @@ export function StreamSettings({ state }: { state: State }) {
   )
 }
 
-type Way = 'facebook' | 'youtube' | 'studio'
+type Way = 'facebook' | 'youtube' | 'studio' | 'sportcast'
 
 /**
  * "How do I stream a match?": step-by-step instructions for the three ways that work from a
@@ -83,6 +83,7 @@ export function StreamGuide() {
     ['facebook', t('Facebook (najprościej)')],
     ['youtube', t('YouTube: kanał z 50+ subskrybentami')],
     ['studio', t('YouTube bez subskrybentów')],
+    ['sportcast', t('Aplikacja SportCast: wynik na obrazie')],
   ]
   return (
     <>
@@ -105,6 +106,7 @@ export function StreamGuide() {
             {way === 'facebook' && <FacebookSteps />}
             {way === 'youtube' && <YouTubeAppSteps />}
             {way === 'studio' && <StudioSteps />}
+            {way === 'sportcast' && <SportCastSteps />}
             <GoodTips />
             <button type="button" className="btn btn-lg" onClick={() => setOpen(false)}>{t('Zamknij instrukcję')}</button>
           </div>
@@ -208,6 +210,28 @@ function LarixHelper() {
         </>
       )}
     </div>
+  )
+}
+
+function SportCastSteps() {
+  return (
+    <section>
+      <p className="guide-lead">{t('Najwygodniej: tablica wyników na obrazie zmienia się sama, prosto z panelu sędziego. Potrzebny jest telefon z Androidem i nasza aplikacja SportCast (wersja testowa). Nadaje na YouTube albo Facebooka.')}</p>
+      <h3>{t('Organizator')}</h3>
+      <Steps items={[
+        t('W panelu: Więcej → Transmisja wideo na żywo → „Nadajesz aplikacją SportCast?” → „Włącz i pokaż kod dla SportCast”.'),
+        t('Pokaż kod QR osobie z kamerą albo podaj jej kod do wpisania. Nie publikuj go dla kibiców.'),
+      ]} />
+      <h3>{t('Operator kamery')}</h3>
+      <Steps items={[
+        t('W aplikacji SportCast naciśnij „Transmisja z sportlivearena.com” i „Zeskanuj kod QR” (albo wpisz kod). Zwykły aparat telefonu też zadziała: sam otworzy SportCast.'),
+        t('Wybierz boisko, na które patrzy kamera. Gdy boisko jest jedno, aplikacja wybierze je sama.'),
+        t('W Ustawieniach wybierz, gdzie nadajesz (YouTube albo klucz transmisji), i ustaw kamerę. Drużyny są już wpisane.'),
+        t('Postaw telefon poziomo na statywie i zacznij transmisję. Wynik z panelu sędziego pojawia się na obrazie sam, a po meczu aplikacja przechodzi do następnego.'),
+        t('Skopiuj link do transmisji i wklej go na tej stronie w „Link do transmisji…”, żeby kibice widzieli obraz obok wyników.'),
+      ]} />
+      <p className="muted small"><a href={IS_PLATFORM_HOST ? '/#transmisja' : '#o-systemie'} target="_blank" rel="noreferrer">▶ {t('Zobacz, jak to działa (animacja na stronie głównej)')}</a></p>
+    </section>
   )
 }
 

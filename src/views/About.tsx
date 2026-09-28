@@ -4,6 +4,7 @@ import { BRAND } from '../config'
 import { SPORTS, sportName } from '../logic/sports'
 import { countSiteVisit, useAccount } from '../store/accounts'
 import { Demo } from './Demo'
+import { StreamDemo } from './StreamDemo'
 import { PlatformNav } from './Platform'
 
 /**
@@ -15,6 +16,11 @@ export function About() {
   const start = account.status === 'signed-in' ? '#nowy-turniej' : '#rejestracja'
   const disciplines = SPORTS.filter((s) => !s.custom)
   const visits = useSiteVisits()
+  // A link to one part of the page (#transmisja from the organiser's guide) scrolls there.
+  useEffect(() => {
+    const id = location.hash.slice(1)
+    if (id === 'transmisja') setTimeout(() => document.getElementById(id)?.scrollIntoView(), 50)
+  }, [])
 
   return (
     <div className="ab">
@@ -34,6 +40,7 @@ export function About() {
               <li>{t('Piszesz po swojemu, bez formularzy i tabelek')}</li>
               <li>{t('Pełna kontrola: każdą rzecz zmienisz sam')}</li>
               <li>{t('{n} dyscyplin z gotowymi zasadami, a do tego dowolna inna', { n: disciplines.length })}</li>
+              <li>{t('Transmisja na żywo z wynikiem na obrazie')} (<a href="#transmisja" onClick={(e) => { e.preventDefault(); document.getElementById('transmisja')?.scrollIntoView({ behavior: 'smooth' }) }}>{t('zobacz')}</a>)</li>
             </ul>
             <div className="ab-cta">
               <a className="ab-btn primary" href={start}>{t('Załóż turniej za darmo')}</a>
@@ -128,7 +135,32 @@ export function About() {
         </div>
       </section>
 
-      <section className="ab-sec alt">
+      <section className="ab-sec alt" id="transmisja">
+        <div className="pf-wrap">
+          <h2>{t('Transmisja na żywo z wynikiem na obrazie')}</h2>
+          <p className="ab-sub">
+            {t('Postaw telefon na statywie i nadawaj mecz na YouTube albo Facebooku. Nasza aplikacja SportCast sama rysuje na obrazie tablicę wyników. Wynik bierze prosto od sędziego, więc operator kamery niczego nie klika.')}
+          </p>
+          <div className="ab-grid3 ab-stream-cards">
+            <Card icon="🔳" title={t('Jeden kod od organizatora')}>
+              {t('Organizator pokazuje kod QR w swoim panelu. Operator skanuje go telefonem w aplikacji i wybiera boisko. Bez wpisywania adresów i haseł.')}
+            </Card>
+            <Card icon="🏐" title={t('Wynik prosto od sędziego')}>
+              {t('Sędzia liczy punkty na stronie jak zwykle. Po sekundzie ten sam wynik jest na obrazie: drużyny, sety i punkty. Po meczu aplikacja sama przechodzi do następnego.')}
+            </Card>
+            <Card icon="🔒" title={t('Tylko dla organizatora')}>
+              {t('Kod widzi wyłącznie organizator. Kibice oglądają transmisję na stronie turnieju, obok wyników, i nic nie instalują.')}
+            </Card>
+          </div>
+          <h3 className="ab-demo-title">▶ {t('Zobacz, jak to działa')}</h3>
+          <StreamDemo />
+          <p className="ab-note-small">
+            {t('Aplikacja SportCast działa na telefonach z Androidem i jest w wersji testowej. Bez niej też nadasz mecz: z Facebooka albo YouTube. Instrukcja krok po kroku jest w panelu organizatora: Więcej → Transmisja wideo na żywo.')}
+          </p>
+        </div>
+      </section>
+
+      <section className="ab-sec">
         <div className="pf-wrap">
           <h2>{t('Ile to kosztuje?')}</h2>
           <p className="ab-sub">

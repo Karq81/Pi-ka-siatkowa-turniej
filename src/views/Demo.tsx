@@ -1,5 +1,5 @@
 import { t } from '../i18n'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 
 /**
  * Front page demo: a short, looping walk through the service (account → assistant → notes →
@@ -23,14 +23,21 @@ const SCENES = [
   { title: t('Kibice widzą wyniki'), say: t('Wysyłasz link albo wieszasz kod QR. Wyniki zmieniają się na żywo.'), ms: 6000 },
 ]
 
-const TICK = 50
+export const TICK = 50
 
 /** The part of `text` typed by `time`, starting at `from`, one character every `every` ms. */
 function typed(text: string, time: number, from: number, every: number): string {
   return text.slice(0, Math.max(0, Math.floor((time - from) / every)))
 }
 
-export function Demo() {
+export interface DemoScene { title: string; say: string; ms: number }
+
+/** The front page demos: steps on the left, a looping animated screen on the right. */
+export function DemoPlayer({ scenes, url, render }: {
+  scenes: DemoScene[]
+  url: (scene: number) => string
+  render: (scene: number, time: number) => ReactNode
+}) {
   const [pos, setPos] = useState({ scene: 0, t: 0 })
   const [playing, setPlaying] = useState(true)
   const [visible, setVisible] = useState(false)
@@ -48,10 +55,10 @@ export function Demo() {
   useEffect(() => {
     if (!playing || !visible) return
     const id = setInterval(() => setPos((p) => (
-      p.t + TICK >= SCENES[p.scene].ms ? { scene: (p.scene + 1) % SCENES.length, t: 0 } : { ...p, t: p.t + TICK }
+      p.t + TICK >= scenes[p.scene].ms ? { scene: (p.scene + 1) % scenes.length, t: 0 } : { ...p, t: p.t + TICK }
     )), TICK)
     return () => clearInterval(id)
-  }, [playing, visible])
+  }, [playing, visible, scenes])
 
   const { scene, t: time } = pos
   const go = (i: number) => { setPos({ scene: i, t: 0 }); setPlaying(true) }
@@ -59,7 +66,7 @@ export function Demo() {
   return (
     <div className="dm" ref={box}>
       <ol className="dm-steps">
-        {SCENES.map((s, i) => (
+        {scenes.map((s, i) => (
           <li key={s.title} className={i === scene ? 'on' : i < scene ? 'done' : ''}>
             <button type="button" onClick={() => go(i)}>
               <span className="dm-n">{i + 1}</span>
@@ -76,14 +83,10 @@ export function Demo() {
       <div className="dm-screen" aria-hidden="true">
         <div className="dm-browser">
           <span className="dm-dots"><i /><i /><i /></span>
-          <span className="dm-url">sportlivearena.com/{scene === 4 ? '?t=orliki' : scene === 0 ? '#rejestracja' : '#nowy-turniej'}</span>
+          <span className="dm-url">{url(scene)}</span>
         </div>
         <div className="dm-body" key={scene}>
-          {scene === 0 && <SignUp time={time} />}
-          {scene === 1 && <OpenAssistant time={time} />}
-          {scene === 2 && <Write time={time} />}
-          {scene === 3 && <Ready time={time} />}
-          {scene === 4 && <Live time={time} />}
+          {render(scene, time)}
         </div>
       </div>
 
@@ -94,6 +97,24 @@ export function Demo() {
         <button type="button" className="dm-ctl" onClick={() => go(0)}>↺ {t('Od początku')}</button>
       </div>
     </div>
+  )
+}
+
+export function Demo() {
+  return (
+    <DemoPlayer
+      scenes={SCENES}
+      url={(scene) => `sportlivearena.com/${scene === 4 ? '?t=orliki' : scene === 0 ? '#rejestracja' : '#nowy-turniej'}`}
+      render={(scene, time) => (
+        <>
+          {scene === 0 && <SignUp time={time} />}
+          {scene === 1 && <OpenAssistant time={time} />}
+          {scene === 2 && <Write time={time} />}
+          {scene === 3 && <Ready time={time} />}
+          {scene === 4 && <Live time={time} />}
+        </>
+      )}
+    />
   )
 }
 
