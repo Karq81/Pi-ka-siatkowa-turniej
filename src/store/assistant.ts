@@ -158,5 +158,6 @@ Dyscypliny i panele sędziego: judo (ippon, waza-ari, yuko, shido, zegar walki z
 Wynik niezgodny z zasadami (np. pomyłka albo wyjątkowa sytuacja) da się zapisać: strona najpierw wyjaśnia, co się nie zgadza, i pyta "Zapisać go mimo to?".
 Zgłoszenia drużyn: panel organizatora → "1. Zespoły i losowanie" → "Zgłoszenia drużyn" → zaznacz "Zgłoszenia otwarte" i wyślij klubom link do formularza. Drużyny podają nazwę, kategorię, skład, logo i kontakt (kontakt widzi tylko organizator). Organizator klika "Przyjmij do turnieju".
 Wyniki do Excela: w panelu organizatora, pod nazwą turnieju, przycisk "Pobierz wyniki do Excela" – w każdej chwili pobiera plik .xlsx z arkuszami: mecze (godzina, boisko, drużyny, wynik, status), tabele grup, klasyfikacja końcowa (gdy są rozegrane mecze o miejsca), drużyny i informacje o turnieju.
+Usuwanie turnieju: "Moje turnieje" → przycisk "Usuń turniej" przy turnieju → strona pyta "Czy na pewno usunąć turniej…?" → "Tak, usuń turniej". Usuwa wszystkie mecze, wyniki, zgłoszenia i PIN-y; adres strony znów jest wolny. Tego nie da się cofnąć, więc wcześniej warto pobrać wyniki do Excela. Albatros CUP nie ma tego przycisku.
 Jeśli czegoś serwis nie potrafi albo nie wiesz, powiedz to wprost i zaproponuj najbliższe rozwiązanie. Nie wymyślaj funkcji.`
 }

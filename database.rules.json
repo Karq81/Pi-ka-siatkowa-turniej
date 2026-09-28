@@ -27,6 +27,7 @@
 
     "board": {
       "$t": {
+        ".write": "auth != null && root.child('sessions/' + $t + '/' + auth.uid + '/role').val() === 'admin' && root.child('sessions/' + $t + '/' + auth.uid + '/pin').val() === root.child('pins/' + $t + '/admin').val()",
         "$key": {
           ".read": true,
           "$court": {

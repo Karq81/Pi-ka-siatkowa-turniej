@@ -1,10 +1,10 @@
-import { NumberField } from '../ui'
+import { ConfirmDialog, NumberField } from '../ui'
 import { locale, t, tk } from '../i18n'
 import { useEffect, useState } from 'react'
 import { ALBATROS_ALIAS, IS_PLATFORM_HOST } from '../config'
 import {
-  accountError, changePassword, createAccount, loadUsage, loginProblem, normalizeLogin, saveProfile, signInAccount, useAccount, type Account,
-  type AccountProfile, type TournamentUsage,
+  accountError, changePassword, createAccount, deleteTournament, forgetTournament, loadUsage, loginProblem, normalizeLogin, saveProfile, signInAccount, useAccount, type Account,
+  type AccountProfile, type AccountTournament, type TournamentUsage,
 } from '../store/accounts'
 import { PlatformNav, Wordmark } from './Platform'
 import {
@@ -140,6 +140,31 @@ function SignIn({ initial }: { initial: 'in' | 'new' }) {
 
 function MyTournaments({ account }: { account: Account }) {
   const usage = useUsage(account)
+  // Deleting a tournament: asked first; if the database refuses, it can still leave the list.
+  const [asking, setAsking] = useState<AccountTournament | null>(null)
+  const [busy, setBusy] = useState('')
+  const [failed, setFailed] = useState<AccountTournament | null>(null)
+  const [done, setDone] = useState('')
+  const remove = async (tr: AccountTournament) => {
+    setAsking(null)
+    setFailed(null)
+    setDone('')
+    setBusy(tr.id)
+    try {
+      await deleteTournament(tr.id)
+      setDone(t('Turniej „{name}” został usunięty.', { name: tr.name }))
+    } catch (e) {
+      console.warn('delete tournament', e)
+      setFailed(tr)
+    } finally {
+      setBusy('')
+    }
+  }
+  const forget = async (tr: AccountTournament) => {
+    setFailed(null)
+    await forgetTournament(tr.id)
+    setDone(t('Turniej „{name}” zniknął z listy.', { name: tr.name }))
+  }
   return (
     <>
       <header className="acc-head">
@@ -153,6 +178,25 @@ function MyTournaments({ account }: { account: Account }) {
       <UsageSummary account={account} usage={usage} />
       <section className="account-list">
         <h2>{t('Moje turnieje')}</h2>
+        {done && <p className="ok" role="status">{done}</p>}
+        {failed && (
+          <div className="error" role="alert">
+            <p>{t('Nie udało się usunąć turnieju „{name}”. Sprawdź internet. Jeśli PIN sędziego głównego był zmieniany na innym urządzeniu, wejdź do panelu turnieju i spróbuj jeszcze raz.', { name: failed.name })}</p>
+            <button type="button" className="btn btn-sm" onClick={() => void forget(failed)}>{t('Usuń tylko z mojej listy')}</button>
+          </div>
+        )}
+        {asking && (
+          <ConfirmDialog
+            question={<>
+              <b>{t('Czy na pewno usunąć turniej „{name}”?', { name: asking.name })}</b>
+              <p>{t('Znikną wszystkie mecze, wyniki, tabele i zgłoszenia. Strona turnieju przestanie działać. Tego nie da się cofnąć.')}</p>
+            </>}
+            yes={t('Tak, usuń turniej')}
+            no={t('Nie, zostaw')}
+            onYes={() => void remove(asking)}
+            onNo={() => setAsking(null)}
+          />
+        )}
         {account.tournaments.length === 0 && (
           <p className="muted">{t('Nie masz jeszcze turniejów. Załóż pierwszy, zapisze się na tym koncie.')}</p>
         )}
@@ -166,6 +210,12 @@ function MyTournaments({ account }: { account: Account }) {
               </div>
               <p className="muted small">{t('PIN sędziego głównego:')} <b>{tr.pin}</b>. {t('Po wejściu z tego konta nie trzeba go wpisywać.')}</p>
               {usage && <TournamentChart usage={usage[tr.id]} test={isTestAccount(account)} />}
+              {/* Albatros CUP ("main") stays. */}
+              {tr.id !== 'main' && (
+                <button type="button" className="btn btn-sm btn-danger account-delete" disabled={busy === tr.id} onClick={() => setAsking(tr)}>
+                  🗑 {busy === tr.id ? t('Usuwam…') : t('Usuń turniej')}
+                </button>
+              )}
             </article>
           ))}
         </div>

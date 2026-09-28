@@ -284,13 +284,13 @@ export function NumberField({ value, onChange, min, max, step, decimals = false,
  * "This breaks the rules, save anyway?": the window of ConfirmButton, opened by the caller
  * (e.g. after the save button when the result does not follow the rules).
  */
-export function ConfirmDialog({ question, yes, onYes, onNo }: { question: ReactNode; yes: string; onYes: () => void; onNo: () => void }) {
+export function ConfirmDialog({ question, yes, no, onYes, onNo }: { question: ReactNode; yes: string; no?: string; onYes: () => void; onNo: () => void }) {
   return (
     <div className="confirm-back" role="presentation" onClick={onNo}>
       <div className="confirm-box" role="alertdialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
         <div className="confirm-q">{question}</div>
         <div className="confirm-actions">
-          <button type="button" className="btn btn-lg" autoFocus onClick={onNo}>{t('Nie, poprawię')}</button>
+          <button type="button" className="btn btn-lg" autoFocus onClick={onNo}>{no ?? t('Nie, poprawię')}</button>
           <button type="button" className="btn btn-danger btn-lg" onClick={onYes}>{yes}</button>
         </div>
       </div>

@@ -73,6 +73,7 @@ service cloud.firestore {
           && request.resource.data.keys().hasOnly(['views']) && request.resource.data.views == 1;
         allow update: if request.resource.data.keys().hasOnly(['views'])
           && request.resource.data.views == resource.data.views + 1;
+        allow delete: if isAdmin();
       }
 
       // Sign-ups from the tournament's page (#zgloszenie): anyone sends one while the organiser
@@ -103,6 +104,8 @@ service cloud.firestore {
         allow update: if isAdmin()
           && request.resource.data.adminPin is string && request.resource.data.adminPin.size() >= 4
           && request.resource.data.courts is map;
+        // Deleting the tournament (from "Moje turnieje") frees its address.
+        allow delete: if isAdmin();
       }
 
       match /sessions/{uid} {
@@ -113,6 +116,7 @@ service cloud.firestore {
           || (request.resource.data.keys().hasOnly(['role', 'pin', 'court'])
             && request.resource.data.role == 'court' && request.resource.data.court is int
             && request.resource.data.pin == pins().courts[string(request.resource.data.court)]));
+        allow delete: if request.auth != null && request.auth.uid == uid;
       }
     }
   }

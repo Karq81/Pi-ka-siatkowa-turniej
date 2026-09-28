@@ -85,6 +85,17 @@ describe('realtime database rules', () => {
     await assertSucceeds(remove(ref(as('boss'), 'clock/main')))
   })
 
+  it('lets the chief referee delete the whole tournament, and nobody else', async () => {
+    await login('ref1', '1111', 1)
+    await assertFails(remove(ref(as('ref1'), 'board/main')))
+    await assertFails(remove(ref(as('ref1'), 'pins/main')))
+    await login('boss', '1234')
+    await assertSucceeds(remove(ref(as('boss'), 'board/main')))
+    await assertSucceeds(remove(ref(as('boss'), 'clock/main')))
+    await assertSucceeds(remove(ref(as('boss'), 'pins/main')))
+    await assertSucceeds(remove(ref(as('boss'), 'sessions/main/boss')))
+  })
+
   it('does not let a court referee clear all courts', async () => {
     await login('ref1', '1111', 1)
     await assertFails(remove(ref(as('ref1'), 'live/main')))

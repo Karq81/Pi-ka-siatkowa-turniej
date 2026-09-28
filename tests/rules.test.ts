@@ -158,4 +158,21 @@ describe('firestore rules', () => {
     await login('boss', '1234')
     await assertSucceeds(getDocs(collection(as('boss'), `${T}/entries`)))
   })
+
+  it('lets only the chief referee delete the whole tournament, which frees its address', async () => {
+    await env.withSecurityRulesDisabled(async (ctx) => { await setDoc(doc(ctx.firestore(), `${T}/usage/2026-10-24`), { views: 3 }) })
+    await login('ref', '1111', 1)
+    await assertFails(deleteDoc(doc(as('ref'), T)))
+    await assertFails(deleteDoc(doc(as('ref'), `${T}/private/pins`)))
+    await assertFails(deleteDoc(doc(as('ref'), `${T}/usage/2026-10-24`)))
+    await assertFails(deleteDoc(doc(as('fan'), `${T}/sessions/ref`)))
+    await login('boss', '1234')
+    await assertSucceeds(deleteDoc(doc(as('boss'), `${T}/matches/court-1`)))
+    await assertSucceeds(deleteDoc(doc(as('boss'), `${T}/usage/2026-10-24`)))
+    await assertSucceeds(deleteDoc(doc(as('boss'), T)))
+    await assertSucceeds(deleteDoc(doc(as('boss'), `${T}/private/pins`)))
+    await assertSucceeds(deleteDoc(doc(as('boss'), `${T}/sessions/boss`)))
+    // The address is free: a new organiser sets up new keys.
+    await assertSucceeds(setDoc(doc(as('new'), `${T}/private/pins`), { adminPin: '9999', courts: {} }))
+  })
 })

@@ -3,7 +3,7 @@ import {
   signInWithEmailAndPassword, signOut, updatePassword, updateProfile,
 } from 'firebase/auth'
 import {
-  arrayUnion, collection, doc, documentId, getDoc, getDocs, increment, limit, onSnapshot, orderBy, query, setDoc, updateDoc, where,
+  arrayUnion, collection, deleteDoc, doc, documentId, getDoc, getDocs, increment, limit, onSnapshot, orderBy, query, setDoc, updateDoc, where,
   type Unsubscribe,
 } from 'firebase/firestore'
 import { t, tk } from '../i18n'
@@ -193,6 +193,56 @@ export async function addTournamentToAccount(entry: AccountTournament) {
   } catch {
     await setDoc(ref, { login: account.login, name: account.name, tournaments: [entry] }, { merge: true })
   }
+}
+
+/** Takes a tournament off the account's list (its data stays). */
+export async function forgetTournament(id: string) {
+  const account = currentAccount()
+  if (!account || !firebaseHandles) return
+  const tournaments = account.tournaments.filter((x) => x.id !== id)
+  await updateDoc(doc(firebaseHandles.db, 'accounts', account.uid), { tournaments })
+}
+
+/**
+ * Deletes one of the account's tournaments for good: its matches and results, sign-ups,
+ * visit counts, keys and live scores; then the address is free again. Uses the tournament's
+ * PIN kept on the account (the rules let only its chief referee delete it). Albatros CUP
+ * ("main") is never deleted from here. Throws when the database refuses (e.g. the PIN was
+ * changed elsewhere); the tournament then stays on the list.
+ */
+export async function deleteTournament(id: string) {
+  const account = currentAccount()
+  if (!account || !firebaseHandles || id === 'main') throw new Error('not allowed')
+  const entry = account.tournaments.find((x) => x.id === id)
+  if (!entry) throw new Error('not on the account')
+  const { auth, db } = firebaseHandles
+  const uid = auth.currentUser?.uid
+  if (!uid) throw new Error('signed out')
+
+  // Live scores (Realtime Database): signed in there as the chief referee, remove everything.
+  try {
+    const app = db.app
+    if (app.options.databaseURL) {
+      const { getDatabase, connectDatabaseEmulator, ref, remove, set } = await import('firebase/database')
+      const rtdb = getDatabase(app)
+      if (import.meta.env.VITE_USE_EMULATOR) { try { connectDatabaseEmulator(rtdb, '127.0.0.1', 9000) } catch { /* already connected */ } }
+      await set(ref(rtdb, `sessions/${id}/${uid}`), { role: 'admin', pin: entry.pin })
+      await Promise.all([`live/${id}`, `clock/${id}`, `board/${id}`].map((p) => remove(ref(rtdb, p)).catch(() => {})))
+      await remove(ref(rtdb, `pins/${id}`)).catch(() => {})
+      await remove(ref(rtdb, `sessions/${id}/${uid}`)).catch(() => {})
+    }
+  } catch { /* no live scores there, or not reachable: the rest still goes */ }
+
+  const tRef = doc(db, 'tournaments', id)
+  await setDoc(doc(tRef, 'sessions', uid), { role: 'admin', pin: entry.pin })
+  for (const sub of ['matches', 'entries', 'usage']) {
+    const snap = await getDocs(collection(tRef, sub))
+    await Promise.all(snap.docs.map((d) => deleteDoc(d.ref)))
+  }
+  await deleteDoc(tRef)
+  await deleteDoc(doc(tRef, 'private', 'pins'))
+  await deleteDoc(doc(tRef, 'sessions', uid)).catch(() => {})
+  await forgetTournament(id)
 }
 
 /** Visits of one tournament: today and each of the last days (newest first). */
