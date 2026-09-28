@@ -163,6 +163,8 @@ function Stage2Panel({ state }: { state: State }) {
           <div key={c.id} className="stage2-cat">
             <p><b>{c.name}</b> · {open ? tp(open, 'faza grupowa: został {n} mecz|faza grupowa: zostały {n} mecze|faza grupowa: zostało {n} meczów') : t('faza grupowa zakończona')}{made ? ` · ${t('drugi etap uruchomiony')}` : ''}</p>
             {open > 0 && (
+              <details className="open-matches" open={open <= 5}>
+              <summary>{t('Które mecze zostały?')}</summary>
               <ul className="stage2-open">
                 {openFirstStageMatches(state, c.id).map((m) => (
                   <li key={m.id}>
@@ -171,9 +173,11 @@ function Stage2Panel({ state }: { state: State }) {
                   </li>
                 ))}
               </ul>
+              </details>
             )}
             <div className="actions">
-              <button type="button" className="btn btn-primary" disabled={busy === c.id} onClick={() => void run(c.id, c.name)}>
+              {/* Every group match played: the button pulses, it is time for the next stage. */}
+              <button type="button" className={`btn btn-primary ${!open && !made ? 'btn-pulse' : ''}`} disabled={busy === c.id} onClick={() => void run(c.id, c.name)}>
                 {busy === c.id ? t('Zapisuję…') : made ? t('Ułóż drugi etap od nowa') : t('Uruchom drugi etap')}
               </button>
               {made && <button type="button" className="btn" onClick={() => void undo(c.id, c.name)}>{t('Cofnij drugi etap')}</button>}

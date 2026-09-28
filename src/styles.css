@@ -1540,3 +1540,14 @@ a.btn-back { text-decoration: none; }
 .open-matches summary { cursor: pointer; font-weight: 700; color: var(--accent); text-align: center; }
 .open-matches ul { list-style: none; padding: 0; margin: 6px 0 0; display: grid; gap: 6px; max-height: 50vh; overflow: auto; }
 .open-matches li { display: flex; gap: 8px; align-items: center; justify-content: space-between; padding: 8px 10px; border: 1px solid var(--live); border-radius: 10px; background: var(--surface); font-size: .92rem; }
+
+/* "Ready for the next step": the button pulses (all matches of the phase are played) */
+@keyframes btn-pulse {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--ok) 70%, transparent); transform: scale(1); }
+  50% { transform: scale(1.04); }
+  70% { box-shadow: 0 0 0 14px color-mix(in srgb, var(--ok) 0%, transparent); }
+  100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--ok) 0%, transparent); transform: scale(1); }
+}
+.btn-pulse { animation: btn-pulse 1.6s ease-out infinite; background: var(--ok) !important; border-color: var(--ok) !important; color: #fff !important; }
+.btn-pulse span { color: #fff !important; }
+@media (prefers-reduced-motion: reduce) { .btn-pulse { animation: none; outline: 3px solid var(--ok); outline-offset: 3px; } }

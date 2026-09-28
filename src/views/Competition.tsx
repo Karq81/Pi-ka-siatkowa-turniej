@@ -315,7 +315,7 @@ function PhaseEnds({ state, categoryId, onEnd }: { state: State; categoryId: str
           <p className="phase-done">✓ {t('Faza grupowa zakończona')}{!stage2Played(state, categoryId) && <> · <button type="button" className="linklike small" onClick={() => void run(reopenGroupPhase(state, categoryId), 'groups')}>{t('Cofnij')}</button></>}</p>
         ) : (
           <div className="phase-end-box">
-            <button type="button" className="btn btn-end" disabled={busy} onClick={() => setAsking('groups')}>
+            <button type="button" className={`btn btn-end ${openGroups ? '' : 'btn-pulse'}`} disabled={busy} onClick={() => setAsking('groups')}>
               <b>{t('Zakończ fazę grupową')}</b><span>{left(openGroups)}</span>
             </button>
             {openGroups > 0 && <OpenMatches state={state} matches={openFirstStageMatches(state, categoryId)} />}
@@ -328,7 +328,7 @@ function PhaseEnds({ state, categoryId, onEnd }: { state: State; categoryId: str
             <p className="phase-done">🏆 {t('Drugi etap zakończony')} · <button type="button" className="linklike small" onClick={() => void run(reopenStage2(state, categoryId), 'ko')}>{t('Cofnij')}</button></p>
           ) : (
             <div className="phase-end-box">
-              <button type="button" className="btn btn-end" disabled={busy} onClick={() => setAsking('stage2')}>
+              <button type="button" className={`btn btn-end ${open2 ? '' : 'btn-pulse'}`} disabled={busy} onClick={() => setAsking('stage2')}>
                 <b>{t('Zakończ drugi etap')}</b><span>{left(open2)}</span>
               </button>
               {open2 > 0 && <OpenMatches state={state} matches={openStage2Matches(state, categoryId)} />}
