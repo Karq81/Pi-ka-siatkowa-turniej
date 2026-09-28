@@ -37,7 +37,7 @@ export interface TournamentDraft {
   rest?: number
   breaks?: { from: string; to: string }[]
   /** How it is played: groups (default), a knockout bracket, or double elimination. */
-  system?: 'groups' | 'knockout' | 'double' | 'custom' | 'swiss' | 'stepladder' | 'consolation'
+  system?: 'groups' | 'knockout' | 'double' | 'custom' | 'swiss' | 'stepladder' | 'consolation' | 'measured'
   thirdPlace?: boolean
 }
 
@@ -93,6 +93,8 @@ export function blankState(draft: TournamentDraft): State {
       dayStart: draft.start.slice(11),
       ...(draft.system && draft.system !== 'groups' ? { system: draft.system } : {}),
       ...(draft.system === 'knockout' && draft.thirdPlace ? { thirdPlace: true } : {}),
+      // Measured events: heats and a final, or rounds with points for places (races, regattas).
+      ...(draft.system === 'measured' ? { measured: draft.sport === 'miejsca' ? { mode: 'rounds' as const, points: 'f1' as const } : { mode: 'heats' as const, Q: 3, q: 2 } } : {}),
       ...(draft.twice ? { twice: true } : {}),
       ...(draft.swissRounds ? { swissRounds: draft.swissRounds } : {}),
       ...(draft.rest ? { rest: draft.rest } : {}),

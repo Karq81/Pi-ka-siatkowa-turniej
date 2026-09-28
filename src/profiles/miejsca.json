@@ -1,0 +1,14 @@
+{
+  "discipline": "miejsca",
+  "name": "Wyścigi, regaty, battle royale (miejsca)",
+  "participantType": "player",
+  "points": {
+    "win": 0,
+    "draw": 0,
+    "loss": 0
+  },
+  "criteria": [],
+  "h2hReapply": false,
+  "measured": true,
+  "source": "Punkty za miejsca w rundach (25-18-15…, albo system niski jak w żeglarstwie)."
+}

@@ -1,0 +1,14 @@
+{
+  "discipline": "kregle",
+  "name": "Kręgle / bowling",
+  "participantType": "player",
+  "points": {
+    "win": 0,
+    "draw": 0,
+    "loss": 0
+  },
+  "criteria": [],
+  "h2hReapply": false,
+  "measured": true,
+  "source": "Suma kręgli z N gier."
+}

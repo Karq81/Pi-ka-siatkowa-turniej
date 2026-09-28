@@ -1575,3 +1575,13 @@ a.btn-back { text-decoration: none; }
 .slot-calc summary { cursor: pointer; color: var(--accent); font-weight: 700; }
 .forecast { margin: 6px 0; padding: 8px 12px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--line); font-size: .92rem; }
 .forecast.late { border-color: var(--danger); background: color-mix(in srgb, var(--danger) 8%, var(--surface)); }
+
+/* Measured events: results with attempts, Q/q, the referee's boxes. */
+.standings.perf-table li { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; grid-template-columns: none; }
+.perf-table li .name { flex: 1 1 auto; min-width: 0; word-break: normal; }
+.perf-table li .pos { min-width: 1.6rem; }
+.perf-table .perf-att { flex: 1 1 100%; order: 5; padding-left: 2.2rem; }
+.perf-table .qual { font-weight: 800; color: var(--accent, #1d4ed8); margin-left: 6px; }
+.perf-edit { flex: 1 1 100%; order: 6; display: flex; flex-wrap: wrap; gap: 6px; padding: 6px 0 4px 2.2rem; }
+.perf-edit input { width: 6.5rem; padding: 6px 8px; font-size: 1rem; }
+.perf-edit select { padding: 6px; }

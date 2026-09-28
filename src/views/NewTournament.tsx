@@ -48,6 +48,8 @@ export function NewTournament() {
   // Judo and karate: a bout of fixed time, on mats.
   const judo = rules.scoring === 'judo' || rules.scoring === 'karate'
   const score = rules.scoring === 'score'
+  // Runs, jumps, golf…: no matches, each participant has a result.
+  const measuredEvent = rules.scoring === 'measured'
   const [categories, setCategories] = useState('')
   const [system, setSystem] = useState<'groups' | 'knockout' | 'double' | 'custom' | 'swiss' | 'stepladder' | 'consolation'>('groups')
   const [thirdPlace, setThirdPlace] = useState(true)
@@ -129,7 +131,7 @@ export function NewTournament() {
       fightSeconds: judo ? rules.fightSeconds : undefined,
       sportName: sport.custom && customName.trim() ? customName.trim() : undefined,
       preset,
-      system,
+      system: measuredEvent ? 'measured' : system,
       thirdPlace: system === 'knockout' ? thirdPlace : undefined,
       twice: system === 'groups' && twice ? true : undefined,
       swissRounds: system === 'swiss' ? swissRounds : undefined,
@@ -213,12 +215,16 @@ export function NewTournament() {
                 ? `${t('Czas walki: {time}, przy remisie senshu albo decyzja sędziów.', { time: clock(rules.fightSeconds ?? 180) })}`
                 : rules.scoring === 'chess'
                   ? t('Wynik partii: 1–0, ½–½ albo 0–1.')
+                : measuredEvent
+                  ? t('Bez meczów: każdy uczestnik ma swój wynik. Najpierw serie albo rundy, potem finał lub klasyfikacja.')
               : score
                 ? `${t('Wynik:')} ${t(rules.unit ?? 'punkty')}, ${rules.draws ? t('remis możliwy') : t('bez remisów')}.`
                 : `${t('Zasady:')} ${describeSets(rules)}.`}
+            {!measuredEvent && <>
             {' '}{t('Tabela:')} {t('wygrana {n} pkt', { n: sport.table[0] })}
             {rules.draws || rules.setsMode === 'fixed' && rules.sets % 2 === 0 ? `, ${t('remis {n} pkt', { n: sport.table[1] })}` : ''}
             , {t('porażka {n} pkt', { n: sport.table[2] })}.
+            </>}
             {' '}{t('Uczestnicy:')} {t(sport.entrants)}.
           </p>
         </div>
@@ -281,7 +287,7 @@ export function NewTournament() {
             </span>
           </label>
         </div>
-        <fieldset className="system-pick">
+        {!measuredEvent && <fieldset className="system-pick">
           <legend>{t('System turnieju')}</legend>
           {([
             ['groups', t('Grupy (każdy z każdym), potem drabinka'), t('Najpierw grupy, w których każdy gra z każdym; potem mecze o miejsca.')],
@@ -316,7 +322,7 @@ export function NewTournament() {
           {planCount > 0 && planProblems.length > 0 && (
             <div className="error small"><b>{t('W planie coś się nie zgadza (te spotkania zostaną pominięte):')}</b><ul>{planProblems.slice(0, 8).map((x) => <li key={x}>{x}</li>)}</ul></div>
           )}
-        </fieldset>
+        </fieldset>}
         <label>{t('Kategorie (każda w osobnej linii lub po przecinku)')}
           <textarea rows={3} value={categories} onChange={(e) => setCategories(e.target.value)}
             placeholder={t('np. Dziewczęta U12\nChłopcy U12')} />

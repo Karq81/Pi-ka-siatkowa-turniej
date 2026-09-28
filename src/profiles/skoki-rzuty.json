@@ -1,0 +1,14 @@
+{
+  "discipline": "skoki-rzuty",
+  "name": "Skoki i rzuty (odległość)",
+  "participantType": "player",
+  "points": {
+    "win": 0,
+    "draw": 0,
+    "loss": 0
+  },
+  "criteria": [],
+  "h2hReapply": false,
+  "measured": true,
+  "source": "World Athletics: najlepsza próba, remis rozstrzyga druga najlepsza."
+}

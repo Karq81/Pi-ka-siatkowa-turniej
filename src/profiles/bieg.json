@@ -1,0 +1,14 @@
+{
+  "discipline": "bieg",
+  "name": "Biegi, pływanie, kolarstwo (czas)",
+  "participantType": "player",
+  "points": {
+    "win": 0,
+    "draw": 0,
+    "loss": 0
+  },
+  "criteria": [],
+  "h2hReapply": false,
+  "measured": true,
+  "source": "World Athletics, World Aquatics: czas, serie i finał (Q/q)."
+}

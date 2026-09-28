@@ -17,7 +17,7 @@ export interface Rules {
    * 'sets' (default: volleyball, badminton, table tennis…) or 'score': one score per match,
    * goals or points (football, handball, basketball…), kept as the match's only "set".
    */
-  scoring?: 'sets' | 'score' | 'judo' | 'karate' | 'chess'
+  scoring?: 'sets' | 'score' | 'judo' | 'karate' | 'chess' | 'measured'
   /** Score mode: whether a match may end level. */
   draws?: boolean
   /** Score mode: what the score counts, e.g. "bramki" or "punkty". */
@@ -57,6 +57,27 @@ export interface Rules {
   pointsWalkoverLoss?: number
   /** Table points for a free round (Swiss, odd round robin); missing: pointsWin. */
   byePoints?: number
+  /** Measured events (runs, jumps, throws, golf…): what is measured and how results compare. */
+  measure?: Measure
+}
+
+/**
+ * A measured event: time (ms), distance (cm), points, or strokes; the lower or the higher
+ * is better; `attempts` tries each (the best counts, or all add up with 'sum').
+ */
+export interface Measure {
+  unit: 'time' | 'distance' | 'points' | 'strokes'
+  lowerIsBetter: boolean
+  attempts: number
+  aggregate: 'best' | 'sum'
+}
+
+/** One participant's result in a heat or round of a measured event. */
+export interface Perf {
+  /** One value per attempt (null: not entered or no valid attempt). */
+  v: (number | null)[]
+  /** Did not finish, did not start, disqualified: always at the end of the results. */
+  mark?: 'DNF' | 'DNS' | 'DQ'
 }
 
 /**
@@ -106,7 +127,7 @@ export interface Tournament {
    * a losers' bracket, out after the second loss, a grand final) or 'custom' (only the
    * organiser's own plan, see `custom`).
    */
-  system?: 'groups' | 'knockout' | 'double' | 'custom' | 'swiss' | 'stepladder' | 'consolation'
+  system?: 'groups' | 'knockout' | 'double' | 'custom' | 'swiss' | 'stepladder' | 'consolation' | 'measured'
   /** Swiss system: number of rounds. */
   swissRounds?: number
   /** Knockout: a match for 3rd place between the semi-final losers. */
@@ -130,6 +151,15 @@ export interface Tournament {
    * are one match.
    */
   ties?: { kind: 'one' | 'two' | 'series'; n?: number; awayGoals?: boolean; finalSingle?: boolean }
+  /**
+   * Measured events: 'heats' (heats, then a final for the first `Q` of each heat and the `q`
+   * best of the rest) or 'rounds' (everybody in every round – race, game, round of golf –
+   * with points for places: 'f1' 25-18-15…, 'linear' n…1, or 'low' 1 point for 1st, the
+   * fewest win; `drop` worst rounds not counted).
+   */
+  measured?: { mode: 'heats' | 'rounds'; Q?: number; q?: number; points?: 'f1' | 'linear' | 'low'; drop?: number }
+  /** Results of measured events: per heat or round (group id), per participant. */
+  perf?: Record<string, Record<string, Perf>>
   /** Groups: each pair plays twice (return matches). */
   twice?: boolean
   /** Rounds a team rests between its matches (0: none). */

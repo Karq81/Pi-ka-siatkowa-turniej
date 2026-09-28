@@ -1,0 +1,14 @@
+{
+  "discipline": "golf",
+  "name": "Golf (stroke play)",
+  "participantType": "player",
+  "points": {
+    "win": 0,
+    "draw": 0,
+    "loss": 0
+  },
+  "criteria": [],
+  "h2hReapply": false,
+  "measured": true,
+  "source": "Stroke play: najmniej uderzeń."
+}

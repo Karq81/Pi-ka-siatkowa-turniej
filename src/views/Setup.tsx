@@ -6,6 +6,7 @@ import { tournamentUrl } from '../config'
 import { clubOf, drawCategory, shuffle } from '../logic/draw'
 import { nextSlot } from '../logic/schedule'
 import { withLegs } from '../logic/legs'
+import { drawMeasured } from '../logic/measured'
 import { arrangeSeeds, createElimination, hasElimination, isElimination, systemOf } from '../logic/elimination'
 import { consolationPlan, groupPlayoffPlan, hasCustom, knockoutPlan, stepladderPlan, withCustom } from '../logic/custom'
 import { defaultSwissRounds, hasSwiss, startSwiss } from '../logic/swiss'
@@ -103,6 +104,7 @@ function SystemSetting({ state }: { state: State }) {
     ['stepladder', t('Drabinka schodkowa (od najsłabszego do najlepszego)')],
     ['consolation', t('Drabinka pucharowa z turniejem pocieszenia')],
     ...(state.tournament.custom ? [['custom', t('Plan własny (z opisu turnieju)')] as const] : []),
+    ...(system === 'measured' ? [['measured', t('Konkurencja mierzona (czas, odległość, punkty)')] as const] : []),
   ] as const
   return (
     <section className="panel system-setting">
@@ -145,6 +147,39 @@ function SystemSetting({ state }: { state: State }) {
       )}
       {system === 'knockout' && <FinishSetting state={state} />}
       {(['knockout', 'double', 'consolation', 'custom'].includes(system) || (system === 'groups' && T.advance)) && !IS_ALBATROS && <TieSetting state={state} />}
+      {system === 'measured' && (
+        <>
+          <label>{t('Przebieg')}
+            <select value={T.measured?.mode ?? 'heats'} onChange={(e) => store.updateTournament({ measured: { ...(T.measured ?? {}), mode: e.target.value as 'heats' | 'rounds' } })}>
+              <option value="heats">{t('Serie, potem finał dla najlepszych')}</option>
+              <option value="rounds">{t('Kilka rund (wyścigów), punkty za miejsca w każdej')}</option>
+            </select>
+          </label>
+          {(T.measured?.mode ?? 'heats') === 'heats' ? (
+            <div className="setup-row">
+              <label>{t('Do finału z każdej serii (Q)')}
+                <NumberField lazy min={0} max={20} value={T.measured?.Q ?? 0} onChange={(v) => store.updateTournament({ measured: { mode: 'heats', ...(T.measured ?? {}), Q: v } })} />
+              </label>
+              <label>{t('Plus najlepsze wyniki z pozostałych (q)')}
+                <NumberField lazy min={0} max={20} value={T.measured?.q ?? 0} onChange={(v) => store.updateTournament({ measured: { mode: 'heats', ...(T.measured ?? {}), q: v } })} />
+              </label>
+            </div>
+          ) : (
+            <div className="setup-row">
+              <label>{t('Punkty za miejsca')}
+                <select value={T.measured?.points ?? 'f1'} onChange={(e) => store.updateTournament({ measured: { mode: 'rounds', ...(T.measured ?? {}), points: e.target.value as 'f1' | 'linear' | 'low' } })}>
+                  <option value="f1">{t('25, 18, 15, 12, 10, 8, 6, 4, 2, 1 (jak w F1)')}</option>
+                  <option value="linear">{t('Ostatni 1 pkt, każde miejsce wyżej o 1 więcej')}</option>
+                  <option value="low">{t('System niski: 1. miejsce = 1 pkt, wygrywa najmniej (żeglarstwo)')}</option>
+                </select>
+              </label>
+              <label>{t('Nie licz najgorszych rund')}
+                <NumberField lazy min={0} max={5} value={T.measured?.drop ?? 0} onChange={(v) => store.updateTournament({ measured: { mode: 'rounds', ...(T.measured ?? {}), drop: v } })} />
+              </label>
+            </div>
+          )}
+        </>
+      )}
       {system === 'swiss' && (
         <label>{t('Liczba rund')}
           <NumberField lazy min={1} max={15} value={state.tournament.swissRounds ?? defaultSwissRounds(state.teams.length)} onChange={(v) => store.updateTournament({ swissRounds: v })} />
@@ -293,6 +328,19 @@ function CategorySetup({ state, category }: { state: State; category: Category }
       if (strange.length) { setOdd(strange); return }
     }
     if (played && !confirm(t('Są już wpisane wyniki. Nowe losowanie ułoży terminarz od nowa i usunie wszystkie wyniki. Losować?'))) return
+    if (systemOf(state.tournament) === 'measured') {
+      // Measured events: heats (or rounds with everybody); results are entered in the tables.
+      const others = state.teams.filter((t) => t.categoryId !== category.id)
+      const next = drawMeasured({ ...state, teams: [...others, ...list] }, category.id, list, groups)
+      setMsg(t('Zapisuję…'))
+      if (!(await store.replace(next))) {
+        setMsg(t('Nie udało się zapisać losowania. Sprawdź internet i kliknij jeszcze raz.'))
+        return
+      }
+      try { sessionStorage.removeItem(draftKey) } catch { /* no storage */ }
+      setMsg(t('Gotowe: {n}. Wyniki wpisujesz w zakładce „2. Grupy”.', { n: next.groups.filter((g) => g.categoryId === category.id).map((g) => g.name).join(', ') }))
+      return
+    }
     if (systemOf(state.tournament) === 'swiss') {
       // Swiss system: the table and round 1; later rounds are paired from the results.
       const others = state.teams.filter((t) => t.categoryId !== category.id)
@@ -431,13 +479,15 @@ function CategorySetup({ state, category }: { state: State; category: Category }
       <div className="form-row">
         <span className="muted">{t('Na liście:')} {teams.length}</span>
         {!bracket && systemOf(state.tournament) !== 'swiss' && (
-          <label>{t('Liczba grup')}
+          <label>{systemOf(state.tournament) !== 'measured' ? t('Liczba grup') : state.tournament.measured?.mode === 'rounds' ? t('Liczba rund (wyścigów)') : t('Liczba serii')}
             <NumberField min={1} max={12} value={groups} onChange={setGroups} />
           </label>
         )}
       </div>
       <button className="btn btn-primary" disabled={teams.length < 2} onClick={() => void draw()}>
-        {systemOf(state.tournament) === 'stepladder' || systemOf(state.tournament) === 'consolation'
+        {systemOf(state.tournament) === 'measured'
+          ? t('Zapisz listę i ułóż serie')
+          : systemOf(state.tournament) === 'stepladder' || systemOf(state.tournament) === 'consolation'
           ? t('Zapisz listę i ułóż drabinkę')
           : systemOf(state.tournament) === 'swiss'
           ? (hasSwiss(state, category.id) ? t('Zapisz listę i losuj 1. rundę od nowa') : t('Zapisz listę i losuj 1. rundę'))
@@ -507,6 +557,7 @@ function DrawForecast({ state, categoryId, teams, groups }: { state: State; cate
     const base: State = { ...state, teams: [...others, ...teams] }
     let matches: Match[]
     const system = systemOf(state.tournament)
+    if (system === 'measured') return { n: 0, last: '' }
     if (system === 'knockout' && state.tournament.allPlaces) {
       const plan = knockoutPlan(teams.map((x) => `team:${x.name}`), { allPlaces: true })
       matches = withCustom({ ...base, groups: [], matches: [], tournament: { ...state.tournament, custom: { [categoryId]: plan } } }).matches

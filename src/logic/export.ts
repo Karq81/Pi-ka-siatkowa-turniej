@@ -7,6 +7,7 @@ import { eliminationPlaces, hasElimination } from './elimination'
 import { customPlaces, hasCustom } from './custom'
 import { xlsx, type Cell, type Sheet } from './xlsx'
 import { koWinner } from './legs'
+import { isMeasured, measuredPlaces } from './measured'
 
 /*
  * The tournament as an Excel file, at any moment: every match with its time, court and
@@ -74,6 +75,10 @@ export function resultSheets(state: State): Sheet[] {
   const places: Cell[][] = [[t('Kategoria'), t('Miejsce'), t('Drużyna'), t('Klub')]]
   const winnerOf = (m: Match) => koWinner(state, m)
   for (const c of state.categories) {
+    if (isMeasured(state.tournament)) {
+      measuredPlaces(state, c.id).forEach(({ place, teamId }) => places.push([c.name, place, teamName(teamId), club(teamId)]))
+      continue
+    }
     if (hasCustom(state, c.id)) {
       customPlaces(state, c.id, winnerOf).forEach(({ place, teamId }) => places.push([c.name, place, teamName(teamId), club(teamId)]))
       continue

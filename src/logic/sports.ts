@@ -1,5 +1,5 @@
 import { t, tk } from '../i18n'
-import type { Rules, Tiebreak } from '../types'
+import type { Measure, Rules, Tiebreak } from '../types'
 import { profileOf, profileRules, type RulesProfile } from './profiles'
 
 /**
@@ -12,7 +12,7 @@ import { profileOf, profileRules, type RulesProfile } from './profiles'
 
 type MatchRules = Pick<Rules,
   'scoring' | 'setsMode' | 'sets' | 'setPoints' | 'lastSetPoints' | 'winBy' | 'cap' | 'lastSetCap' | 'draws' | 'unit' | 'fightSeconds'
-  | 'periods' | 'periodMinutes' | 'scoreButtons'>
+  | 'periods' | 'periodMinutes' | 'scoreButtons' | 'measure'>
 
 export interface SportFormat {
   id: string
@@ -29,7 +29,7 @@ export interface Sport {
   id: string
   label: string
   /** Heading in the discipline list. */
-  group: 'Siatkówka' | 'Sporty rakietowe' | 'Gry zespołowe' | 'Sporty walki' | 'Inne'
+  group: 'Siatkówka' | 'Sporty rakietowe' | 'Gry zespołowe' | 'Sporty walki' | 'Konkurencje mierzone' | 'Inne'
   /** Who is entered: teams, players, pairs. */
   entrants: 'drużyny' | 'zawodnicy' | 'pary' | 'zawodnicy lub pary'
   /** Table points for a win, a draw and a loss (from the profile). */
@@ -60,6 +60,11 @@ function sets(n: number, points: number, o: SetOpts = {}): MatchRules {
     lastSetPoints: one ? points : o.last ?? points, winBy: o.winBy ?? 2, cap: o.cap, lastSetCap: o.lastCap,
     unit: o.unit,
   }
+}
+
+/** A measured event: no matches, each participant has a result (see measured.ts). */
+function measured(unit: Measure['unit'], lowerIsBetter: boolean, attempts: number, aggregate: Measure['aggregate'] = 'best'): MatchRules {
+  return { scoring: 'measured', setsMode: 'fixed', sets: 1, setPoints: 0, lastSetPoints: 0, winBy: 1, measure: { unit, lowerIsBetter, attempts, aggregate } }
 }
 
 function score(unit: string, draws: boolean): MatchRules {
@@ -265,6 +270,55 @@ const DEFS: SportDef[] = [
       { id: '2min', label: t('Seniorki, juniorzy i kadeci: 2 minuty'), rules: karate(120) },
       { id: '90s', label: t('Dzieci i młodzicy: 1,5 minuty'), rules: karate(90) },
     ],
+  },
+  {
+    id: 'bieg', label: 'Biegi, pływanie, kolarstwo (czas)', group: 'Konkurencje mierzone', entrants: 'zawodnicy', slot: 10,
+    note: t('Liczy się czas: im krótszy, tym lepiej. Serie, a potem finał dla najszybszych (Q – miejsce w serii, q – najlepsze czasy). DNF, DNS i DQ zawsze na końcu.'),
+    formats: [
+      { id: 'czas', label: t('Jeden start, czas (np. 12,85 albo 1:02,35)'), rules: measured('time', true, 1) },
+      { id: 'czas-2', label: t('Dwa przejazdy, liczy się suma czasów'), rules: measured('time', true, 2, 'sum') },
+    ],
+  },
+  {
+    id: 'skoki-rzuty', label: 'Skoki i rzuty (odległość)', group: 'Konkurencje mierzone', entrants: 'zawodnicy', slot: 20,
+    note: t('Liczy się najdłuższa próba (w metrach). Przy równym wyniku decyduje druga najlepsza próba.'),
+    formats: [
+      { id: '3', label: t('3 próby, liczy się najlepsza'), rules: measured('distance', false, 3) },
+      { id: '6', label: t('6 prób, liczy się najlepsza'), rules: measured('distance', false, 6) },
+      { id: '1', label: t('1 próba'), rules: measured('distance', false, 1) },
+    ],
+  },
+  {
+    id: 'punkty-celnosc', label: 'Łucznictwo, strzelectwo, rzutki (punkty)', group: 'Konkurencje mierzone', entrants: 'zawodnicy', slot: 30,
+    note: t('Punkty z serii strzałów lub rzutów się sumują: im więcej, tym lepiej.'),
+    formats: [
+      { id: 'suma-1', label: t('Jeden wynik punktowy'), rules: measured('points', false, 1, 'sum') },
+      { id: 'suma-3', label: t('3 serie, suma punktów'), rules: measured('points', false, 3, 'sum') },
+      { id: 'suma-6', label: t('6 serii, suma punktów'), rules: measured('points', false, 6, 'sum') },
+    ],
+  },
+  {
+    id: 'kregle', label: 'Kręgle / bowling', group: 'Konkurencje mierzone', entrants: 'zawodnicy lub pary', slot: 30,
+    note: t('Suma strąconych kręgli ze wszystkich gier: im więcej, tym lepiej.'),
+    formats: [
+      { id: '3', label: t('3 gry, suma'), rules: measured('points', false, 3, 'sum') },
+      { id: '6', label: t('6 gier, suma'), rules: measured('points', false, 6, 'sum') },
+      { id: '1', label: t('1 gra'), rules: measured('points', false, 1, 'sum') },
+    ],
+  },
+  {
+    id: 'golf', label: 'Golf (stroke play)', group: 'Konkurencje mierzone', entrants: 'zawodnicy', slot: 15,
+    note: t('Liczba uderzeń z rund się sumuje: im mniej, tym lepiej.'),
+    formats: [
+      { id: '1', label: t('1 runda'), rules: measured('strokes', true, 1, 'sum') },
+      { id: '2', label: t('2 rundy, suma uderzeń'), rules: measured('strokes', true, 2, 'sum') },
+      { id: '4', label: t('4 rundy, suma uderzeń'), rules: measured('strokes', true, 4, 'sum') },
+    ],
+  },
+  {
+    id: 'miejsca', label: 'Wyścigi, regaty, battle royale (miejsca)', group: 'Konkurencje mierzone', entrants: 'zawodnicy', slot: 30,
+    note: t('W każdej rundzie (wyścigu, meczu) wpisujesz zajęte miejsce, a za miejsca są punkty. Wygrywa najlepszy po wszystkich rundach.'),
+    formats: [{ id: 'miejsce', label: t('Miejsce w każdej rundzie'), rules: measured('points', true, 1) }],
   },
   {
     id: 'szachy', label: 'Szachy', group: 'Inne', entrants: 'zawodnicy', slot: 30,

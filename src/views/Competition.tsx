@@ -10,6 +10,8 @@ import { BracketTree } from './BracketTree'
 import { CustomView, EliminationView } from './Elimination'
 import { hasCustom } from '../logic/custom'
 import { hasSwiss } from '../logic/swiss'
+import { isMeasured } from '../logic/measured'
+import { MeasuredView } from './Measured'
 import { hasElimination } from '../logic/elimination'
 import { isUnderway } from '../logic/courtBoard'
 import { CorrectButton } from './Correction'
@@ -45,6 +47,7 @@ export function Competition({ state, route }: { state: State; route: string }) {
   const custom = hasCustom(state, cat)
   // Without groups the category's own plan is shown straight away, like a bracket.
   const elim = hasElimination(state, cat) || (custom && !state.groups.some((g) => g.categoryId === cat))
+  const measuredEvent = isMeasured(state.tournament)
   if (!state.groups.length && !state.matches.some((m) => m.ko?.bracket)) {
     return <p className="notice-inline">{t('Grupy pojawią się tutaj wkrótce.')}</p>
   }
@@ -67,15 +70,17 @@ export function Competition({ state, route }: { state: State; route: string }) {
 
       <NextMatch state={state} categoryId={cat} />
 
+      {measuredEvent && <MeasuredView state={state} categoryId={cat} />}
+
       {elim && (custom ? <CustomView state={state} categoryId={cat} /> : <EliminationView state={state} categoryId={cat} />)}
 
-      {!elim && !hasSwiss(state, cat) && <div className="phase" role="tablist" aria-label="Faza">
+      {!elim && !measuredEvent && !hasSwiss(state, cat) && <div className="phase" role="tablist" aria-label="Faza">
         <button role="tab" aria-selected={phase === 'groups'} className={phase === 'groups' ? 'on' : ''} onClick={() => setPhase('groups')}>{t('Faza grupowa')}</button>
         <button role="tab" aria-selected={phase === 'ko'} className={phase === 'ko' ? 'on' : ''} onClick={() => setPhase('ko')}>{STAGE2[cat] ? t('Drugi etap') : t('Faza pucharowa')}</button>
       </div>}
       {!elim && STAGE2[cat] && <PhaseEnds state={state} categoryId={cat} onEnd={(p) => setPhase(p)} />}
 
-      {!elim && phase === 'groups' && group && (
+      {!elim && !measuredEvent && phase === 'groups' && group && (
         <>
           <div className="seg seg-groups" role="tablist" aria-label="Grupa">
             {groups.map((g) => {
@@ -91,8 +96,8 @@ export function Competition({ state, route }: { state: State; route: string }) {
           <GroupView state={state} groupId={group.id} />
         </>
       )}
-      {!elim && phase === 'ko' && custom && <CustomView state={state} categoryId={cat} />}
-      {!elim && phase === 'ko' && !custom && (STAGE2[cat] ? <Stage2View state={state} categoryId={cat} /> : <KnockoutView state={state} categoryId={cat} />)}
+      {!elim && !measuredEvent && phase === 'ko' && custom && <CustomView state={state} categoryId={cat} />}
+      {!elim && !measuredEvent && phase === 'ko' && !custom && (STAGE2[cat] ? <Stage2View state={state} categoryId={cat} /> : <KnockoutView state={state} categoryId={cat} />)}
     </div>
   )
 }
