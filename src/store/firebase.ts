@@ -129,6 +129,8 @@ export function createFirebaseStore(config: FirebaseOptions, tournamentId: strin
   // set being played; Firestore wins once it has a later set or a clearly newer change
   // (phones' clocks differ, so only a large difference counts).
   let liveScores = new Map<string, LiveEntry>()
+  /** Scores this phone sent for each match, oldest first (the last few). */
+  const sentScores = new Map<string, string[]>()
   const newer = (m: Match, e: LiveEntry) => e.sets.length > m.sets.length
     || (e.sets.length === m.sets.length && e.at + CLOCK_SLACK_MS >= (m.updatedAt ?? 0))
   const withLive = (matches: Match[]) => matches.map((m) => {
@@ -166,6 +168,15 @@ export function createFirebaseStore(config: FirebaseOptions, tournamentId: strin
     if (live) {
       stops.push(live.followClocks((map) => { clocks = map; notify() }))
       stops.push(live.follow((map) => {
+        // An echo of an older score this phone sent (quick taps, a reconnect) never takes
+        // the place of its newer one.
+        for (const [id, e] of map) {
+          const mine = sentScores.get(id)
+          const newest = liveScores.get(id)
+          if (!mine || !newest) continue
+          const i = mine.lastIndexOf(JSON.stringify(e.sets))
+          if (i >= 0 && i < mine.length - 1) map.set(id, newest)
+        }
         liveScores = map
         state = { ...state, matches: withLive(state.matches) }
         notify()
@@ -359,6 +370,7 @@ export function createFirebaseStore(config: FirebaseOptions, tournamentId: strin
         && m.sets.length > 0 && m.sets.length === before.sets.length && m.court === before.court
       if (point && live?.canWrite()) {
         liveScores.set(id, entry)
+        sentScores.set(id, [...(sentScores.get(id) ?? []), JSON.stringify(entry.sets)].slice(-30))
         backupScore(tournamentId, id, entry)
         live.write(m.court, id, entry, () => writeSheets([m]))
         publishBoards([m.court])
