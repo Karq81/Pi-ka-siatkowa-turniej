@@ -4,7 +4,7 @@ import { t } from '../i18n'
 import { streamEmbed } from '../logic/stream'
 import { store } from '../store/store'
 import type { State } from '../types'
-import { courtLabel } from '../ui'
+import { ConfirmButton, courtLabel } from '../ui'
 
 /** The live video, 16:9, with a link to open it in the app when embedding is refused. */
 export function StreamPlayer({ link, title }: { link?: string; title: string }) {
@@ -42,7 +42,7 @@ export function StreamSettings({ state }: { state: State }) {
       <h2>📺 {t('Transmisja wideo na żywo')}</h2>
       <p>{t('Możesz nadawać mecz na żywo z telefonu (Facebook albo YouTube) i pokazać obraz kibicom na stronie turnieju, obok wyników. Nie jest to obowiązkowe.')}</p>
       <StreamGuide />
-      <CameraApp courts={tour.courts} />
+      <CameraApp />
       <p className="muted small">{t('Gdy transmisja już trwa: skopiuj jej link i wklej go poniżej.')}</p>
       <label>{t('Link do transmisji całego turnieju')}
         <input value={all} onChange={(e) => { setAll(e.target.value); setMsg('') }} placeholder="https://youtube.com/live/…" inputMode="url" />
@@ -226,46 +226,65 @@ function GoodTips() {
   )
 }
 
-/**
- * The address of a court's scoreboard for the SportCast camera app. Opened in a browser it
- * shows the scoreboard page; the app reads `board` (tournament/court in the database).
- */
-export function cameraAppUrl(court: number): string {
-  const base = tournamentUrl()
-  return `${base}${base.includes('?') ? '&' : '?'}board=${TOURNAMENT_ID}/${court}#tablica-${court}`
+/** What the SportCast app scans or has typed in: the tournament and the organiser's key. */
+export function cameraCode(key: string): string {
+  return `${TOURNAMENT_ID}/${key}`
 }
 
-/** A QR code per court for the SportCast app, which then draws the live score on the video. */
-function CameraApp({ courts }: { courts: number }) {
-  const [court, setCourt] = useState(0)
+/** The QR code's address; in a browser it opens the courts' scoreboards. */
+export function cameraAppUrl(key: string): string {
+  const base = tournamentUrl()
+  return `${base}${base.includes('?') ? '&' : '?'}cam=${cameraCode(key)}#kamera`
+}
+
+/**
+ * The organiser's code for the SportCast camera app: one per tournament. Only who has it
+ * can connect the app (the scoreboards live under this key); a new code cuts off the old one.
+ */
+function CameraApp() {
+  const [key, setKey] = useState<string | null | undefined>(undefined)
   const [qr, setQr] = useState('')
-  const pick = async (c: number) => {
-    setCourt(c)
+  const [err, setErr] = useState('')
+  const load = async () => {
+    const k = await store.cameraKey()
+    await show(k)
+  }
+  const show = async (k: string | null) => {
+    setKey(k)
+    if (!k) return
     const QRCode = (await import('qrcode')).default
-    setQr(await QRCode.toString(cameraAppUrl(c), { type: 'svg', margin: 1 }))
+    setQr(await QRCode.toString(cameraAppUrl(k), { type: 'svg', margin: 1 }))
+  }
+  const create = async () => {
+    setErr('')
+    const k = await store.newCameraKey()
+    if (!k) setErr(t('Nie udało się. Sprawdź internet i zaloguj się PIN-em sędziego głównego.'))
+    else await show(k)
   }
   return (
-    <details className="camera-app">
+    <details className="camera-app" onToggle={(e) => { if ((e.target as HTMLDetailsElement).open && key === undefined) void load() }}>
       <summary>📱 {t('Nadajesz aplikacją SportCast? Wynik na obrazie sam się zmienia')}</summary>
       <p>{t('Aplikacja SportCast (Android) rysuje na obrazie tablicę wyników. Wynik bierze prosto z panelu sędziego, więc operator kamery niczego nie klika.')}</p>
       <Steps items={[
-        t('W aplikacji SportCast wybierz sport i naciśnij „Wynik z sportlivearena.com”.'),
-        t('Wybierz poniżej boisko, na które patrzy kamera, i zeskanuj kod QR aplikacją.'),
+        t('W aplikacji SportCast naciśnij „Transmisja z sportlivearena.com”.'),
+        t('Zeskanuj kod QR poniżej albo wpisz kod turnieju.'),
+        t('W aplikacji wybierz boisko, na które patrzy kamera.'),
         t('Sędzia liczy punkty w swoim panelu jak zwykle. Po sekundzie ten sam wynik widać na obrazie.'),
       ]} />
-      <div className="actions">
-        {Array.from({ length: courts }, (_, i) => i + 1).map((c) => (
-          <button key={c} type="button" className={`btn${c === court ? ' btn-primary' : ''}`} onClick={() => void pick(c)}>
-            {t('Boisko {n}', { n: courtLabel(c) })}
-          </button>
-        ))}
-      </div>
-      {court > 0 && qr && (
+      <p className="muted small">{t('Kod widzi tylko organizator. Kibice i trenerzy nie mają tej opcji. Kto dostanie kod, może podłączyć kamerę, więc nie publikuj go.')}</p>
+      {key === undefined && <p className="muted">{t('Ładowanie…')}</p>}
+      {key === null && <button type="button" className="btn btn-primary" onClick={() => void create()}>{t('Włącz i pokaż kod dla SportCast')}</button>}
+      {key && (
         <>
-          <div className="larix-qr" dangerouslySetInnerHTML={{ __html: qr }} />
-          <p className="muted small">{t('Ten sam wynik w przeglądarce (np. do sprawdzenia):')} <a href={cameraAppUrl(court)} target="_blank" rel="noreferrer">{t('tablica boiska {n}', { n: courtLabel(court) })}</a></p>
+          {qr && <div className="larix-qr" dangerouslySetInnerHTML={{ __html: qr }} />}
+          <p className="center">{t('Kod turnieju do wpisania:')} <code className="camera-code">{cameraCode(key)}</code></p>
+          <p className="muted small">{t('Podgląd tego, co dostaje aplikacja:')} <a href={cameraAppUrl(key)} target="_blank" rel="noreferrer">{t('tablice wyników boisk')}</a></p>
+          <ConfirmButton className="btn" label={t('Nowy kod (stary przestanie działać)')}
+            question={t('Zmienić kod? Kamery podłączone starym kodem przestaną dostawać wynik i trzeba je podłączyć od nowa.')}
+            yes={t('Tak, zmień kod')} onYes={() => void create()} />
         </>
       )}
+      {err && <p className="error small">{err}</p>}
     </details>
   )
 }

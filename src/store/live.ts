@@ -12,7 +12,10 @@ import type { Pins, SetScore } from '../types'
  *   pins/{t}               { admin, courts: { "1": key, … } }, a copy of the Firestore keys
  *   sessions/{t}/{uid}     { role, court?, pin }: a device's role, accepted when the key matches
  *   live/{t}/{court}/{id}  { sets, at }: the score of a match in progress, readable by all
- *   board/{t}/{court}      the court's scoreboard for camera apps (see logic/publicBoard.ts), readable by all
+ *   pins/{t}/stream        the camera apps' key, set by the chief referee, readable by referees
+ *   board/{t}/{key}/{court} the court's scoreboard for camera apps (see logic/publicBoard.ts):
+ *                          readable by whoever knows the key (the organiser's QR code), and
+ *                          only while the organiser has turned the camera app on
  */
 export interface LiveEntry {
   sets: SetScore[]
@@ -28,8 +31,12 @@ export interface LiveChannel {
   /** Sends a score; `onRefused` runs when the database does not accept it (then use Firestore). */
   write(court: number, matchId: string, entry: LiveEntry, onRefused: () => void): void
   clear(court: number, matchId: string): void
-  /** Publishes a court's scoreboard for camera apps (skipped when this device may not). */
-  writeBoard(court: number, board: PublicBoard): void
+  /** Publishes a court's scoreboard for camera apps under the organiser's key. */
+  writeBoard(key: string, court: number, board: PublicBoard): void
+  /** Follows the camera apps' key (null: turned off or not allowed); returns the unsubscribe function. */
+  followStreamKey(onChange: (key: string | null) => void): () => void
+  /** The chief referee: sets a new camera apps' key. */
+  setStreamKey(key: string): Promise<boolean>
   /** The chief referee: removes all live scores of the tournament. */
   clearAll(): void
   /** Opens a session for this device; resolves to whether the key was accepted. */
@@ -49,7 +56,7 @@ function withTimeout<T>(p: Promise<T>, ms = TIMEOUT_MS): Promise<T> {
 /** The Realtime Database of the app, or null when it is not configured. Loaded on demand. */
 export async function openLive(app: FirebaseApp, tournamentId: string, emulator: boolean): Promise<LiveChannel | null> {
   if (!app.options.databaseURL) return null
-  const { getDatabase, connectDatabaseEmulator, ref, onValue, set, remove } = await import('firebase/database')
+  const { getDatabase, connectDatabaseEmulator, ref, onValue, set, remove, update } = await import('firebase/database')
   const db = getDatabase(app)
   if (emulator) connectDatabaseEmulator(db, '127.0.0.1', 9000)
   let writable = false
@@ -75,8 +82,19 @@ export async function openLive(app: FirebaseApp, tournamentId: string, emulator:
       set(ref(db, `live/${tournamentId}/${court}/${matchId}`), { sets: entry.sets.map((s) => ({ a: s.a, b: s.b })), at: entry.at })
         .catch((e) => { console.warn('live write', e); writable = false; onRefused() })
     },
-    writeBoard(court, board) {
-      if (writable) set(ref(db, `board/${tournamentId}/${court}`), JSON.parse(JSON.stringify(board))).catch((e) => console.warn('board write', e))
+    writeBoard(key, court, board) {
+      if (writable) set(ref(db, `board/${tournamentId}/${key}/${court}`), JSON.parse(JSON.stringify(board))).catch((e) => console.warn('board write', e))
+    },
+    followStreamKey(onChange) {
+      return onValue(ref(db, `pins/${tournamentId}/stream`), (snap) => onChange(typeof snap.val() === 'string' ? snap.val() : null), () => onChange(null))
+    },
+    async setStreamKey(key) {
+      try {
+        await withTimeout(set(ref(db, `pins/${tournamentId}/stream`), key))
+        return true
+      } catch {
+        return false
+      }
     },
     clearAll() {
       if (writable) remove(ref(db, `live/${tournamentId}`)).catch(() => {})
@@ -95,7 +113,8 @@ export async function openLive(app: FirebaseApp, tournamentId: string, emulator:
     },
     async copyPins(pins) {
       try {
-        await withTimeout(set(ref(db, `pins/${tournamentId}`), { admin: pins.adminPin, courts: pins.courts }))
+        // update, not set: the camera apps' key next to them stays
+        await withTimeout(update(ref(db, `pins/${tournamentId}`), { admin: pins.adminPin, courts: pins.courts }))
         return true
       } catch {
         return false

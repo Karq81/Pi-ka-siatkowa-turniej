@@ -36,6 +36,10 @@ export interface Store {
   getPins(): Promise<Pins | null>
   /** Admin: save keys. The first call on an empty online database sets them up. */
   setPins(pins: Pins): Promise<void>
+  /** The camera apps' key (SportCast), or null when turned off or not reachable. */
+  cameraKey(): Promise<string | null>
+  /** The chief referee: turns the camera apps on with a new key (the old one stops working). */
+  newCameraKey(): Promise<string | null>
   /** Whether a tournament with this address is already saved (for "Załóż turniej"). */
   tournamentExists(id: string): Promise<boolean>
   clearError(): void

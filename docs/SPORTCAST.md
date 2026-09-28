@@ -5,31 +5,36 @@ z wszystkim, czego potrzebuje nakładka na obraz. Czytanie nie wymaga logowania 
 Wpis zapisują telefony, które liczą punkty (sędzia boiska, sędzia główny), przy każdym punkcie,
 starcie i końcu meczu.
 
-## Skąd aplikacja wie, które to boisko
+## Kod organizatora (tylko organizator może podłączyć kamerę)
 
-Organizator otwiera: panel → **Więcej** → **📺 Transmisja wideo na żywo** →
-**📱 Nadajesz aplikacją SportCast?**, wybiera boisko i pokazuje kod QR. Kod zawiera adres, np.:
+Organizator otwiera: panel → **Więcej** (PIN sędziego głównego) → **📺 Transmisja wideo na żywo** →
+**📱 Nadajesz aplikacją SportCast?** → **Włącz i pokaż kod dla SportCast**. Strona losuje klucz
+(10 znaków `A–Z`, `2–9`) i pokazuje:
 
-```
-https://sportlivearena.com/?t=halowka-mielno&board=halowka-mielno/3#tablica-3
-https://sportlivearena.com/?t=albatros&board=main/1#tablica-1        (Albatros CUP)
-```
+- **kod QR** z adresem, np.
+  `https://sportlivearena.com/?t=albatros&cam=main/Y7EE8MVL42#kamera`
+- **kod do wpisania**, np. `main/Y7EE8MVL42` (`{turniej}/{klucz}`).
 
-Aplikacja bierze **tylko parametr `board`** (`{turniej}/{boisko}`). Nie trzeba go przeliczać
-(`?t=albatros` to w bazie `main`, dlatego `board` podaje już właściwą nazwę). Zeskanowany zwykłym
-aparatem ten sam adres otwiera w przeglądarce stronę z tą tablicą, więc można nią też sprawdzić, co
-dostanie aplikacja (albo użyć jej jako „źródła przeglądarki” w OBS).
+Aplikacja przyjmuje jedno i drugie: z adresu bierze parametr `cam`, a wpisany tekst bierze wprost.
+Poprawny kod pasuje do `^([a-z0-9-]{3,40})/([A-Z0-9]{8,20})$`.
 
-Warunek poprawności: `board` pasuje do `^[a-z0-9-]{3,40}/[0-9]{1,2}$`.
+Tablice są zapisane **pod kluczem**, więc bez kodu nie da się ich odczytać ani wylistować.
+Kibice i trenerzy nie widzą tej opcji. „Nowy kod” odcina stary: kamery podłączone starym kodem
+przestają dostawać wynik. Dopóki organizator nie włączy kodu, telefony sędziów nie zapisują tablic.
 
-## Adres danych
+Zeskanowany zwykłym aparatem ten sam adres otwiera w przeglądarce tablice wszystkich boisk
+(podgląd tego, co dostaje aplikacja).
 
-```
-https://turniej-siatkowki-faf22-default-rtdb.europe-west1.firebasedatabase.app/board/{board}.json
-```
+## Adresy danych
 
-np. `…/board/main/1.json`. Zwykły `GET` zwraca JSON (albo `null`, gdy tablicy jeszcze nie ma:
-nikt nie zalogował się PIN-em do tego boiska).
+Baza: `https://turniej-siatkowki-faf22-default-rtdb.europe-west1.firebasedatabase.app`
+
+- **Lista boisk** (do wyboru w aplikacji): `GET {baza}/board/{turniej}/{klucz}.json`
+  → obiekt `{ "1": {tablica}, "2": {tablica}, … }` (klucze to numery boisk; Firebase może też
+  zwrócić tablicę JSON z `null` na pozycji 0 – obsłuż oba). Nazwa boiska do pokazania: pole `court`,
+  a pod nią `a` – `b` (kto teraz gra). `null` albo pusto: kod jest zły albo zmieniony, albo sędziowie
+  jeszcze się nie zalogowali.
+- **Jedno boisko** (na żywo): `{baza}/board/{turniej}/{klucz}/{boisko}.json`
 
 ### Na żywo, bez odpytywania co chwilę (zalecane)
 

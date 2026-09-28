@@ -87,6 +87,8 @@ export function createLocalStore(tournamentId: string, initial: State): Store {
     updateTournament(patch) {
       commit({ ...state, tournament: { ...state.tournament, ...patch } })
     },
+    async cameraKey() { return null },
+    async newCameraKey() { return null },
     async getPins() {
       return session?.role === 'admin' ? pins : null
     },

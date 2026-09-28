@@ -7,7 +7,11 @@
       "$t": {
         ".read": false,
         ".write": "auth != null && (!data.exists() || (root.child('sessions/' + $t + '/' + auth.uid + '/role').val() === 'admin' && root.child('sessions/' + $t + '/' + auth.uid + '/pin').val() === data.child('admin').val()))",
-        ".validate": "newData.child('admin').isString() && newData.child('admin').val().length >= 4 && newData.hasChildren(['admin', 'courts'])"
+        ".validate": "newData.child('admin').isString() && newData.child('admin').val().length >= 4 && newData.hasChildren(['admin', 'courts'])",
+        "stream": {
+          ".read": "auth != null && root.child('sessions/' + $t + '/' + auth.uid + '/pin').val() === (root.child('sessions/' + $t + '/' + auth.uid + '/role').val() === 'admin' ? root.child('pins/' + $t + '/admin').val() : root.child('pins/' + $t + '/courts/' + root.child('sessions/' + $t + '/' + auth.uid + '/court').val()).val())",
+          ".validate": "newData.isString() && newData.val().matches(/^[A-Z0-9]{8,20}$/)"
+        }
       }
     },
 
@@ -23,32 +27,16 @@
 
     "board": {
       "$t": {
-        ".read": true,
-        "$court": {
-          ".write": "auth != null && ((root.child('sessions/' + $t + '/' + auth.uid + '/role').val() === 'admin' && root.child('sessions/' + $t + '/' + auth.uid + '/pin').val() === root.child('pins/' + $t + '/admin').val()) || (root.child('sessions/' + $t + '/' + auth.uid + '/role').val() === 'court' && root.child('sessions/' + $t + '/' + auth.uid + '/court').val() + '' === $court && root.child('sessions/' + $t + '/' + auth.uid + '/pin').val() === root.child('pins/' + $t + '/courts/' + $court).val()))",
-          ".validate": "newData.hasChildren(['v', 'at', 'status', 'a', 'b']) && newData.child('v').val() === 1 && newData.child('at').isNumber() && newData.child('a').isString() && newData.child('a').val().length < 200 && newData.child('b').isString() && newData.child('b').val().length < 200 && newData.child('status').val().matches(/^(live|finished|next|none)$/)",
-          "tournament": { ".validate": "newData.isString() && newData.val().length < 200" },
-          "court": { ".validate": "newData.isString() && newData.val().length < 50" },
-          "stage": { ".validate": "newData.isString() && newData.val().length < 300" },
-          "start": { ".validate": "newData.isString() && newData.val().length < 30" },
-          "scoring": { ".validate": "newData.val() === 'sets' || newData.val() === 'score'" },
-          "sets": {
-            "$i": {
-              ".validate": "newData.hasChildren(['a', 'b']) && newData.child('a').isNumber() && newData.child('b').isNumber() && newData.child('a').val() >= 0 && newData.child('b').val() >= 0 && newData.child('a').val() < 1000 && newData.child('b').val() < 1000",
-              "a": { ".validate": true },
-              "b": { ".validate": true },
-              "$other": { ".validate": false }
-            }
-          },
-          "next": {
-            ".validate": "newData.hasChildren(['a', 'b', 'start'])",
-            "a": { ".validate": "newData.isString() && newData.val().length < 200" },
-            "b": { ".validate": "newData.isString() && newData.val().length < 200" },
+        "$key": {
+          ".read": true,
+          "$court": {
+            ".write": "auth != null && ((root.child('sessions/' + $t + '/' + auth.uid + '/role').val() === 'admin' && root.child('sessions/' + $t + '/' + auth.uid + '/pin').val() === root.child('pins/' + $t + '/admin').val()) || (root.child('sessions/' + $t + '/' + auth.uid + '/role').val() === 'court' && root.child('sessions/' + $t + '/' + auth.uid + '/court').val() + '' === $court && root.child('sessions/' + $t + '/' + auth.uid + '/pin').val() === root.child('pins/' + $t + '/courts/' + $court).val())) && $key === root.child('pins/' + $t + '/stream').val()",
+            ".validate": "newData.hasChildren(['v', 'at', 'status', 'a', 'b']) && newData.child('v').val() === 1 && newData.child('at').isNumber() && newData.child('a').isString() && newData.child('a').val().length < 200 && newData.child('b').isString() && newData.child('b').val().length < 200 && newData.child('status').val().matches(/^(live|finished|next|none)$/)",
+            "tournament": { ".validate": "newData.isString() && newData.val().length < 200" },
+            "court": { ".validate": "newData.isString() && newData.val().length < 50" },
+            "stage": { ".validate": "newData.isString() && newData.val().length < 300" },
             "start": { ".validate": "newData.isString() && newData.val().length < 30" },
-            "$other": { ".validate": false }
-          },
-          "previous": {
-            ".validate": "newData.hasChildren(['a', 'b', 'setsA', 'setsB']) && newData.child('a').isString() && newData.child('a').val().length < 200 && newData.child('b').isString() && newData.child('b').val().length < 200 && newData.child('setsA').isNumber() && newData.child('setsB').isNumber()",
+            "scoring": { ".validate": "newData.val() === 'sets' || newData.val() === 'score'" },
             "sets": {
               "$i": {
                 ".validate": "newData.hasChildren(['a', 'b']) && newData.child('a').isNumber() && newData.child('b').isNumber() && newData.child('a').val() >= 0 && newData.child('b').val() >= 0 && newData.child('a').val() < 1000 && newData.child('b').val() < 1000",
@@ -57,13 +45,31 @@
                 "$other": { ".validate": false }
               }
             },
-            "a": { ".validate": true },
-            "b": { ".validate": true },
-            "setsA": { ".validate": true },
-            "setsB": { ".validate": true },
-            "$other": { ".validate": false }
-          },
-          "$num": { ".validate": "($num === 'v' || $num === 'at' || $num === 'status' || $num === 'a' || $num === 'b' || $num === 'setsA' || $num === 'setsB' || $num === 'pointsA' || $num === 'pointsB' || $num === 'setsToWin' || $num === 'setPoints' || $num === 'lastSetPoints') && (newData.isNumber() || $num === 'status' || $num === 'a' || $num === 'b') && (!newData.isNumber() || (newData.val() >= 0 && newData.val() < 100000000000000))" }
+            "next": {
+              ".validate": "newData.hasChildren(['a', 'b', 'start'])",
+              "a": { ".validate": "newData.isString() && newData.val().length < 200" },
+              "b": { ".validate": "newData.isString() && newData.val().length < 200" },
+              "start": { ".validate": "newData.isString() && newData.val().length < 30" },
+              "$other": { ".validate": false }
+            },
+            "previous": {
+              ".validate": "newData.hasChildren(['a', 'b', 'setsA', 'setsB']) && newData.child('a').isString() && newData.child('a').val().length < 200 && newData.child('b').isString() && newData.child('b').val().length < 200 && newData.child('setsA').isNumber() && newData.child('setsB').isNumber()",
+              "sets": {
+                "$i": {
+                  ".validate": "newData.hasChildren(['a', 'b']) && newData.child('a').isNumber() && newData.child('b').isNumber() && newData.child('a').val() >= 0 && newData.child('b').val() >= 0 && newData.child('a').val() < 1000 && newData.child('b').val() < 1000",
+                  "a": { ".validate": true },
+                  "b": { ".validate": true },
+                  "$other": { ".validate": false }
+                }
+              },
+              "a": { ".validate": true },
+              "b": { ".validate": true },
+              "setsA": { ".validate": true },
+              "setsB": { ".validate": true },
+              "$other": { ".validate": false }
+            },
+            "$num": { ".validate": "($num === 'v' || $num === 'at' || $num === 'status' || $num === 'a' || $num === 'b' || $num === 'setsA' || $num === 'setsB' || $num === 'pointsA' || $num === 'pointsB' || $num === 'setsToWin' || $num === 'setPoints' || $num === 'lastSetPoints') && (newData.isNumber() || $num === 'status' || $num === 'a' || $num === 'b') && (!newData.isNumber() || (newData.val() >= 0 && newData.val() < 100000000000000))" }
+          }
         }
       }
     },

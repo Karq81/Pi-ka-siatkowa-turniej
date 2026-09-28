@@ -1280,3 +1280,5 @@ button.btn-correct { font: inherit; cursor: pointer; }
 .sb-live { color: #f87171; font-weight: 700; }
 .sb-empty { padding: 20px 14px; color: #cbd5e1; }
 .sb-note { max-width: 560px; color: #94a3b8; font-size: 0.85rem; text-align: center; margin: 0; }
+.scoreboards { display: grid; gap: 12px; }
+.camera-code { font-size: 1.1rem; padding: 2px 8px; user-select: all; }

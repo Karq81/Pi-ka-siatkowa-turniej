@@ -1,6 +1,6 @@
 // Realtime Database rules tests (live scores). Run with: npm run test:rules (starts the emulators).
 import { assertFails, assertSucceeds, initializeTestEnvironment, type RulesTestEnvironment } from '@firebase/rules-unit-testing'
-import { get, ref, remove, set } from 'firebase/database'
+import { get, ref, remove, set, update } from 'firebase/database'
 import { readFileSync } from 'node:fs'
 import { afterAll, beforeAll, beforeEach, describe, it } from 'vitest'
 
@@ -87,21 +87,54 @@ describe('realtime database rules', () => {
     await assertFails(set(ref(as('ref1'), 'live/main/1/m1'), { ...score, extra: 1 }))
   })
 
-  it('lets anyone read a court scoreboard, and only its own referee or the chief write it', async () => {
-    await assertSucceeds(get(ref(as(null), 'board/main/1')))
-    await assertFails(set(ref(as('fan'), 'board/main/1'), board))
+  const KEY = 'CAMKEY2345'
+  const withKey = () => env.withSecurityRulesDisabled(async (ctx) => { await set(ref(ctx.database(), 'pins/main/stream'), KEY) })
+
+  it('keeps the camera key from fans, and gives it to referees', async () => {
+    await withKey()
+    await assertFails(get(ref(as('fan'), 'pins/main/stream')))
     await login('ref1', '1111', 1)
-    await assertSucceeds(set(ref(as('ref1'), 'board/main/1'), board))
-    await assertFails(set(ref(as('ref1'), 'board/main/2'), board))
+    await assertSucceeds(get(ref(as('ref1'), 'pins/main/stream')))
+    await assertFails(set(ref(as('ref1'), 'pins/main/stream'), 'OTHERKEY99'))
     await login('boss', '1234')
-    await assertSucceeds(set(ref(as('boss'), 'board/main/2'), { ...board, status: 'none', a: '', b: '', sets: null, next: null }))
+    await assertSucceeds(set(ref(as('boss'), 'pins/main/stream'), 'NEWKEY2345'))
+    await assertFails(set(ref(as('boss'), 'pins/main/stream'), 'bad key'))
+  })
+
+  it('lets whoever has the key read the scoreboards, but nobody list them', async () => {
+    await withKey()
+    await assertSucceeds(get(ref(as(null), `board/main/${KEY}`)))
+    await assertFails(get(ref(as(null), 'board/main')))
+  })
+
+  it('lets only the court referee or the chief write a scoreboard, and only under the current key', async () => {
+    await withKey()
+    await assertFails(set(ref(as('fan'), `board/main/${KEY}/1`), board))
+    await login('ref1', '1111', 1)
+    await assertSucceeds(set(ref(as('ref1'), `board/main/${KEY}/1`), board))
+    await assertFails(set(ref(as('ref1'), `board/main/${KEY}/2`), board))
+    await assertFails(set(ref(as('ref1'), 'board/main/GUESSED234/1'), board))
+    await login('boss', '1234')
+    await assertSucceeds(set(ref(as('boss'), `board/main/${KEY}/2`), { ...board, status: 'none', a: '', b: '', sets: null, next: null }))
+  })
+
+  it('keeps the camera key when the keys are copied again', async () => {
+    await withKey()
+    await login('boss', '1234')
+    await assertSucceeds(update(ref(as('boss'), 'pins/main'), { admin: '1234', courts: PINS.courts }))
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      const v = (await get(ref(ctx.database(), 'pins/main/stream'))).val()
+      if (v !== KEY) throw new Error(`stream key lost: ${v}`)
+    })
   })
 
   it('accepts only proper scoreboards', async () => {
+    await withKey()
     await login('ref1', '1111', 1)
-    await assertFails(set(ref(as('ref1'), 'board/main/1'), { ...board, status: 'party' }))
-    await assertFails(set(ref(as('ref1'), 'board/main/1'), { ...board, extra: 'x' }))
-    await assertFails(set(ref(as('ref1'), 'board/main/1'), { ...board, setsA: 'x' }))
-    await assertFails(set(ref(as('ref1'), 'board/main/1'), { ...board, a: 'x'.repeat(300) }))
+    const at = `board/main/${KEY}/1`
+    await assertFails(set(ref(as('ref1'), at), { ...board, status: 'party' }))
+    await assertFails(set(ref(as('ref1'), at), { ...board, extra: 'x' }))
+    await assertFails(set(ref(as('ref1'), at), { ...board, setsA: 'x' }))
+    await assertFails(set(ref(as('ref1'), at), { ...board, a: 'x'.repeat(300) }))
   })
 })

@@ -8,13 +8,13 @@ import { formatTime, useNow } from '../ui'
  * someone scans the app's QR code with the phone's camera, and works as a browser source
  * in streaming software (OBS).
  */
-export function Scoreboard({ court }: { court: number }) {
+export function Scoreboard({ court, note = true }: { court: number; note?: boolean }) {
   const state = useStore()
   const now = useNow(5000)
   const b = publicBoard(state, court, now)
   const sets = b.scoring === 'sets'
   return (
-    <div className="scoreboard-page">
+    <div className={note ? 'scoreboard-page' : undefined}>
       <div className="scoreboard">
         <div className="sb-head">{b.tournament} · {t('Boisko {n}', { n: b.court })}{b.stage && ` · ${b.stage}`}</div>
         {b.status === 'none' ? (
@@ -37,7 +37,20 @@ export function Scoreboard({ court }: { court: number }) {
           </>
         )}
       </div>
-      <p className="sb-note">{t('To jest tablica wyników dla aplikacji SportCast. Zeskanuj ten sam kod QR w aplikacji, a wynik pojawi się na obrazie transmisji.')}</p>
+      {note && <p className="sb-note">{t('To jest tablica wyników dla aplikacji SportCast. Zeskanuj ten sam kod QR w aplikacji, a wynik pojawi się na obrazie transmisji.')}</p>}
+    </div>
+  )
+}
+
+/** The page behind the organiser's QR code: every court's scoreboard. */
+export function CameraBoards() {
+  const state = useStore()
+  return (
+    <div className="scoreboard-page">
+      <p className="sb-note">{t('To jest kod dla aplikacji SportCast. Zeskanuj go w aplikacji („Transmisja z sportlivearena.com”), a wynik z panelu sędziego pojawi się na obrazie transmisji.')}</p>
+      <div className="scoreboards">
+        {Array.from({ length: state.tournament.courts }, (_, i) => <Scoreboard key={i} court={i + 1} note={false} />)}
+      </div>
     </div>
   )
 }

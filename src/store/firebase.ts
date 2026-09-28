@@ -256,6 +256,15 @@ export function createFirebaseStore(config: FirebaseOptions, tournamentId: strin
 
   async function afterLiveSignIn() {
     await restoreBackups()
+    // The camera apps' key: boards are written only while the organiser has it turned on.
+    if (!stopStreamKey && live) {
+      stopStreamKey = live.followStreamKey((key) => {
+        if (key === streamKey) return
+        streamKey = key
+        boardsSent.clear()
+        publishBoards(allCourts())
+      })
+    }
     publishBoards(allCourts())
   }
 
@@ -277,9 +286,11 @@ export function createFirebaseStore(config: FirebaseOptions, tournamentId: strin
    * the phones that score: a court's referee its own court, the chief referee every court.
    */
   const boardsSent = new Map<number, string>()
+  let streamKey: string | null = null
+  let stopStreamKey: (() => void) | null = null
   const publishBoards = (courts: Iterable<number>, from: State = state) => {
     // Before the matches are loaded, the board would say the court is empty.
-    if (!live?.canWrite() || !session || (from === state && !sheetsLoaded)) return
+    if (!live?.canWrite() || !session || !streamKey || (from === state && !sheetsLoaded)) return
     for (const c of new Set(courts)) {
       if (session.role === 'court' && session.court !== c) continue
       if (c < 1 || c > from.tournament.courts) continue
@@ -287,7 +298,7 @@ export function createFirebaseStore(config: FirebaseOptions, tournamentId: strin
       const key = boardKey(board)
       if (boardsSent.get(c) === key) continue
       boardsSent.set(c, key)
-      live.writeBoard(c, board)
+      live.writeBoard(streamKey, c, board)
     }
   }
   const allCourts = (s: State = state) => Array.from({ length: s.tournament.courts }, (_, i) => i + 1)
@@ -401,6 +412,22 @@ export function createFirebaseStore(config: FirebaseOptions, tournamentId: strin
       await setDoc(doc(tRef, 'private', 'pins'), pins)
       // Sessions are tied to the key they used; log this device in again with the new admin PIN.
       if (!(await login(pins.adminPin))) saveSession(null)
+    },
+    async newCameraKey() {
+      const ch = await liveReady
+      if (!ch?.canWrite() || session?.role !== 'admin') return null
+      const abc = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+      const key = Array.from(crypto.getRandomValues(new Uint8Array(10)), (n) => abc[n % abc.length]).join('')
+      return (await ch.setStreamKey(key)) ? key : null
+    },
+    async cameraKey() {
+      const ch = await liveReady
+      if (!ch) return null
+      if (streamKey) return streamKey
+      return new Promise<string | null>((resolve) => {
+        const stop = ch.followStreamKey((k) => { resolve(k); setTimeout(() => stop(), 0) })
+        setTimeout(() => resolve(null), 8000)
+      })
     },
     async tournamentExists(id) {
       const snap = await getDoc(doc(db, 'tournaments', id))
