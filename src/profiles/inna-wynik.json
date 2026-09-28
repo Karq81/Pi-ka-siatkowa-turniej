@@ -1,0 +1,21 @@
+{
+  "discipline": "inna-wynik",
+  "name": "Inna dyscyplina: bramki / punkty",
+  "participantType": "team",
+  "points": {
+    "win": 3,
+    "draw": 1,
+    "loss": 0
+  },
+  "criteria": [
+    "points",
+    "h2h_points",
+    "h2h_diff",
+    "h2h_scored",
+    "diff",
+    "scored",
+    "lots"
+  ],
+  "h2hReapply": false,
+  "source": "Szablon ogólny: jeden wynik na mecz."
+}

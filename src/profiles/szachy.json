@@ -1,0 +1,28 @@
+{
+  "discipline": "szachy",
+  "name": "Szachy",
+  "participantType": "player",
+  "points": {
+    "win": 1,
+    "draw": 0.5,
+    "loss": 0,
+    "bye": 1
+  },
+  "criteria": [
+    "points",
+    "h2h_points",
+    "sonneborn_berger",
+    "wins",
+    "lots"
+  ],
+  "h2hReapply": false,
+  "swissCriteria": [
+    "points",
+    "buchholz_cut1",
+    "buchholz",
+    "sonneborn_berger",
+    "wins",
+    "lots"
+  ],
+  "source": "FIDE: 1 / ½ / 0. Kołowy: bezpośredni pojedynek i Sonneborn-Berger; szwajcar: Buchholz Cut 1, Buchholz, Sonneborn-Berger."
+}

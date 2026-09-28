@@ -1,0 +1,27 @@
+{
+  "discipline": "koszykowka",
+  "name": "Koszykówka",
+  "participantType": "team",
+  "points": {
+    "win": 2,
+    "draw": 0,
+    "loss": 1,
+    "walkoverLoss": 0
+  },
+  "criteria": [
+    "points",
+    "h2h_points",
+    "h2h_diff",
+    "h2h_scored",
+    "diff",
+    "scored",
+    "lots"
+  ],
+  "h2hReapply": true,
+  "cupTie": "dogrywki po 5 min aż do rozstrzygnięcia",
+  "walkover": {
+    "winner": 20,
+    "loser": 0
+  },
+  "source": "FIBA: 2 pkt za wygraną, 1 za porażkę, 0 za walkower; bezpośrednie mecze wysoko."
+}

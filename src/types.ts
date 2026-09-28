@@ -45,6 +45,18 @@ export interface Rules {
    * scored, head-to-head; sets: set ratio, small-points ratio, head-to-head).
    */
   tiebreak?: Tiebreak[]
+  /**
+   * Head-to-head criteria counted again among the teams still level after an h2h criterion
+   * split a bigger block (UEFA). Off: they are counted among the whole block first level.
+   */
+  h2hReapply?: boolean
+  /** Table points after overtime or a shootout (hockey IIHF: 2 and 1); missing: as in regular time. */
+  pointsOvertimeWin?: number
+  pointsOvertimeLoss?: number
+  /** Table points for a team that lost by walkover (basketball: 0 instead of 1); missing: pointsLoss. */
+  pointsWalkoverLoss?: number
+  /** Table points for a free round (Swiss, odd round robin); missing: pointsWin. */
+  byePoints?: number
 }
 
 /**
@@ -52,8 +64,20 @@ export interface Rules {
  * then difference in those matches); wins: matches won; diff / scored: goal (point)
  * difference and goals scored; setRatio / setDiff: sets won to lost; pointRatio: small points
  * won to lost; buchholz: the sum of the opponents' points (Swiss system).
+ * The rest as named in the tournament specification (docs/specyfikacja-turnieje.md, part 4):
+ * win_pct: wins per match played; h2h_points / h2h_diff / h2h_scored / h2h_result: points,
+ * difference, goals and wins in the matches among the teams level; buchholz_cut1 /
+ * buchholz_median: Buchholz without the weakest (and the best) opponent; sonneborn_berger:
+ * points of the opponents beaten plus half of those drawn with; progressive: the running
+ * score added up round by round; seed / rating: the team's seed (lower is better) or rating;
+ * lots: a draw of lots (fixed for a team, so the table never changes); shared: the teams
+ * still level share the place (ex aequo).
  */
-export type Tiebreak = 'h2h' | 'wins' | 'diff' | 'scored' | 'setRatio' | 'setDiff' | 'pointRatio' | 'buchholz'
+export type Tiebreak =
+  | 'h2h' | 'wins' | 'diff' | 'scored' | 'setRatio' | 'setDiff' | 'pointRatio' | 'buchholz'
+  | 'win_pct' | 'h2h_points' | 'h2h_diff' | 'h2h_scored' | 'h2h_result'
+  | 'buchholz_cut1' | 'buchholz_median' | 'sonneborn_berger' | 'progressive'
+  | 'seed' | 'rating' | 'lots' | 'shared'
 
 export interface Tournament {
   name: string
@@ -153,6 +177,11 @@ export interface Team {
   categoryId: Id
   /** Club, so the draw can keep a club's teams in different groups. */
   club?: string
+  /** Seed (1 = the strongest) and rating (e.g. chess Elo), for tie-breakers and seeding. */
+  seed?: number
+  rating?: number
+  /** Withdrawn or disqualified teams stay in the results, marked. Missing: active. */
+  status?: 'active' | 'withdrawn' | 'disqualified'
 }
 
 export interface SetScore {
@@ -271,6 +300,8 @@ export interface Match {
   updatedAt: number
   /** When the court moved on to this match (result of the one before, or a time set by hand). */
   calledAt?: number
+  /** How the match was decided, for table points (hockey: overtime and shootout give 2 and 1). Missing: regular time. */
+  decidedBy?: 'regulation' | 'overtime' | 'shootout' | 'walkover' | 'retirement'
   /** Swiss system: the round of this match (1, 2, …). */
   swissRound?: number
   /** Swiss system: a free round (teamB empty); counts as a win for teamA. */

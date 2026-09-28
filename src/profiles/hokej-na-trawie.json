@@ -1,0 +1,26 @@
+{
+  "discipline": "hokej-na-trawie",
+  "name": "Hokej na trawie",
+  "participantType": "team",
+  "points": {
+    "win": 3,
+    "draw": 1,
+    "loss": 0
+  },
+  "criteria": [
+    "points",
+    "h2h_points",
+    "h2h_diff",
+    "h2h_scored",
+    "diff",
+    "scored",
+    "lots"
+  ],
+  "h2hReapply": true,
+  "cupTie": "rzuty karne (shoot-out)",
+  "walkover": {
+    "winner": 5,
+    "loser": 0
+  },
+  "source": "FIH: 3/1/0."
+}

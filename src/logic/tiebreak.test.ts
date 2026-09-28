@@ -14,7 +14,8 @@ const order = (rules: Rules, matches: Match[]) => standings(rules, group, matche
 
 describe('tie-breakers', () => {
   it('football: head-to-head before goal difference', () => {
-    expect(tiebreakOrder(football)).toEqual(['h2h', 'diff', 'scored'])
+    expect(tiebreakOrder(football)).toEqual(['h2h_points', 'h2h_diff', 'h2h_scored', 'diff', 'scored', 'lots'])
+    expect(football.h2hReapply).toBe(true)
     // A and B both 6 points; B beat A, A has the better goal difference.
     const ms = [m('A', 'B', 0, 1), m('A', 'C', 9, 0), m('A', 'D', 5, 0), m('B', 'C', 1, 0), m('B', 'D', 0, 1), m('C', 'D', 0, 0)]
     expect(order(football, ms).slice(0, 2)).toBe('BA')

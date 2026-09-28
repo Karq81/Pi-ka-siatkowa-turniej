@@ -1,6 +1,13 @@
 import type { Group, Match } from '../types'
 
-/** Round-robin pairings (circle method). Returns rounds of [teamA, teamB]. */
+/**
+ * Round-robin pairings (circle method, Berger tables): the first team stays in place, the
+ * others move one position each round; with an odd number an empty "bye" place is added, so
+ * each round one team rests. Returns rounds of [home (teamA), away (teamB)]. Home and away
+ * (first-named, first serve, white) alternate: the fixed team switches every round, and in
+ * the other pairs the team in an odd position is at home. Nobody plays three home or three
+ * away matches in a row, and there are only n−2 "breaks" (two in a row), the fewest possible.
+ */
 export function roundRobin(teamIds: string[]): [string, string][][] {
   const ids = [...teamIds]
   if (ids.length < 2) return []
@@ -12,7 +19,9 @@ export function roundRobin(teamIds: string[]): [string, string][][] {
     for (let i = 0; i < n / 2; i++) {
       const a = ids[i]
       const b = ids[n - 1 - i]
-      if (a && b) round.push(r % 2 === 0 ? [a, b] : [b, a])
+      if (!a || !b) continue
+      const aHome = i === 0 ? r % 2 === 0 : i % 2 === 1
+      round.push(aHome ? [a, b] : [b, a])
     }
     rounds.push(round)
     ids.splice(1, 0, ids.pop()!) // rotate all but the first

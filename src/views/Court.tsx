@@ -13,7 +13,7 @@ import { setNextOnCourt } from '../logic/schedule'
 import { canScore } from '../logic/pins'
 import { store, useSession, useStore } from '../store/store'
 import type { Match, State } from '../types'
-import { ResultForm } from './ResultForm'
+import { ResultForm, withDecided } from './ResultForm'
 import { Upcoming } from './Public'
 import { BackBar, ConfirmButton, courtLabel, courtMatch, formatTime, PinGate, StatusPill, useLookups, useNow } from '../ui'
 
@@ -202,8 +202,8 @@ function CourtPanel({ state, court, manualFirst }: { state: State; court: number
           state={state}
           match={current}
           submitLabel={t('Zakończ mecz i wyślij wynik')}
-          onSubmit={(sets) => {
-            store.updateMatch(current.id, (m) => ({ ...m, status: 'finished', sets }))
+          onSubmit={(sets, decidedBy) => {
+            store.updateMatch(current.id, (m) => ({ ...withDecided(m, decidedBy), status: 'finished', sets }))
             setManual(null)
             setJustFinished(current.id)
           }}

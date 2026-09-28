@@ -171,6 +171,8 @@ export interface StandingRow {
   pointsWon: number
   pointsLost: number
   tablePoints: number
+  /** Place in the table (the same for teams sharing it, see the "shared" criterion). */
+  place: number
 }
 
 function ratio(won: number, lost: number): number {
@@ -183,9 +185,35 @@ function desc(x: number, y: number): number {
   return x === y ? 0 : y > x ? 1 : -1
 }
 
+/** Table points the two sides get for a finished match (overtime, walkover and volleyball's 3:2 rule included). */
+export function matchTablePoints(rules: Rules, m: Match): [number, number] {
+  const t = tally(rules, m.sets)
+  if (t.setsA === t.setsB) return [rules.pointsDraw, rules.pointsDraw]
+  // Volleyball: a 3:2 (or 2:1) win gives one point less to the winner and one to the loser.
+  const split = rules.tieBreakSplit && rules.setsMode === 'bestOf' && t.setsA + t.setsB === rules.sets ? 1 : 0
+  const extra = (m.decidedBy === 'overtime' || m.decidedBy === 'shootout') && rules.pointsOvertimeWin !== undefined
+  const win = extra ? rules.pointsOvertimeWin! : rules.pointsWin - split
+  const loss = extra
+    ? rules.pointsOvertimeLoss ?? rules.pointsLoss
+    : m.decidedBy === 'walkover' && rules.pointsWalkoverLoss !== undefined ? rules.pointsWalkoverLoss : rules.pointsLoss + split
+  return t.setsA > t.setsB ? [win, loss] : [loss, win]
+}
+
+/** A fixed pseudo-random number for a team: the "draw of lots" that never changes. */
+function lotOf(id: string): number {
+  let h = 2166136261
+  for (let i = 0; i < id.length; i++) h = Math.imul(h ^ id.charCodeAt(i), 16777619)
+  return (h >>> 0) / 4294967296
+}
+
+const isH2h = (k: Tiebreak | undefined) => !!k && (k === 'h2h' || k.startsWith('h2h_'))
+
 /**
- * Group table from finished matches. Order: table points, set ratio,
- * small-points ratio, head-to-head (for two teams level), then name.
+ * Group table from finished matches: table points, then the tie-breakers in the order of
+ * the rules (tiebreakOrder), each applied only to the teams still level. Head-to-head
+ * criteria count the matches among the teams level when the head-to-head run started, or,
+ * with `h2hReapply`, again among those still level after a split (UEFA). `place` is the
+ * position shown; teams left level by "shared" have the same place (ex aequo).
  */
 export function standings(
   rules: Rules,
@@ -197,7 +225,7 @@ export function standings(
   for (const id of group.teamIds) {
     rows.set(id, {
       teamId: id, played: 0, won: 0, drawn: 0, lost: 0,
-      setsWon: 0, setsLost: 0, pointsWon: 0, pointsLost: 0, tablePoints: 0,
+      setsWon: 0, setsLost: 0, pointsWon: 0, pointsLost: 0, tablePoints: 0, place: 0,
     })
   }
   const finished = matches.filter((m) => m.groupId === group.id && m.status === 'finished')
@@ -205,7 +233,7 @@ export function standings(
     const a = rows.get(m.teamA)
     const b = rows.get(m.teamB)
     // A free round (Swiss system) counts as a win.
-    if (m.bye && a) { a.played++; a.won++; a.tablePoints += rules.pointsWin; continue }
+    if (m.bye && a) { a.played++; a.won++; a.tablePoints += rules.byePoints ?? rules.pointsWin; continue }
     if (!a || !b) continue
     const t = tally(rules, m.sets)
     a.played++; b.played++
@@ -213,67 +241,132 @@ export function standings(
     b.setsWon += t.setsB; b.setsLost += t.setsA
     a.pointsWon += t.pointsA; a.pointsLost += t.pointsB
     b.pointsWon += t.pointsB; b.pointsLost += t.pointsA
-    // Volleyball: a 3:2 (or 2:1) win gives one point less to the winner and one to the loser.
-    const split = rules.tieBreakSplit && rules.setsMode === 'bestOf' && t.setsA + t.setsB === rules.sets ? 1 : 0
-    if (t.setsA > t.setsB) {
-      a.won++; b.lost++
-      a.tablePoints += rules.pointsWin - split; b.tablePoints += rules.pointsLoss + split
-    } else if (t.setsB > t.setsA) {
-      b.won++; a.lost++
-      b.tablePoints += rules.pointsWin - split; a.tablePoints += rules.pointsLoss + split
-    } else {
-      a.drawn++; b.drawn++
-      a.tablePoints += rules.pointsDraw; b.tablePoints += rules.pointsDraw
-    }
+    const [pa, pb] = matchTablePoints(rules, m)
+    a.tablePoints += pa; b.tablePoints += pb
+    if (t.setsA > t.setsB) { a.won++; b.lost++ } else if (t.setsB > t.setsA) { b.won++; a.lost++ } else { a.drawn++; b.drawn++ }
   }
 
-  const name = (id: string) => teams.find((t) => t.id === id)?.name ?? id
+  const team = (id: string) => teams.find((t) => t.id === id)
+  const name = (id: string) => team(id)?.name ?? id
   const order = tiebreakOrder(rules)
-  // Criteria compare values within a block of teams level so far; h2h depends on the block.
-  const value = (key: Tiebreak, r: StandingRow, block: StandingRow[]): number => {
+  const played = finished.filter((m) => !m.bye)
+  // The opponents' table points, one per match (Buchholz family).
+  const opponents = (id: string): number[] => played
+    .filter((m) => m.teamA === id || m.teamB === id)
+    .map((m) => rows.get(m.teamA === id ? m.teamB : m.teamA)?.tablePoints ?? 0)
+  const sum = (xs: number[]) => xs.reduce((x, y) => x + y, 0)
+  // Head-to-head among the teams of `base`: points, difference, goals and wins in those matches.
+  const h2h = (id: string, base: StandingRow[]) => {
+    const ids = new Set(base.map((b) => b.teamId))
+    let pts = 0; let diff = 0; let scored = 0; let wins = 0
+    for (const m of played) {
+      if (!ids.has(m.teamA) || !ids.has(m.teamB) || (m.teamA !== id && m.teamB !== id)) continue
+      const t = tally(rules, m.sets)
+      const home = m.teamA === id
+      const [pa, pb] = matchTablePoints(rules, m)
+      const mine = home ? t.setsA : t.setsB
+      const theirs = home ? t.setsB : t.setsA
+      const goalsMine = home ? t.pointsA : t.pointsB
+      const goalsTheirs = home ? t.pointsB : t.pointsA
+      pts += home ? pa : pb
+      // Goals for goals, sets for sets.
+      diff += isScore(rules) ? goalsMine - goalsTheirs : mine - theirs
+      scored += goalsMine
+      if (mine > theirs) wins++
+    }
+    return { pts, diff, scored, wins }
+  }
+  // Running score round by round, added up (chess "progressive").
+  const progressive = (id: string): number => {
+    let run = 0
+    let total = 0
+    const mine = finished
+      .filter((m) => m.teamA === id || m.teamB === id)
+      .sort((x, y) => (x.swissRound ?? 0) - (y.swissRound ?? 0) || x.start.localeCompare(y.start))
+    for (const m of mine) {
+      run += m.bye ? rules.byePoints ?? rules.pointsWin : matchTablePoints(rules, m)[m.teamA === id ? 0 : 1]
+      total += run
+    }
+    return total
+  }
+  const value = (key: Tiebreak, r: StandingRow, base: StandingRow[]): number => {
     switch (key) {
       case 'wins': return r.won
+      case 'win_pct': return r.played ? (r.won + r.drawn / 2) / r.played : 0
       case 'diff': return r.pointsWon - r.pointsLost
       case 'scored': return r.pointsWon
       case 'setDiff': return r.setsWon - r.setsLost
       case 'setRatio': return ratio(r.setsWon, r.setsLost)
       case 'pointRatio': return ratio(r.pointsWon, r.pointsLost)
-      case 'h2h': return miniValue(r.teamId, block)
-      case 'buchholz': return buchholz(r.teamId)
+      case 'h2h': { const h = h2h(r.teamId, base); return h.pts * 100000 + h.diff }
+      case 'h2h_points': return h2h(r.teamId, base).pts
+      case 'h2h_diff': return h2h(r.teamId, base).diff
+      case 'h2h_scored': return h2h(r.teamId, base).scored
+      case 'h2h_result': return h2h(r.teamId, base).wins
+      case 'buchholz': return sum(opponents(r.teamId))
+      case 'buchholz_cut1': {
+        const o = opponents(r.teamId)
+        return o.length > 1 ? sum(o) - Math.min(...o) : sum(o)
+      }
+      case 'buchholz_median': {
+        const o = opponents(r.teamId)
+        return o.length > 2 ? sum(o) - Math.min(...o) - Math.max(...o) : sum(o)
+      }
+      case 'sonneborn_berger': return played
+        .filter((m) => m.teamA === r.teamId || m.teamB === r.teamId)
+        .reduce((acc, m) => {
+          const home = m.teamA === r.teamId
+          const t = tally(rules, m.sets)
+          const mine = home ? t.setsA : t.setsB
+          const theirs = home ? t.setsB : t.setsA
+          const opp = rows.get(home ? m.teamB : m.teamA)?.tablePoints ?? 0
+          return acc + (mine > theirs ? opp : mine === theirs ? opp / 2 : 0)
+        }, 0)
+      case 'progressive': return progressive(r.teamId)
+      // Seed: 1 is the strongest; without seeds, the order the teams were entered in.
+      case 'seed': return -(team(r.teamId)?.seed ?? 1000 + group.teamIds.indexOf(r.teamId))
+      case 'rating': return team(r.teamId)?.rating ?? 0
+      case 'lots': return lotOf(r.teamId)
+      case 'shared': return 0
     }
   }
-  // Buchholz: the table points of everyone this team played (Swiss system).
-  const buchholz = (id: string): number => finished
-    .filter((m) => !m.bye && (m.teamA === id || m.teamB === id))
-    .reduce((sum, m) => sum + (rows.get(m.teamA === id ? m.teamB : m.teamA)?.tablePoints ?? 0), 0)
-  // Head-to-head: points in the matches between the teams of the block, then the difference
-  // in those matches (sets for sets, goals for goals) – one number, points first.
-  const miniValue = (id: string, block: StandingRow[]): number => {
-    const ids = new Set(block.map((b) => b.teamId))
-    let pts = 0
-    let diff = 0
-    for (const m of finished) {
-      if (!ids.has(m.teamA) || !ids.has(m.teamB) || (m.teamA !== id && m.teamB !== id)) continue
-      const t = tally(rules, m.sets)
-      const mine = m.teamA === id ? t.setsA : t.setsB
-      const theirs = m.teamA === id ? t.setsB : t.setsA
-      const goalsMine = m.teamA === id ? t.pointsA : t.pointsB
-      const goalsTheirs = m.teamA === id ? t.pointsB : t.pointsA
-      pts += mine > theirs ? rules.pointsWin : mine < theirs ? rules.pointsLoss : rules.pointsDraw
-      diff += isScore(rules) ? goalsMine - goalsTheirs : mine - theirs
+  const shared = new Map<string, number>()
+  let sharedBlock = 0
+  const byName = (block: StandingRow[]) => [...block].sort((x, y) => name(x.teamId).localeCompare(name(y.teamId), 'pl'))
+  // Orders a block of teams level so far, from criterion `i` on. `base`: the block the
+  // current head-to-head run is counted among (without h2hReapply).
+  const rank = (block: StandingRow[], i: number, base?: StandingRow[]): StandingRow[] => {
+    if (block.length < 2) return block
+    if (i >= order.length) return byName(block)
+    const key = order[i]
+    if (key === 'shared') {
+      sharedBlock++
+      for (const r of block) shared.set(r.teamId, sharedBlock)
+      return byName(block)
     }
-    return pts * 100000 + diff
-  }
-  const rank = (block: StandingRow[], keys: Tiebreak[]): StandingRow[] => {
-    if (block.length < 2 || !keys.length) return [...block].sort((x, y) => name(x.teamId).localeCompare(name(y.teamId), 'pl'))
-    const [key, ...rest] = keys
-    const scored = block.map((r) => ({ r, v: value(key, r, block) }))
+    const h2hBase = isH2h(key) ? (rules.h2hReapply ? block : base ?? block) : undefined
+    const scored = block.map((r) => ({ r, v: value(key, r, h2hBase ?? block) }))
     const levels = [...new Set(scored.map((x) => x.v))].sort((x, y) => desc(x, y))
-    return levels.flatMap((v) => rank(scored.filter((x) => x.v === v).map((x) => x.r), rest))
+    const keepBase = isH2h(order[i + 1]) ? h2hBase : undefined
+    if (levels.length === 1) return rank(block, i + 1, keepBase)
+    // Start of this head-to-head run, where h2hReapply begins again.
+    let runStart = i
+    while (runStart > 0 && isH2h(order[runStart - 1])) runStart--
+    return levels.flatMap((v) => {
+      const sub = scored.filter((x) => x.v === v).map((x) => x.r)
+      if (isH2h(key) && rules.h2hReapply && sub.length > 1) return rank(sub, runStart)
+      return rank(sub, i + 1, keepBase)
+    })
   }
   const all = [...rows.values()]
   const pointsLevels = [...new Set(all.map((r) => r.tablePoints))].sort((x, y) => y - x)
-  return pointsLevels.flatMap((p) => rank(all.filter((r) => r.tablePoints === p), order))
+  const ranked = pointsLevels.flatMap((p) => rank(all.filter((r) => r.tablePoints === p), 0))
+  ranked.forEach((r, i) => {
+    const prev = ranked[i - 1]
+    const same = prev && shared.has(r.teamId) && shared.get(r.teamId) === shared.get(prev.teamId)
+    r.place = same ? prev.place : i + 1
+  })
+  return ranked
 }
 
 /** The tie-breakers in use: the tournament's own, or the usual ones for the scoring. */
@@ -299,4 +392,17 @@ export const TIEBREAK_NAMES: Record<Tiebreak, string> = {
   setDiff: tk('Różnica setów'),
   pointRatio: tk('Stosunek małych punktów'),
   buchholz: tk('Buchholz (suma punktów rywali)'),
+  win_pct: tk('Procent zwycięstw'),
+  h2h_points: tk('Punkty w meczach bezpośrednich'),
+  h2h_diff: tk('Różnica w meczach bezpośrednich'),
+  h2h_scored: tk('Bramki / punkty zdobyte w meczach bezpośrednich'),
+  h2h_result: tk('Wygrane mecze bezpośrednie'),
+  buchholz_cut1: tk('Buchholz bez najsłabszego rywala'),
+  buchholz_median: tk('Buchholz bez najlepszego i najsłabszego rywala'),
+  sonneborn_berger: tk('Sonneborn-Berger (punkty pokonanych rywali + połowa zremisowanych)'),
+  progressive: tk('Wynik narastający (suma po każdej rundzie)'),
+  seed: tk('Rozstawienie'),
+  rating: tk('Ranking (np. Elo)'),
+  lots: tk('Losowanie'),
+  shared: tk('Miejsce ex aequo'),
 }

@@ -1,0 +1,26 @@
+{
+  "discipline": "pilka-wodna",
+  "name": "Piłka wodna",
+  "participantType": "team",
+  "points": {
+    "win": 3,
+    "draw": 1,
+    "loss": 0
+  },
+  "criteria": [
+    "points",
+    "h2h_points",
+    "h2h_diff",
+    "h2h_scored",
+    "diff",
+    "scored",
+    "lots"
+  ],
+  "h2hReapply": true,
+  "cupTie": "rzuty karne",
+  "walkover": {
+    "winner": 5,
+    "loser": 0
+  },
+  "source": "World Aquatics: 3/1/0."
+}

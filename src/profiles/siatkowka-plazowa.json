@@ -1,0 +1,25 @@
+{
+  "discipline": "siatkowka-plazowa",
+  "name": "Siatkówka plażowa",
+  "participantType": "pair",
+  "points": {
+    "win": 2,
+    "draw": 0,
+    "loss": 1
+  },
+  "criteria": [
+    "points",
+    "wins",
+    "ratio_sets",
+    "ratio_points",
+    "h2h_points",
+    "h2h_diff",
+    "lots"
+  ],
+  "h2hReapply": false,
+  "walkover": {
+    "sets": true,
+    "setScore": 21
+  },
+  "source": "FIVB beach: 2 pkt za wygraną, 1 pkt za porażkę."
+}

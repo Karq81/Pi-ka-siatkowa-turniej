@@ -24,11 +24,18 @@ export function parseFields(fields: Field[]): SetScore[] {
  * Typing a whole result from the score sheet, keyboard first: two digits jump to the
  * next box, Enter jumps too, and Enter in the last filled box saves.
  */
+type DecidedBy = NonNullable<Match['decidedBy']>
+
+/** The match with how it was decided, when the form asked (hockey: overtime, shootout). */
+export function withDecided(m: Match, decidedBy?: DecidedBy): Match {
+  return decidedBy ? { ...m, decidedBy } : m
+}
+
 export function ResultForm({ state, match, submitLabel, onSubmit, children }: {
   state: State
   match: Match
   submitLabel: string
-  onSubmit: (sets: SetScore[]) => void
+  onSubmit: (sets: SetScore[], decidedBy?: DecidedBy) => void
   children?: ReactNode
 }) {
   if (state.tournament.rules.scoring === 'judo') {
@@ -43,16 +50,24 @@ export function ResultForm({ state, match, submitLabel, onSubmit, children }: {
   return <SetsResultForm state={state} match={match} submitLabel={submitLabel} onSubmit={onSubmit}>{children}</SetsResultForm>
 }
 
-function SetsResultForm({ state, match, submitLabel, onSubmit, children }: {
+function SetsResultForm({ state, match, submitLabel, onSubmit: save, children }: {
   state: State
   match: Match
   submitLabel: string
-  onSubmit: (sets: SetScore[]) => void
+  onSubmit: (sets: SetScore[], decidedBy?: DecidedBy) => void
   children?: ReactNode
 }) {
   const { side } = useLookups(state)
   const rules = state.tournament.rules
   const score = isScore(rules)
+  // Disciplines whose table points depend on how the match was decided (rules profile).
+  const ways: [DecidedBy, string][] = [
+    ...(rules.pointsOvertimeWin !== undefined || rules.pointsWalkoverLoss !== undefined ? [['regulation', t('w regulaminowym czasie')] as [DecidedBy, string]] : []),
+    ...(rules.pointsOvertimeWin !== undefined ? [['overtime', t('po dogrywce')], ['shootout', t('po rzutach karnych')]] as [DecidedBy, string][] : []),
+    ...(rules.pointsWalkoverLoss !== undefined ? [['walkover', t('walkower')]] as [DecidedBy, string][] : []),
+  ]
+  const [decidedBy, setDecidedBy] = useState<DecidedBy>(match.decidedBy ?? 'regulation')
+  const onSubmit = (sets: SetScore[]) => save(sets, ways.length ? decidedBy : undefined)
   // Goals and points can have three digits (basketball); set points two; games in tennis one.
   const digitsFor = (i: number) => (score ? 3 : Math.max(setTarget(rules, i), setCap(rules, i) ?? 0) < 10 ? 1 : 2)
   const [fields, setFields] = useState<Field[]>(() => toFields(match.sets, rules.sets))
@@ -145,6 +160,13 @@ function SetsResultForm({ state, match, submitLabel, onSubmit, children }: {
         {t('Wynik:')} <b>{score ? `${sets[0]?.a ?? 0}:${sets[0]?.b ?? 0}` : `${tl.setsA}:${tl.setsB}`}</b>
         {sets.length > 0 && !decided && <span className="muted small"> {t('· mecz jeszcze nierozstrzygnięty')}</span>}
       </p>
+      {ways.length > 0 && (
+        <div className="chips rf-decided" role="group" aria-label={t('Jak rozstrzygnięto mecz')}>
+          {ways.map(([id, label]) => (
+            <button key={id} type="button" className={`chip ${decidedBy === id ? 'active' : ''}`} aria-pressed={decidedBy === id} onClick={() => setDecidedBy(id)}>{label}</button>
+          ))}
+        </div>
+      )}
       {tried && problem && <p className="error" role="alert">{problem}</p>}
       <div className="actions">
         <button className="btn btn-primary btn-lg" type="submit" disabled={!sets.length}>{submitLabel}</button>

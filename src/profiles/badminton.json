@@ -1,0 +1,25 @@
+{
+  "discipline": "badminton",
+  "name": "Badminton",
+  "participantType": "player_or_pair",
+  "points": {
+    "win": 1,
+    "draw": 0,
+    "loss": 0
+  },
+  "criteria": [
+    "points",
+    "wins",
+    "set_diff",
+    "diff",
+    "h2h_points",
+    "h2h_diff",
+    "lots"
+  ],
+  "h2hReapply": false,
+  "walkover": {
+    "sets": true,
+    "setScore": 21
+  },
+  "source": "Gry do 21, przewaga 2, maks. 30."
+}

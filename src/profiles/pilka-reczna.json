@@ -1,0 +1,26 @@
+{
+  "discipline": "pilka-reczna",
+  "name": "Piłka ręczna",
+  "participantType": "team",
+  "points": {
+    "win": 2,
+    "draw": 1,
+    "loss": 0
+  },
+  "criteria": [
+    "points",
+    "h2h_points",
+    "h2h_diff",
+    "h2h_scored",
+    "diff",
+    "scored",
+    "lots"
+  ],
+  "h2hReapply": true,
+  "cupTie": "dogrywka, potem rzuty karne 7 m",
+  "walkover": {
+    "winner": 10,
+    "loser": 0
+  },
+  "source": "EHF: 2/1/0, najpierw bezpośrednie mecze."
+}

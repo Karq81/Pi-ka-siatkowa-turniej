@@ -1,0 +1,26 @@
+{
+  "discipline": "rugby-7",
+  "name": "Rugby 7",
+  "participantType": "team",
+  "points": {
+    "win": 3,
+    "draw": 2,
+    "loss": 1
+  },
+  "criteria": [
+    "points",
+    "h2h_points",
+    "h2h_diff",
+    "h2h_scored",
+    "diff",
+    "scored",
+    "lots"
+  ],
+  "h2hReapply": false,
+  "cupTie": "dogrywka do pierwszych punktów",
+  "walkover": {
+    "winner": 28,
+    "loser": 0
+  },
+  "source": "World Rugby Sevens: 3 pkt za wygraną, 2 za remis, 1 za porażkę."
+}

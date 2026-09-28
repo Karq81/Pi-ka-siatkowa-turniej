@@ -1,0 +1,20 @@
+{
+  "discipline": "pilkarzyki",
+  "name": "Piłkarzyki",
+  "participantType": "player_or_pair",
+  "points": {
+    "win": 1,
+    "draw": 0,
+    "loss": 0
+  },
+  "criteria": [
+    "points",
+    "wins",
+    "diff",
+    "scored",
+    "h2h_points",
+    "lots"
+  ],
+  "h2hReapply": false,
+  "source": "Bez remisów."
+}

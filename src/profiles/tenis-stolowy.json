@@ -1,0 +1,26 @@
+{
+  "discipline": "tenis-stolowy",
+  "name": "Tenis stołowy (ping-pong)",
+  "participantType": "player_or_pair",
+  "points": {
+    "win": 2,
+    "draw": 0,
+    "loss": 1,
+    "walkoverLoss": 0
+  },
+  "criteria": [
+    "points",
+    "wins",
+    "set_diff",
+    "diff",
+    "h2h_points",
+    "h2h_diff",
+    "lots"
+  ],
+  "h2hReapply": false,
+  "walkover": {
+    "sets": true,
+    "setScore": 11
+  },
+  "source": "Drużynowo: 2 pkt za wygraną, 1 za porażkę, 0 za niestawienie się."
+}

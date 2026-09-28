@@ -1,0 +1,21 @@
+{
+  "discipline": "karate",
+  "name": "Karate (kumite WKF)",
+  "participantType": "player",
+  "points": {
+    "win": 1,
+    "draw": 0,
+    "loss": 0
+  },
+  "criteria": [
+    "points",
+    "h2h_result",
+    "wins",
+    "diff",
+    "lots"
+  ],
+  "h2hReapply": false,
+  "cupTie": "senshu, potem decyzja sędziów",
+  "bronzes": 2,
+  "source": "WKF: dwa brązowe medale, repasaże."
+}

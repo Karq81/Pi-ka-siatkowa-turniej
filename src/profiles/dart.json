@@ -1,0 +1,19 @@
+{
+  "discipline": "dart",
+  "name": "Dart",
+  "participantType": "player",
+  "points": {
+    "win": 2,
+    "draw": 0,
+    "loss": 0
+  },
+  "criteria": [
+    "points",
+    "wins",
+    "diff",
+    "h2h_points",
+    "lots"
+  ],
+  "h2hReapply": false,
+  "source": "Tabela: zwycięstwa, różnica legów."
+}

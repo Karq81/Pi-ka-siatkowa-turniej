@@ -1,0 +1,25 @@
+{
+  "discipline": "tenis-plazowy",
+  "name": "Tenis plażowy",
+  "participantType": "pair",
+  "points": {
+    "win": 1,
+    "draw": 0,
+    "loss": 0
+  },
+  "criteria": [
+    "points",
+    "wins",
+    "set_diff",
+    "diff",
+    "h2h_points",
+    "h2h_diff",
+    "lots"
+  ],
+  "h2hReapply": false,
+  "walkover": {
+    "sets": true,
+    "setScore": 6
+  },
+  "source": "Jak tenis."
+}

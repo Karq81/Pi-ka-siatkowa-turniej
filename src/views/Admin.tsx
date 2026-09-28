@@ -13,7 +13,7 @@ import { courtKeys } from '../logic/pins'
 import type { Match, MatchStatus, Pins, Rules, SetScore, State, Tiebreak } from '../types'
 import { NumberField, BackBar, courtLabel, formatDay, formatTime, PinGate, useLookups } from '../ui'
 import { CourtCard, MatchList } from './Public'
-import { ResultForm } from './ResultForm'
+import { ResultForm, withDecided } from './ResultForm'
 
 const TABS = [
   { id: 'boiska', label: tk('Boiska') },
@@ -113,8 +113,8 @@ function Matches({ state }: { state: State }) {
 
 function MatchEditor({ state, match, onClose }: { state: State; match: Match; onClose: () => void }) {
   const { side } = useLookups(state)
-  const save = (status: MatchStatus, sets: SetScore[] = []) => {
-    store.updateMatch(match.id, (m) => ({ ...m, status, sets }))
+  const save = (status: MatchStatus, sets: SetScore[] = [], decidedBy?: Match['decidedBy']) => {
+    store.updateMatch(match.id, (m) => ({ ...withDecided(m, decidedBy), status, sets }))
     onClose()
   }
   return (
@@ -122,7 +122,7 @@ function MatchEditor({ state, match, onClose }: { state: State; match: Match; on
       <button className="back" onClick={onClose}>{t('← Lista meczów')}</button>
       <h2>{side(match, 'a')} – {side(match, 'b')}</h2>
       <p className="muted">{t('Boisko {n}', { n: courtLabel(match.court) })} · {formatDay(match.start)} {formatTime(match.start)}</p>
-      <ResultForm state={state} match={match} submitLabel={t('Zapisz jako zakończony')} onSubmit={(sets) => save('finished', sets)}>
+      <ResultForm state={state} match={match} submitLabel={t('Zapisz jako zakończony')} onSubmit={(sets, decidedBy) => save('finished', sets, decidedBy)}>
         <button type="button" className="btn" onClick={() => save('live', match.status === 'live' ? match.sets : [])}>{t('Oznacz jako trwający')}</button>
         <button type="button" className="btn btn-danger" onClick={() => save('scheduled')}>{t('Wyczyść wynik')}</button>
       </ResultForm>
@@ -159,8 +159,8 @@ function QuickResults({ state }: { state: State }) {
           state={state}
           match={match}
           submitLabel={t('Zapisz i następny mecz')}
-          onSubmit={(sets) => {
-            store.updateMatch(match.id, (m) => ({ ...m, status: 'finished', sets }))
+          onSubmit={(sets, decidedBy) => {
+            store.updateMatch(match.id, (m) => ({ ...withDecided(m, decidedBy), status: 'finished', sets }))
             const score = sets.map((x) => `${x.a}:${x.b}`).join(', ')
             setSaved(`${t('Zapisano:')} ${side(match, 'a')} – ${side(match, 'b')} (${score})`)
             const next = list.filter((m) => m.id !== match.id)[0]
@@ -302,7 +302,7 @@ function Settings({ state }: { state: State }) {
           <label>{t('Pkt za remis')}<NumberField lazy decimals id="set-pdraw" min={0} max={99} value={r.pointsDraw} onChange={(v) => rules({ pointsDraw: v })} /></label>
           <label>{t('Pkt za przegraną')}<NumberField lazy decimals id="set-ploss" min={0} max={99} value={r.pointsLoss} onChange={(v) => rules({ pointsLoss: v })} /></label>
         </div>
-        <TiebreakEditor rules={r} onChange={(tiebreak) => rules({ tiebreak })} />
+        <TiebreakEditor rules={r} onChange={(tiebreak) => rules({ tiebreak })} onReapply={(h2hReapply) => rules({ h2hReapply })} />
         <p className="muted small">{t('Zasady do potwierdzenia z organizatorem. Zmiana od razu przelicza wszystkie tabele.')}</p>
       </section>
     </div>
@@ -310,7 +310,7 @@ function Settings({ state }: { state: State }) {
 }
 
 /** Order of the tie-breakers after table points: move up and down, add or take away. */
-function TiebreakEditor({ rules, onChange }: { rules: Rules; onChange: (order: Tiebreak[]) => void }) {
+function TiebreakEditor({ rules, onChange, onReapply }: { rules: Rules; onChange: (order: Tiebreak[]) => void; onReapply: (on: boolean) => void }) {
   const order = tiebreakOrder(rules)
   const unused = (Object.keys(TIEBREAK_NAMES) as Tiebreak[]).filter((k) => !order.includes(k))
   const move = (i: number, d: -1 | 1) => {
@@ -341,7 +341,13 @@ function TiebreakEditor({ rules, onChange }: { rules: Rules; onChange: (order: T
           </select>
         </label>
       )}
-      <p className="muted small">{t('Na końcu, gdy wszystko jest równe: kolejność alfabetyczna (albo losowanie przez organizatora).')}</p>
+      {order.some((k) => k.startsWith('h2h')) && (
+        <label className="check">
+          <input type="checkbox" checked={!!rules.h2hReapply} onChange={(e) => onReapply(e.target.checked)} />
+          {t('Mecze bezpośrednie licz od nowa między drużynami, które nadal są równe (jak w UEFA)')}
+        </label>
+      )}
+      <p className="muted small">{t('Na końcu, gdy wszystko jest równe: kolejność alfabetyczna. Możesz dodać „Losowanie” albo „Miejsce ex aequo”.')}</p>
     </div>
   )
 }

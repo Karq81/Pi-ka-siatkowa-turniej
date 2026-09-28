@@ -1,0 +1,22 @@
+{
+  "discipline": "koszykowka-3x3",
+  "name": "Koszykówka 3x3",
+  "participantType": "team",
+  "points": {
+    "win": 1,
+    "draw": 0,
+    "loss": 0
+  },
+  "criteria": [
+    "points",
+    "h2h_result",
+    "scored",
+    "lots"
+  ],
+  "h2hReapply": false,
+  "walkover": {
+    "winner": 21,
+    "loser": 0
+  },
+  "source": "FIBA 3x3: zwycięstwa, bezpośredni mecz, średnia zdobytych punktów."
+}

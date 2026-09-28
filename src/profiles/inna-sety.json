@@ -1,0 +1,21 @@
+{
+  "discipline": "inna-sety",
+  "name": "Inna dyscyplina: wynik w setach",
+  "participantType": "team",
+  "points": {
+    "win": 2,
+    "draw": 0,
+    "loss": 0
+  },
+  "criteria": [
+    "points",
+    "wins",
+    "ratio_sets",
+    "ratio_points",
+    "h2h_points",
+    "h2h_diff",
+    "lots"
+  ],
+  "h2hReapply": false,
+  "source": "Szablon ogólny: wynik w setach."
+}

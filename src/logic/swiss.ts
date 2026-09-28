@@ -1,7 +1,9 @@
 import blossom from 'edmonds-blossom-fixed'
 import { t } from '../i18n'
-import type { Group, Match, State } from '../types'
+import type { Group, Match, State, Tiebreak } from '../types'
 import { scheduleOf } from './newTournament'
+import { criteriaToTiebreaks } from './profiles'
+import { SPORTS } from './sports'
 import { nextSlot } from './schedule'
 import { standings } from './scoring'
 
@@ -70,6 +72,12 @@ function place(state: State, categoryId: string, round: number, pairs: [string, 
   return out
 }
 
+/** The discipline profile's Swiss criteria, or the usual chess ones. */
+function swissTiebreaks(sport: string | undefined): Tiebreak[] {
+  const profile = SPORTS.find((s) => s.label === sport)?.profile
+  return profile?.swissCriteria ? criteriaToTiebreaks(profile.swissCriteria) : ['buchholz_cut1', 'buchholz', 'sonneborn_berger', 'wins', 'lots']
+}
+
 /** The tournament with the category played in the Swiss system: its table and round 1. */
 export function startSwiss(state: State, categoryId: string, teamIds: string[]): State {
   const group: Group = { id: swissGroupId(categoryId), categoryId, name: t('Tabela'), teamIds }
@@ -80,7 +88,7 @@ export function startSwiss(state: State, categoryId: string, teamIds: string[]):
     tournament: {
       ...state.tournament,
       // Buchholz first, as in chess, unless the organiser set their own order with it.
-      rules: state.tournament.rules.tiebreak?.includes('buchholz') ? state.tournament.rules : { ...state.tournament.rules, tiebreak: ['buchholz', 'wins', 'h2h'] },
+      rules: state.tournament.rules.tiebreak?.some((k) => k.startsWith('buchholz')) ? state.tournament.rules : { ...state.tournament.rules, tiebreak: swissTiebreaks(state.tournament.rules.sport) },
     },
   }
   // Round 1: top half against bottom half (1–5, 2–6, 3–7, 4–8 for 8 players); the last one rests when odd.

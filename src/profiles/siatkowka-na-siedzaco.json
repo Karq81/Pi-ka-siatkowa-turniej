@@ -1,0 +1,27 @@
+{
+  "discipline": "siatkowka-na-siedzaco",
+  "name": "Siatkówka na siedząco",
+  "participantType": "team",
+  "points": {
+    "win": 3,
+    "draw": 1,
+    "loss": 0,
+    "setsSplit": true
+  },
+  "criteria": [
+    "points",
+    "wins",
+    "ratio_sets",
+    "ratio_points",
+    "h2h_points",
+    "h2h_diff",
+    "lots"
+  ],
+  "h2hReapply": false,
+  "walkover": {
+    "sets": true,
+    "setScore": 25,
+    "note": "3:0 w setach, każdy set 25:0"
+  },
+  "source": "Jak siatkówka (World ParaVolley)."
+}

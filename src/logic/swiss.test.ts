@@ -33,7 +33,7 @@ describe('Swiss system', () => {
     const rand = rng(11)
     let s = startSwiss(chess(9), 'k', chess(9).teams.map((t) => t.id))
     s = { ...s, teams: chess(9).teams }
-    expect(s.tournament.rules.tiebreak?.[0]).toBe('buchholz')
+    expect(s.tournament.rules.tiebreak?.[0]).toBe('buchholz_cut1')
     expect(swissOpen(s, 'k')).toHaveLength(4)
     for (let r = 1; r <= 5; r++) {
       if (r > 1) s = { ...s, matches: [...s.matches, ...pairNextRound(s, 'k')] }

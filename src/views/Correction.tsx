@@ -2,7 +2,7 @@ import { t } from '../i18n'
 import { useSession, store, useStore } from '../store/store'
 import type { Match } from '../types'
 import { BackBar, ConfirmButton, courtLabel, formatDay, formatTime, PinGate, useLookups } from '../ui'
-import { ResultForm } from './ResultForm'
+import { ResultForm, withDecided } from './ResultForm'
 import { setsText } from '../logic/scoring'
 
 /** Small button shown only to the chief referee: opens the result correction for a match. */
@@ -50,8 +50,8 @@ export function Correction({ matchId }: { matchId: string }) {
               state={state}
               match={m}
               submitLabel={t('Zapisz poprawiony wynik')}
-              onSubmit={(sets) => {
-                store.updateMatch(m.id, (x) => ({ ...x, status: 'finished', sets }))
+              onSubmit={(sets, decidedBy) => {
+                store.updateMatch(m.id, (x) => ({ ...withDecided(x, decidedBy), status: 'finished', sets }))
                 done()
               }}
             >

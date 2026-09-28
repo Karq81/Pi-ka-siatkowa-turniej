@@ -1,0 +1,26 @@
+{
+  "discipline": "mini-siatkowka",
+  "name": "Mini siatkówka",
+  "participantType": "team",
+  "points": {
+    "win": 2,
+    "draw": 1,
+    "loss": 1
+  },
+  "criteria": [
+    "points",
+    "wins",
+    "ratio_sets",
+    "ratio_points",
+    "h2h_points",
+    "h2h_diff",
+    "lots"
+  ],
+  "h2hReapply": false,
+  "walkover": {
+    "sets": true,
+    "setScore": 25,
+    "note": "3:0 w setach, każdy set 25:0"
+  },
+  "source": "Regulaminy Kinder+Sport: 2 pkt za wygraną, 1 pkt za porażkę."
+}

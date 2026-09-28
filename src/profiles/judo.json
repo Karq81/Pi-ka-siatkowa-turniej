@@ -1,0 +1,21 @@
+{
+  "discipline": "judo",
+  "name": "Judo",
+  "participantType": "player",
+  "points": {
+    "win": 1,
+    "draw": 0,
+    "loss": 0
+  },
+  "criteria": [
+    "points",
+    "h2h_result",
+    "wins",
+    "diff",
+    "lots"
+  ],
+  "h2hReapply": false,
+  "cupTie": "golden score",
+  "bronzes": 2,
+  "source": "IJF: pojedyncza eliminacja, dwa brązowe medale, repasaże."
+}

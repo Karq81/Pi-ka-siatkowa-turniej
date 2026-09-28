@@ -1,0 +1,28 @@
+{
+  "discipline": "siatkowka",
+  "name": "Siatkówka",
+  "participantType": "team",
+  "points": {
+    "win": 3,
+    "draw": 1,
+    "loss": 0,
+    "setsSplit": true
+  },
+  "criteria": [
+    "points",
+    "wins",
+    "ratio_sets",
+    "ratio_points",
+    "h2h_points",
+    "h2h_diff",
+    "lots"
+  ],
+  "h2hReapply": false,
+  "cupTie": "brak remisów: gra się do wygrania setów",
+  "walkover": {
+    "sets": true,
+    "setScore": 25,
+    "note": "3:0 w setach, każdy set 25:0"
+  },
+  "source": "FIVB: 3 pkt za 3:0 i 3:1, 2 pkt za 3:2, 1 pkt za 2:3. Kolejność kryteriów zależy od turnieju."
+}
