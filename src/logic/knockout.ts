@@ -254,7 +254,7 @@ export function propagate(state: State): Match[] {
         any = true
         continue
       }
-      if (reset !== false && m.skipped) {
+      if (m.ko?.resetOf && reset !== false && m.skipped) {
         // The first match was corrected: the second is open again.
         const next: Match = { ...m, status: 'scheduled', skipped: false }
         current = { ...current, matches: current.matches.map((x) => (x.id === m.id ? next : x)) }

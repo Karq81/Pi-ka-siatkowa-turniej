@@ -1,6 +1,6 @@
 import { EntriesPanel } from './Registration'
 import { STAGE2 } from '../content/stage2'
-import { buildStage2, openFirstStage, openFirstStageMatches, removeStage2, stage2Groups, stage2Played } from '../logic/stage2'
+import { endGroupPhase, openFirstStage, openFirstStageMatches, reopenGroupPhase, stage2Groups, stage2Played } from '../logic/stage2'
 import { downloadResults } from '../logic/export'
 import { sportLabelOf } from '../logic/sports'
 import { StreamSettings } from './Stream'
@@ -143,13 +143,13 @@ function Stage2Panel({ state }: { state: State }) {
     if (stage2Played(state, categoryId) && !confirm(t('Drugi etap ma już wyniki. Ułożenie go od nowa usunie te wyniki. Kontynuować?'))) return
     setBusy(categoryId)
     setMsg('')
-    const ok = await store.replace(buildStage2(state, categoryId))
+    const ok = await store.replace(endGroupPhase(state, categoryId))
     setBusy('')
     setMsg(ok ? t('Drugi etap ({cat}) uruchomiony: nowe grupy i terminarz są gotowe.', { cat: name }) : t('Nie udało się zapisać. Sprawdź internet i spróbuj jeszcze raz.'))
   }
   const undo = async (categoryId: string, name: string) => {
     if (!confirm(t('Cofnąć drugi etap w kategorii {cat}? Jego grupy i mecze znikną.', { cat: name }))) return
-    await store.replace(removeStage2(state, categoryId))
+    await store.replace(reopenGroupPhase(state, categoryId))
     setMsg(t('Drugi etap ({cat}) cofnięty.', { cat: name }))
   }
   return (

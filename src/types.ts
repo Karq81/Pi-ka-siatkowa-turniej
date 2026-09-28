@@ -74,6 +74,8 @@ export interface Tournament {
   thirdPlace?: boolean
   /** Groups: each pair plays twice (return matches). */
   twice?: boolean
+  /** Albatros CUP: phases the chief referee has ended, per category. */
+  phases?: Record<string, { groupsEnded?: boolean; stage2Ended?: boolean }>
   /**
    * The organiser's own plan (usually made by the AI assistant from a description): per
    * category, matches whose players come from group places, other matches' winners or
@@ -250,7 +252,10 @@ export interface Match {
   updatedAt: number
   /** When the court moved on to this match (result of the one before, or a time set by hand). */
   calledAt?: number
-  /** Not played because it was not needed (the grand final's second match after a clear win). */
+  /**
+   * Not played: the grand final's second match after a clear win, or a match left when the
+   * chief referee ended its phase. Hidden from courts, boards and lists.
+   */
   skipped?: boolean
 }
 

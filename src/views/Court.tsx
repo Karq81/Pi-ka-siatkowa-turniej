@@ -93,7 +93,7 @@ export function CourtList() {
  */
 function NextTimeForm({ state, court }: { state: State; court: number }) {
   const next = state.matches
-    .filter((m) => m.court === court && m.status === 'scheduled')
+    .filter((m) => m.court === court && m.status === 'scheduled' && !m.skipped)
     .sort((a, b) => a.start.localeCompare(b.start))[0]
   const [time, setTime] = useState(next ? next.start.slice(11, 16) : '')
   const [msg, setMsg] = useState('')

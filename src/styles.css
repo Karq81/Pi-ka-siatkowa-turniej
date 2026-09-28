@@ -1522,3 +1522,21 @@ a.btn-back { text-decoration: none; }
 .elim-place.p1 { background: var(--ball); color: #0e1b2c; border-color: var(--ball); }
 .stage2-open { list-style: none; padding: 0; margin: 0 0 10px; display: grid; gap: 6px; }
 .stage2-open li { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; padding: 8px 10px; border: 1px solid var(--live); border-radius: 10px; background: var(--surface); }
+
+/* Albatros CUP: end the group phase / the second stage (chief referee) */
+.phase-ends { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 8px 0 14px; }
+.phase-ends > div { display: flex; justify-content: center; align-items: center; text-align: center; }
+.btn-end { display: grid; gap: 2px; padding: 10px 16px; border: 2px solid var(--live); color: var(--live); background: var(--surface); border-radius: 12px; }
+.btn-end span { font-size: .85rem; font-weight: 500; color: var(--muted); }
+.phase-done { margin: 0; font-weight: 700; color: var(--ok); }
+.final-ranking { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px 16px; margin-bottom: 16px; }
+.final-ranking h3 { margin: 0 0 8px; }
+.final-ranking ol { margin: 0; padding-left: 28px; columns: 2; column-gap: 28px; }
+.final-ranking li { padding: 3px 0; break-inside: avoid; }
+.final-ranking li.top { font-weight: 700; }
+@media (max-width: 560px) { .phase-ends { grid-template-columns: 1fr; } .final-ranking ol { columns: 1; } }
+.phase-end-box { display: grid; gap: 6px; justify-items: center; width: 100%; }
+.open-matches { width: 100%; text-align: left; }
+.open-matches summary { cursor: pointer; font-weight: 700; color: var(--accent); text-align: center; }
+.open-matches ul { list-style: none; padding: 0; margin: 6px 0 0; display: grid; gap: 6px; max-height: 50vh; overflow: auto; }
+.open-matches li { display: flex; gap: 8px; align-items: center; justify-content: space-between; padding: 8px 10px; border: 1px solid var(--live); border-radius: 10px; background: var(--surface); font-size: .92rem; }

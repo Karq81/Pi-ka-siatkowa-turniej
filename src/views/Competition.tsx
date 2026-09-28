@@ -1,7 +1,7 @@
 import { t, tp } from '../i18n'
 import { useEffect, useState } from 'react'
 import { STAGE2 } from '../content/stage2'
-import { isStage2Group, stage2Groups } from '../logic/stage2'
+import { endGroupPhase, endStage2, finalRanking, groupsEnded, isStage2Group, openFirstStageMatches, openStage2Matches, reopenGroupPhase, reopenStage2, stage2Ended, stage2Groups, stage2Played } from '../logic/stage2'
 import { IS_ALBATROS } from '../config'
 import { clubOf } from '../logic/draw'
 import { bracketView, groupFinished, tierForGroupPlace } from '../logic/knockout'
@@ -12,10 +12,10 @@ import { hasCustom } from '../logic/custom'
 import { hasElimination } from '../logic/elimination'
 import { isUnderway } from '../logic/courtBoard'
 import { CorrectButton } from './Correction'
-import { useSession } from '../store/store'
+import { store, useSession } from '../store/store'
 import { formatRatio, isScore, scoreUnit, standings, tally } from '../logic/scoring'
 import type { Match, State, Team } from '../types'
-import { BackBar, courtLabel, formatDay, formatTime, StatusPill, useLookups, useNow } from '../ui'
+import { BackBar, ConfirmDialog, courtLabel, formatDay, formatTime, StatusPill, useLookups, useNow } from '../ui'
 
 type Phase = 'groups' | 'ko'
 
@@ -72,6 +72,7 @@ export function Competition({ state, route }: { state: State; route: string }) {
         <button role="tab" aria-selected={phase === 'groups'} className={phase === 'groups' ? 'on' : ''} onClick={() => setPhase('groups')}>{t('Faza grupowa')}</button>
         <button role="tab" aria-selected={phase === 'ko'} className={phase === 'ko' ? 'on' : ''} onClick={() => setPhase('ko')}>{STAGE2[cat] ? t('Drugi etap') : t('Faza pucharowa')}</button>
       </div>}
+      {!elim && STAGE2[cat] && <PhaseEnds state={state} categoryId={cat} onEnd={(p) => setPhase(p)} />}
 
       {!elim && phase === 'groups' && group && (
         <>
@@ -285,13 +286,107 @@ export function MatchCard({ state, match: m, label }: { state: State; match: Mat
 /* ---------- Knockout phase ---------- */
 
 
+/**
+ * Chief referee (Albatros CUP): under each phase a button to end it, with the number of
+ * matches still to play; asked first. Ending the groups makes the second stage.
+ */
+function PhaseEnds({ state, categoryId, onEnd }: { state: State; categoryId: string; onEnd: (p: Phase) => void }) {
+  const session = useSession()
+  const [asking, setAsking] = useState<'groups' | 'stage2' | null>(null)
+  const [busy, setBusy] = useState(false)
+  if (session?.role !== 'admin') return null
+  const openGroups = openFirstStageMatches(state, categoryId).length
+  const open2 = openStage2Matches(state, categoryId).length
+  const has2 = stage2Groups(state, categoryId).length > 0
+  const doneGroups = groupsEnded(state, categoryId) || (has2 && !openGroups)
+  const done2 = stage2Ended(state, categoryId)
+  const left = (n: number) => (n ? tp(n, 'został {n} mecz do końca|zostały {n} mecze do końca|zostało {n} meczów do końca') : t('wszystkie mecze rozegrane'))
+  const run = async (next: State, phase: Phase) => {
+    setAsking(null)
+    setBusy(true)
+    await store.replace(next)
+    setBusy(false)
+    onEnd(phase)
+  }
+  return (
+    <div className="phase-ends">
+      <div>
+        {doneGroups ? (
+          <p className="phase-done">✓ {t('Faza grupowa zakończona')}{!stage2Played(state, categoryId) && <> · <button type="button" className="linklike small" onClick={() => void run(reopenGroupPhase(state, categoryId), 'groups')}>{t('Cofnij')}</button></>}</p>
+        ) : (
+          <div className="phase-end-box">
+            <button type="button" className="btn btn-end" disabled={busy} onClick={() => setAsking('groups')}>
+              <b>{t('Zakończ fazę grupową')}</b><span>{left(openGroups)}</span>
+            </button>
+            {openGroups > 0 && <OpenMatches state={state} matches={openFirstStageMatches(state, categoryId)} />}
+          </div>
+        )}
+      </div>
+      <div>
+        {!has2 ? <p className="muted small">{t('Drugi etap ułoży się po zakończeniu fazy grupowej.')}</p>
+          : done2 ? (
+            <p className="phase-done">🏆 {t('Drugi etap zakończony')} · <button type="button" className="linklike small" onClick={() => void run(reopenStage2(state, categoryId), 'ko')}>{t('Cofnij')}</button></p>
+          ) : (
+            <div className="phase-end-box">
+              <button type="button" className="btn btn-end" disabled={busy} onClick={() => setAsking('stage2')}>
+                <b>{t('Zakończ drugi etap')}</b><span>{left(open2)}</span>
+              </button>
+              {open2 > 0 && <OpenMatches state={state} matches={openStage2Matches(state, categoryId)} />}
+            </div>
+          )}
+      </div>
+      {asking && (
+        <ConfirmDialog
+          question={asking === 'groups' ? <>
+            <b>{t('Czy na pewno chcesz zakończyć fazę grupową?')}</b>
+            <p>{openGroups ? tp(openGroups, 'Został {n} nierozegrany mecz: zniknie z boisk i nie liczy się do tabel.|Zostały {n} nierozegrane mecze: znikną z boisk i nie liczą się do tabel.|Zostało {n} nierozegranych meczów: znikną z boisk i nie liczą się do tabel.') : t('Wszystkie mecze są rozegrane.')} {t('Drugi etap ułoży się z obecnych tabel, razem z terminarzem.')}</p>
+          </> : <>
+            <b>{t('Czy na pewno chcesz zakończyć drugi etap?')}</b>
+            <p>{open2 ? tp(open2, 'Został {n} nierozegrany mecz: zniknie z boisk i nie liczy się do tabel.|Zostały {n} nierozegrane mecze: znikną z boisk i nie liczą się do tabel.|Zostało {n} nierozegranych meczów: znikną z boisk i nie liczą się do tabel.') : t('Wszystkie mecze są rozegrane.')} {t('Kibice zobaczą klasyfikację końcową.')}</p>
+          </>}
+          yes={asking === 'groups' ? t('Tak, zakończ fazę grupową') : t('Tak, zakończ drugi etap')}
+          no={t('Nie, jeszcze nie')}
+          onYes={() => void (asking === 'groups' ? run(endGroupPhase(state, categoryId), 'ko') : run(endStage2(state, categoryId), 'ko'))}
+          onNo={() => setAsking(null)}
+        />
+      )}
+    </div>
+  )
+}
+
+/** The matches of a phase still to be played, each with a link to enter its result. */
+function OpenMatches({ state, matches }: { state: State; matches: Match[] }) {
+  const { teamName, groupName } = useLookups(state)
+  return (
+    <details className="open-matches" open={matches.length <= 5}>
+      <summary>{t('Które mecze zostały?')}</summary>
+      <ul>
+        {[...matches].sort((a, b) => a.start.localeCompare(b.start) || a.court - b.court).map((m) => (
+          <li key={m.id}>
+            <span>{groupName(m.groupId)} · {t('Boisko {n}', { n: courtLabel(m.court) })} · {formatDay(m.start)} {formatTime(m.start)}<br /><b>{teamName(m.teamA)}</b> – <b>{teamName(m.teamB)}</b></span>
+            <a className="btn btn-sm btn-primary" href={`#korekta-${m.id}`}>{t('Wpisz wynik')}</a>
+          </li>
+        ))}
+      </ul>
+    </details>
+  )
+}
+
 /** The organiser's second stage: new round-robin groups for places, filled after the group phase. */
 function Stage2View({ state, categoryId }: { state: State; categoryId: string }) {
   const stage = STAGE2[categoryId]
   const made = stage2Groups(state, categoryId)
+  const { teamName } = useLookups(state)
   if (made.length) {
+    const final = stage2Ended(state, categoryId) ? finalRanking(state, categoryId) : []
     return (
       <section className="stage2">
+        {final.length > 0 && (
+          <div className="final-ranking">
+            <h3>🏆 {t('Klasyfikacja końcowa')}</h3>
+            <ol>{final.map((r) => <li key={r.teamId} value={r.place} className={r.place <= 3 ? `top p${r.place}` : ''}>{r.place === 1 ? '🥇 ' : r.place === 2 ? '🥈 ' : r.place === 3 ? '🥉 ' : ''}{teamName(r.teamId)}</li>)}</ol>
+          </div>
+        )}
         {made.map((g, i) => (
           <div key={g.id} className="stage2-made">
             <h3>{g.name} <span className="pill">{t('miejsca {places}', { places: stage.groups[i]?.places ?? '' })}</span></h3>

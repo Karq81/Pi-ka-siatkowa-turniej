@@ -33,7 +33,7 @@ export function openFirstStage(state: State, categoryId: string): number {
 
 export function openFirstStageMatches(state: State, categoryId: string): Match[] {
   const ids = new Set(firstStage(state, categoryId).map((g) => g.id))
-  return state.matches.filter((m) => ids.has(m.groupId) && m.status !== 'finished')
+  return state.matches.filter((m) => ids.has(m.groupId) && m.status !== 'finished' && !m.skipped)
     .sort((a, b) => a.start.localeCompare(b.start) || a.court - b.court)
 }
 
@@ -124,3 +124,63 @@ export function stage2Played(state: State, categoryId: string): boolean {
   return state.matches.some((m) => ids.has(m.groupId) && m.status !== 'scheduled')
 }
 
+
+/** Second-stage matches still to be played. */
+export function openStage2Matches(state: State, categoryId: string): Match[] {
+  const ids = new Set(stage2Groups(state, categoryId).map((g) => g.id))
+  return state.matches.filter((m) => ids.has(m.groupId) && m.status !== 'finished' && !m.skipped)
+}
+
+function setPhase(state: State, categoryId: string, patch: { groupsEnded?: boolean; stage2Ended?: boolean }): State {
+  const phases = { ...(state.tournament.phases ?? {}) }
+  phases[categoryId] = { ...(phases[categoryId] ?? {}), ...patch }
+  return { ...state, tournament: { ...state.tournament, phases } }
+}
+
+/** Matches of these groups not played yet are set aside (or brought back). */
+function skipOpen(state: State, groupIds: Set<string>, skip: boolean): State {
+  return {
+    ...state,
+    matches: state.matches.map((m) => (groupIds.has(m.groupId) && m.status !== 'finished' && !!m.skipped !== skip
+      ? (skip ? { ...m, skipped: true, status: 'scheduled' as const, sets: [] } : { ...m, skipped: false })
+      : m)),
+  }
+}
+
+export function groupsEnded(state: State, categoryId: string): boolean {
+  return !!state.tournament.phases?.[categoryId]?.groupsEnded
+}
+
+export function stage2Ended(state: State, categoryId: string): boolean {
+  return !!state.tournament.phases?.[categoryId]?.stage2Ended
+}
+
+/** Ends the group phase: matches not played are set aside and the second stage is made from the tables. */
+export function endGroupPhase(state: State, categoryId: string): State {
+  const ids = new Set(firstStage(state, categoryId).map((g) => g.id))
+  return setPhase(buildStage2(skipOpen(state, ids, true), categoryId), categoryId, { groupsEnded: true, stage2Ended: false })
+}
+
+/** Takes back the end of the group phase: its matches are open again and the second stage is removed. */
+export function reopenGroupPhase(state: State, categoryId: string): State {
+  const ids = new Set(firstStage(state, categoryId).map((g) => g.id))
+  return setPhase(removeStage2(skipOpen(state, ids, false), categoryId), categoryId, { groupsEnded: false, stage2Ended: false })
+}
+
+export function endStage2(state: State, categoryId: string): State {
+  const ids = new Set(stage2Groups(state, categoryId).map((g) => g.id))
+  return setPhase(skipOpen(state, ids, true), categoryId, { stage2Ended: true })
+}
+
+export function reopenStage2(state: State, categoryId: string): State {
+  const ids = new Set(stage2Groups(state, categoryId).map((g) => g.id))
+  return setPhase(skipOpen(state, ids, false), categoryId, { stage2Ended: false })
+}
+
+/** Final places: each second-stage group decides its own places (Grupa 6: 8–14). */
+export function finalRanking(state: State, categoryId: string): { place: number; teamId: string }[] {
+  return stage2Groups(state, categoryId).flatMap((g, i) => {
+    const from = stage2FirstPlace(categoryId, i)
+    return standings(state.tournament.rules, g, state.matches, state.teams).map((r, k) => ({ place: from + k, teamId: r.teamId }))
+  })
+}

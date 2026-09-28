@@ -59,7 +59,7 @@ export function upcomingMatches(state: State, now: number): Match[] {
   for (let c = 1; c <= state.tournament.courts; c++) {
     const shown = courtBoard(state, c, now).match
     const queue = state.matches
-      .filter((m) => m.court === c && m.status === 'scheduled' && m.id !== shown?.id)
+      .filter((m) => m.court === c && m.status === 'scheduled' && !m.skipped && m.id !== shown?.id)
       .sort((a, b) => a.start.localeCompare(b.start))
     if (queue[0]) out.push(queue[0])
   }

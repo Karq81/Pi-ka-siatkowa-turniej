@@ -160,7 +160,7 @@ export const NEXT_MATCH_GAP_MINUTES = 2
  */
 export function followOnCourt(matches: Match[], finished: Match, now: number): Match[] {
   const onCourt = matches
-    .filter((m) => m.court === finished.court && m.start)
+    .filter((m) => m.court === finished.court && m.start && !m.skipped)
     .sort((a, b) => a.start.localeCompare(b.start) || a.id.localeCompare(b.id))
   const at = onCourt.findIndex((m) => m.id === finished.id)
   if (at < 0 || onCourt.slice(0, at).some((m) => m.status !== 'finished')) return []
@@ -187,7 +187,7 @@ export function followOnCourt(matches: Match[], finished: Match, now: number): M
  */
 export function setNextOnCourt(matches: Match[], court: number, time: string, now = Date.now()): Match[] {
   const onCourt = matches
-    .filter((m) => m.court === court && m.start)
+    .filter((m) => m.court === court && m.start && !m.skipped)
     .sort((a, b) => a.start.localeCompare(b.start) || a.id.localeCompare(b.id))
   if (onCourt.some((m) => m.status === 'live')) return []
   const next = onCourt.find((m) => m.status === 'scheduled')
