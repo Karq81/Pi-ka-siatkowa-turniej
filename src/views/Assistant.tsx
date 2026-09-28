@@ -14,9 +14,10 @@ export interface AssistantDraft {
   dayEnd: string
   courts: number
   slotMinutes: number
-  categories: { name: string; teams: string[]; groups: string[][] }[]
+  categories: { name: string; teams: string[]; groups: string[][]; matches?: { name: string; a: string; b: string; place: number; loserPlace: number }[] }[]
+  twice?: boolean
   /** How the tournament is played, read from the description. */
-  system?: 'groups' | 'knockout' | 'double'
+  system?: 'groups' | 'knockout' | 'double' | 'custom'
   thirdPlace?: boolean
   notes: string
 }

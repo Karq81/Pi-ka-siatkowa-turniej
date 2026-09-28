@@ -1,12 +1,14 @@
 import { t, tp } from '../i18n'
 import { useEffect, useState } from 'react'
 import { STAGE2 } from '../content/stage2'
+import { isStage2Group, stage2Groups } from '../logic/stage2'
 import { IS_ALBATROS } from '../config'
 import { clubOf } from '../logic/draw'
 import { bracketView, groupFinished, tierForGroupPlace } from '../logic/knockout'
 import { useFavorites, toggleFavorite, setFavorites } from '../favorites'
 import { BracketTree } from './BracketTree'
-import { EliminationView } from './Elimination'
+import { CustomView, EliminationView } from './Elimination'
+import { hasCustom } from '../logic/custom'
 import { hasElimination } from '../logic/elimination'
 import { isUnderway } from '../logic/courtBoard'
 import { CorrectButton } from './Correction'
@@ -30,7 +32,8 @@ export function Competition({ state, route }: { state: State; route: string }) {
     ?? state.groups.find((g) => mine.some((id) => g.teamIds.includes(id)))
   const [cat, setCat] = useState(start?.categoryId ?? state.categories[0]?.id ?? '')
   const [phase, setPhase] = useState<Phase>(route === 'drabinka' ? 'ko' : 'groups')
-  const groups = state.groups.filter((g) => g.categoryId === cat)
+  // The group phase; second-stage groups (Albatros CUP) are shown under "Drugi etap".
+  const groups = state.groups.filter((g) => g.categoryId === cat && !isStage2Group(g))
   const [groupId, setGroupId] = useState(start?.id ?? groups[0]?.id ?? '')
   const group = groups.find((g) => g.id === groupId) ?? groups[0]
 
@@ -38,7 +41,9 @@ export function Competition({ state, route }: { state: State; route: string }) {
     if (start) { setCat(start.categoryId); setGroupId(start.id); setPhase('groups') }
   }, [start?.id])
 
-  const elim = hasElimination(state, cat)
+  const custom = hasCustom(state, cat)
+  // Without groups the category's own plan is shown straight away, like a bracket.
+  const elim = hasElimination(state, cat) || (custom && !state.groups.some((g) => g.categoryId === cat))
   if (!state.groups.length && !state.matches.some((m) => m.ko?.bracket)) {
     return <p className="notice-inline">{t('Grupy pojawią się tutaj wkrótce.')}</p>
   }
@@ -61,7 +66,7 @@ export function Competition({ state, route }: { state: State; route: string }) {
 
       <NextMatch state={state} categoryId={cat} />
 
-      {elim && <EliminationView state={state} categoryId={cat} />}
+      {elim && (custom ? <CustomView state={state} categoryId={cat} /> : <EliminationView state={state} categoryId={cat} />)}
 
       {!elim && <div className="phase" role="tablist" aria-label="Faza">
         <button role="tab" aria-selected={phase === 'groups'} className={phase === 'groups' ? 'on' : ''} onClick={() => setPhase('groups')}>{t('Faza grupowa')}</button>
@@ -84,7 +89,8 @@ export function Competition({ state, route }: { state: State; route: string }) {
           <GroupView state={state} groupId={group.id} />
         </>
       )}
-      {!elim && phase === 'ko' && (STAGE2[cat] ? <Stage2View categoryId={cat} /> : <KnockoutView state={state} categoryId={cat} />)}
+      {!elim && phase === 'ko' && custom && <CustomView state={state} categoryId={cat} />}
+      {!elim && phase === 'ko' && !custom && (STAGE2[cat] ? <Stage2View state={state} categoryId={cat} /> : <KnockoutView state={state} categoryId={cat} />)}
     </div>
   )
 }
@@ -280,8 +286,21 @@ export function MatchCard({ state, match: m, label }: { state: State; match: Mat
 
 
 /** The organiser's second stage: new round-robin groups for places, filled after the group phase. */
-function Stage2View({ categoryId }: { categoryId: string }) {
+function Stage2View({ state, categoryId }: { state: State; categoryId: string }) {
   const stage = STAGE2[categoryId]
+  const made = stage2Groups(state, categoryId)
+  if (made.length) {
+    return (
+      <section className="stage2">
+        {made.map((g, i) => (
+          <div key={g.id} className="stage2-made">
+            <h3>{g.name} <span className="pill">{t('miejsca {places}', { places: stage.groups[i]?.places ?? '' })}</span></h3>
+            <GroupView state={state} groupId={g.id} />
+          </div>
+        ))}
+      </section>
+    )
+  }
   return (
     <section className="stage2">
       <p className="muted">

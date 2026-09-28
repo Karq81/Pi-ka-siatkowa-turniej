@@ -4,6 +4,7 @@ import { sourceLabel } from './knockout'
 import { isScore, scoreUnit, setText, setsText, standings, tally } from './scoring'
 import { sportLabelOf } from './sports'
 import { eliminationPlaces, hasElimination } from './elimination'
+import { customPlaces, hasCustom } from './custom'
 import { xlsx, type Cell, type Sheet } from './xlsx'
 
 /*
@@ -72,6 +73,10 @@ export function resultSheets(state: State): Sheet[] {
   const places: Cell[][] = [[t('Kategoria'), t('Miejsce'), t('Drużyna'), t('Klub')]]
   const winnerOf = (m: Match) => { const tl = tally(rules, m.sets); return tl.setsA > tl.setsB ? m.teamA : tl.setsB > tl.setsA ? m.teamB : '' }
   for (const c of state.categories) {
+    if (hasCustom(state, c.id)) {
+      customPlaces(state, c.id, winnerOf).forEach(({ place, teamId }) => places.push([c.name, place, teamName(teamId), club(teamId)]))
+      continue
+    }
     if (hasElimination(state, c.id)) {
       eliminationPlaces(state, c.id, winnerOf).forEach(({ place, teamId }) => places.push([c.name, place, teamName(teamId), club(teamId)]))
       continue

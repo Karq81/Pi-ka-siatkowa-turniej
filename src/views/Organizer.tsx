@@ -1,4 +1,6 @@
 import { EntriesPanel } from './Registration'
+import { STAGE2 } from '../content/stage2'
+import { buildStage2, openFirstStage, removeStage2, stage2Groups, stage2Played } from '../logic/stage2'
 import { downloadResults } from '../logic/export'
 import { sportLabelOf } from '../logic/sports'
 import { StreamSettings } from './Stream'
@@ -59,6 +61,9 @@ export function Organizer({ route }: { route: string }) {
       </header>
       {tab === 'panel' && !IS_ALBATROS && <PinGate label={t('Zgłoszenia drużyn (sędzia główny)')}><EntriesPanel state={state} /></PinGate>}
       {tab === 'panel' && (IS_ALBATROS ? <TeamsAndDraw state={state} /> : <Setup state={state} />)}
+      {tab === 'panel-grupy' && state.categories.some((c) => STAGE2[c.id]) && (
+        <PinGate label={t('Drugi etap (sędzia główny)')}><Stage2Panel state={state} /></PinGate>
+      )}
       {tab === 'panel-grupy' && (
         state.groups.length || state.matches.some((m) => m.ko?.bracket) ? <Competition state={state} route="grupy" /> : <Empty />
       )}
@@ -120,6 +125,52 @@ function DeleteTournament({ state }: { state: State }) {
           onNo={() => setAsking(false)}
         />
       )}
+    </section>
+  )
+}
+
+/**
+ * Albatros CUP: starts the second stage of each category once its groups are played –
+ * the ranking of group places makes the new groups and their timetable.
+ */
+function Stage2Panel({ state }: { state: State }) {
+  const [msg, setMsg] = useState('')
+  const [busy, setBusy] = useState('')
+  const run = async (categoryId: string, name: string) => {
+    const open = openFirstStage(state, categoryId)
+    if (open && !confirm(tp(open, 'W kategorii {cat} został {n} nierozegrany mecz fazy grupowej. Uruchomić drugi etap mimo to?|W kategorii {cat} zostały {n} nierozegrane mecze fazy grupowej. Uruchomić drugi etap mimo to?|W kategorii {cat} zostało {n} nierozegranych meczów fazy grupowej. Uruchomić drugi etap mimo to?', { cat: name }))) return
+    if (stage2Played(state, categoryId) && !confirm(t('Drugi etap ma już wyniki. Ułożenie go od nowa usunie te wyniki. Kontynuować?'))) return
+    setBusy(categoryId)
+    setMsg('')
+    const ok = await store.replace(buildStage2(state, categoryId))
+    setBusy('')
+    setMsg(ok ? t('Drugi etap ({cat}) uruchomiony: nowe grupy i terminarz są gotowe.', { cat: name }) : t('Nie udało się zapisać. Sprawdź internet i spróbuj jeszcze raz.'))
+  }
+  const undo = async (categoryId: string, name: string) => {
+    if (!confirm(t('Cofnąć drugi etap w kategorii {cat}? Jego grupy i mecze znikną.', { cat: name }))) return
+    await store.replace(removeStage2(state, categoryId))
+    setMsg(t('Drugi etap ({cat}) cofnięty.', { cat: name }))
+  }
+  return (
+    <section className="panel stage2-panel">
+      <h2>🏐 {t('Drugi etap')}</h2>
+      <p className="muted">{t('Po fazie grupowej kliknij „Uruchom drugi etap”. Strona sama ułoży ranking (miejsce w grupie, potem punkty, sety i małe punkty), nowe grupy i terminarz na boiskach tej kategorii.')}</p>
+      {state.categories.filter((c) => STAGE2[c.id]).map((c) => {
+        const open = openFirstStage(state, c.id)
+        const made = stage2Groups(state, c.id).length > 0
+        return (
+          <div key={c.id} className="stage2-cat">
+            <p><b>{c.name}</b> · {open ? tp(open, 'faza grupowa: został {n} mecz|faza grupowa: zostały {n} mecze|faza grupowa: zostało {n} meczów') : t('faza grupowa zakończona')}{made ? ` · ${t('drugi etap uruchomiony')}` : ''}</p>
+            <div className="actions">
+              <button type="button" className="btn btn-primary" disabled={busy === c.id} onClick={() => void run(c.id, c.name)}>
+                {busy === c.id ? t('Zapisuję…') : made ? t('Ułóż drugi etap od nowa') : t('Uruchom drugi etap')}
+              </button>
+              {made && <button type="button" className="btn" onClick={() => void undo(c.id, c.name)}>{t('Cofnij drugi etap')}</button>}
+            </div>
+          </div>
+        )
+      })}
+      {msg && <p className="ok" role="status">{msg}</p>}
     </section>
   )
 }

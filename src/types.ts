@@ -66,11 +66,33 @@ export interface Tournament {
   /**
    * How the tournament is played: 'groups' (default: groups, each with each, then a bracket),
    * 'knockout' (a bracket from the start, the loser is out) or 'double' (double elimination:
-   * a losers' bracket, out after the second loss, a grand final).
+   * a losers' bracket, out after the second loss, a grand final) or 'custom' (only the
+   * organiser's own plan, see `custom`).
    */
-  system?: 'groups' | 'knockout' | 'double'
+  system?: 'groups' | 'knockout' | 'double' | 'custom'
   /** Knockout: a match for 3rd place between the semi-final losers. */
   thirdPlace?: boolean
+  /** Groups: each pair plays twice (return matches). */
+  twice?: boolean
+  /**
+   * The organiser's own plan (usually made by the AI assistant from a description): per
+   * category, matches whose players come from group places, other matches' winners or
+   * losers, or are named directly. Played after the groups (if any), in any shape.
+   */
+  custom?: Record<string, CustomMatch[]>
+}
+
+/**
+ * One match of a custom plan. Sides: "team:Name", "group:A:1" (1st place in group A),
+ * "winner:Other match", "loser:Other match". `place`: the winner's place (the loser gets
+ * the next one unless `loserPlace` says otherwise).
+ */
+export interface CustomMatch {
+  name: string
+  a: string
+  b: string
+  place?: number
+  loserPlace?: number
 }
 
 /** A team's (or player's) sign-up sent from the tournament's page; only the organiser reads it. */
@@ -200,7 +222,7 @@ export interface KoInfo {
   srcA: KoSource
   srcB: KoSource
   /** Knockout from the start: 'W' winners' bracket, 'L' losers' bracket, 'F' the final(s). */
-  bracket?: 'W' | 'L' | 'F'
+  bracket?: 'W' | 'L' | 'F' | 'C'
   /** Round within its bracket (1, 2, …), for drawing the columns. */
   col?: number
   /** The grand final's second match: played only when the losers' bracket winner wins match `resetOf`. */

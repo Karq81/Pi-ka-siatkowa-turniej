@@ -1,6 +1,7 @@
 import { NumberField } from '../ui'
 import { t, tp } from '../i18n'
 import { useState } from 'react'
+import { checkCustom } from '../logic/custom'
 import { ALBATROS_ALIAS, TOURNAMENT_SLUG } from '../config'
 import { MAX_COURTS, saveDraft, slugify, type TournamentDraft } from '../logic/newTournament'
 import { Assistant, type AssistantDraft } from './Assistant'
@@ -48,9 +49,15 @@ export function NewTournament() {
   const judo = rules.scoring === 'judo' || rules.scoring === 'karate'
   const score = rules.scoring === 'score'
   const [categories, setCategories] = useState('')
-  const [system, setSystem] = useState<'groups' | 'knockout' | 'double'>('groups')
+  const [system, setSystem] = useState<'groups' | 'knockout' | 'double' | 'custom'>('groups')
   const [thirdPlace, setThirdPlace] = useState(true)
+  const [twice, setTwice] = useState(false)
   const [preset, setPreset] = useState<TournamentDraft['preset']>()
+  const planCount = preset?.reduce((n, p) => n + (p.matches?.length ?? 0), 0) ?? 0
+  // Plan sides that do not match the list (a typo, a player left out): shown before saving.
+  const planProblems = (preset ?? []).flatMap((p) => p.matches?.length
+    ? checkCustom(p.matches, p.teams.map((x) => x.replace(/^[^:]*:\s*/, '')), p.groups.length ? p.groups.map((_, i) => ({ name: t('Grupa {letter}', { letter: 'ABCDEFGHIJKL'[i] ?? String(i + 1) }) })) : null, 12)
+    : [])
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
 
@@ -83,8 +90,14 @@ export function NewTournament() {
     if (d.courts > 0) setCourts(Math.min(MAX_COURTS, d.courts))
     setSlotMinutes(d.slotMinutes > 0 ? Math.min(120, d.slotMinutes) : s.slot)
     setCategories(d.categories.map((c) => c.name).join('\n'))
-    setPreset(d.categories.map((c) => ({ category: c.name, teams: c.teams, groups: c.groups })))
-    if (d.system === 'knockout' || d.system === 'double' || d.system === 'groups') setSystem(d.system)
+    setPreset(d.categories.map((c) => ({
+      category: c.name, teams: c.teams, groups: c.groups,
+      matches: (c.matches ?? []).filter((m) => m.name && m.a && m.b).map((m) => ({
+        name: m.name, a: m.a, b: m.b, ...(m.place > 0 ? { place: m.place } : {}), ...(m.loserPlace > 0 ? { loserPlace: m.loserPlace } : {}),
+      })),
+    })))
+    setTwice(!!d.twice)
+    if (d.system === 'knockout' || d.system === 'double' || d.system === 'groups' || d.system === 'custom') setSystem(d.system)
     if (typeof d.thirdPlace === 'boolean') setThirdPlace(d.thirdPlace)
   }
 
@@ -113,6 +126,7 @@ export function NewTournament() {
       preset,
       system,
       thirdPlace: system === 'knockout' ? thirdPlace : undefined,
+      twice: system === 'groups' && twice ? true : undefined,
     })
     location.href = `${location.pathname}?t=${address}#panel`
   }
@@ -256,6 +270,18 @@ export function NewTournament() {
           ))}
           {system === 'knockout' && (
             <label className="check"><input type="checkbox" checked={thirdPlace} onChange={(e) => setThirdPlace(e.target.checked)} /> {t('Spotkanie o 3. miejsce')}</label>
+          )}
+          {system === 'groups' && (
+            <label className="check"><input type="checkbox" checked={twice} onChange={(e) => setTwice(e.target.checked)} /> {t('Każdy z każdym dwa razy (rewanże)')}</label>
+          )}
+          {planCount > 0 && (
+            <label className={`system-opt ${system === 'custom' ? 'on' : ''}`}>
+              <input type="radio" name="system" checked={system === 'custom'} onChange={() => setSystem('custom')} />
+              <span><b>{t('Plan własny (z opisu turnieju)')}</b><span className="muted small">{t('Asystent ułożył {n} spotkań według Twojego opisu. Kolejne spotkania wypełnią się same po wpisaniu wyników.', { n: planCount })}</span></span>
+            </label>
+          )}
+          {planCount > 0 && planProblems.length > 0 && (
+            <div className="error small"><b>{t('W planie coś się nie zgadza (te spotkania zostaną pominięte):')}</b><ul>{planProblems.slice(0, 8).map((x) => <li key={x}>{x}</li>)}</ul></div>
           )}
         </fieldset>
         <label>{t('Kategorie (każda w osobnej linii lub po przecinku)')}

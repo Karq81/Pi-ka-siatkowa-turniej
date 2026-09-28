@@ -29,6 +29,8 @@ export interface ScheduleOptions {
   dayEnd: string
   /** First slot on the following days (HH:MM); defaults to the time of `start`. */
   dayStart?: string
+  /** Each pair plays twice, the second time with sides swapped (after all first matches). */
+  twice?: boolean
 }
 
 function addMinutes(iso: string, minutes: number): string {
@@ -49,7 +51,10 @@ export function toLocalIso(d: Date): string {
  */
 export function buildGroupSchedule(groups: Group[], opts: ScheduleOptions): Match[] {
   const queue: Omit<Match, 'court' | 'start'>[] = []
-  const perGroup = groups.map((g) => ({ g, rounds: roundRobin(g.teamIds) }))
+  const perGroup = groups.map((g) => {
+    const rounds = roundRobin(g.teamIds)
+    return { g, rounds: opts.twice ? [...rounds, ...rounds.map((r) => r.map(([a, b]) => [b, a] as [string, string]))] : rounds }
+  })
   const maxRounds = Math.max(0, ...perGroup.map((x) => x.rounds.length))
   let seq = 0
   for (let r = 0; r < maxRounds; r++) {

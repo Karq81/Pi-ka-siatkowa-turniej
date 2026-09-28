@@ -17,7 +17,7 @@ import { toLocalIso } from './schedule'
  * never created; whoever had the bye simply appears in the next match.
  */
 
-export type System = 'groups' | 'knockout' | 'double'
+export type System = 'groups' | 'knockout' | 'double' | 'custom'
 
 export function systemOf(t: Pick<Tournament, 'system'>): System {
   return t.system ?? 'groups'
@@ -207,7 +207,7 @@ export function createElimination(state: State, categoryId: string, teamIds: str
   const plan = eliminationPlan(categoryId, teamIds, system === 'double', !!state.tournament.thirdPlace)
   if (!plan.length) return []
   const depth = depths(plan, categoryId)
-  const order = { W: 0, L: 1, F: 2 }
+  const order = { W: 0, L: 1, F: 2, C: 3 }
   const levels = [...new Set(plan.map((p) => depth.get(p.key)!))].sort((a, b) => a - b)
   const result: Match[] = []
   let slot = new Date(opts.start)
@@ -235,7 +235,7 @@ export function createElimination(state: State, categoryId: string, teamIds: str
 
 /** Whether a category is played as a bracket from the start (its matches say so). */
 export function hasElimination(state: State, categoryId: string): boolean {
-  return state.matches.some((m) => m.categoryId === categoryId && !!m.ko?.bracket)
+  return state.matches.some((m) => m.categoryId === categoryId && !!m.ko?.bracket && m.ko.bracket !== 'C')
 }
 
 /** Final places decided so far: 1 and 2 from the (last) final, 3 from the 3rd place match or the losers' final. */

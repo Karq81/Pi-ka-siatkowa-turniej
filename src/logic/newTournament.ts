@@ -1,5 +1,6 @@
 import { locale, t } from '../i18n'
-import type { Group, State, Team, Tournament } from '../types'
+import { withCustom } from './custom'
+import type { CustomMatch, Group, State, Team, Tournament } from '../types'
 import { GROUP_LETTERS } from './draw'
 import { sportById, sportRules } from './sports'
 import { DEFAULT_SCHEDULE } from './demo'
@@ -27,9 +28,11 @@ export interface TournamentDraft {
    * Teams (and optionally groups) per category, e.g. prepared by the AI assistant from pasted
    * notes. Groups list team names; empty groups mean the organiser draws them later.
    */
-  preset?: { category: string; teams: string[]; groups: string[][] }[]
+  preset?: { category: string; teams: string[]; groups: string[][]; matches?: CustomMatch[] }[]
+  /** Groups: each pair plays twice. */
+  twice?: boolean
   /** How it is played: groups (default), a knockout bracket, or double elimination. */
-  system?: 'groups' | 'knockout' | 'double'
+  system?: 'groups' | 'knockout' | 'double' | 'custom'
   thirdPlace?: boolean
 }
 
@@ -73,7 +76,7 @@ export function blankState(draft: TournamentDraft): State {
   const subtitle = Number.isNaN(day.getTime())
     ? ''
     : day.toLocaleDateString(locale(), { day: 'numeric', month: 'long', year: 'numeric' })
-  return {
+  const state: State = {
     tournament: {
       name: draft.name,
       subtitle,
@@ -85,9 +88,20 @@ export function blankState(draft: TournamentDraft): State {
       dayStart: draft.start.slice(11),
       ...(draft.system && draft.system !== 'groups' ? { system: draft.system } : {}),
       ...(draft.system === 'knockout' && draft.thirdPlace ? { thirdPlace: true } : {}),
+      ...(draft.twice ? { twice: true } : {}),
     },
     ...presetTeams(draft),
   }
+  // The organiser's own plan (from the AI assistant): matches after the groups, any shape.
+  const custom: Record<string, CustomMatch[]> = {}
+  state.categories.forEach((c, i) => {
+    const p = draft.preset?.find((x) => x.category.trim().toLowerCase() === c.name.trim().toLowerCase())
+      ?? (draft.preset?.length === state.categories.length ? draft.preset[i] : undefined)
+      ?? (state.categories.length === 1 ? { matches: draft.preset?.flatMap((x) => x.matches ?? []) } : undefined)
+    if (p?.matches?.length) custom[c.id] = p.matches
+  })
+  if (!Object.keys(custom).length) return state
+  return withCustom({ ...state, tournament: { ...state.tournament, custom } })
 }
 
 /** Categories with the draft's preset teams and groups, and the group timetable if groups are set. */
@@ -120,6 +134,7 @@ function presetTeams(draft: TournamentDraft): Pick<State, 'categories' | 'groups
   if (!draft.start || !groups.length) return { categories, teams, groups: [], matches: [] }
   const schedule: ScheduleOptions = {
     courts: draft.courts, start: draft.start, slotMinutes: draft.slotMinutes, dayEnd: draft.dayEnd, dayStart: draft.start.slice(11),
+    ...(draft.twice ? { twice: true } : {}),
   }
   return { categories, teams, groups, matches: buildGroupSchedule(groups, schedule) }
 }
@@ -138,6 +153,7 @@ export function scheduleOf(t: Tournament): ScheduleOptions & { dayStart: string 
     slotMinutes: t.slotMinutes ?? DEFAULT_SCHEDULE.slotMinutes,
     dayEnd: t.dayEnd ?? DEFAULT_SCHEDULE.dayEnd,
     dayStart: t.dayStart ?? DEFAULT_SCHEDULE.dayStart,
+    ...(t.twice ? { twice: true } : {}),
   }
 }
 

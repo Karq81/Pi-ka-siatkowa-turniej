@@ -1,5 +1,6 @@
 import { t } from '../i18n'
 import { eliminationPlaces } from '../logic/elimination'
+import { customPlaces } from '../logic/custom'
 import { tally } from '../logic/scoring'
 import type { Match, State } from '../types'
 import { useLookups } from '../ui'
@@ -99,6 +100,41 @@ function Columns({ state, columns }: { state: State; columns: [string, Match[]][
           </div>
         ))}
       </div>
+    </div>
+  )
+}
+
+/**
+ * The organiser's own plan (see logic/custom.ts): its matches in columns, step by step
+ * (a match stands right of the ones it waits for), the places decided so far and the
+ * matches by time.
+ */
+export function CustomView({ state, categoryId, schedule = true }: { state: State; categoryId: string; schedule?: boolean }) {
+  const { teamName } = useLookups(state)
+  const ms = state.matches.filter((m) => m.categoryId === categoryId && m.ko?.bracket === 'C')
+  if (!ms.length) return null
+  const byCol = new Map<number, Match[]>()
+  for (const m of ms) byCol.set(m.ko!.col ?? 1, [...(byCol.get(m.ko!.col ?? 1) ?? []), m])
+  const columns = [...byCol.entries()].sort((a, b) => a[0] - b[0])
+  const winnerOf = (m: Match) => { const tl = tally(state.tournament.rules, m.sets); return tl.setsA > tl.setsB ? m.teamA : tl.setsB > tl.setsA ? m.teamB : '' }
+  const places = customPlaces(state, categoryId, winnerOf)
+  return (
+    <div className="elim">
+      {places.length > 0 && (
+        <section className="elim-places">
+          {places.map((p) => (
+            <span key={p.place} className={`elim-place p${p.place}`}>{p.place === 1 ? '🏆' : p.place === 2 ? '🥈' : p.place === 3 ? '🥉' : `${p.place}.`} {teamName(p.teamId)}</span>
+          ))}
+        </section>
+      )}
+      <p className="tree-hint">{t('Przesuń drabinkę w bok, żeby zobaczyć dalsze rundy →')}</p>
+      <Columns state={state} columns={columns.map(([c, list]) => [columns.length === 1 ? t('Spotkania') : t('Etap {n}', { n: c }), list])} />
+      {schedule && (
+        <>
+          <h3 className="elim-title">{t('Terminarz')}</h3>
+          <MatchList state={state} matches={[...ms].sort((a, b) => a.start.localeCompare(b.start) || a.court - b.court)} />
+        </>
+      )}
     </div>
   )
 }
