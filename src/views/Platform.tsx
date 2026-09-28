@@ -35,6 +35,24 @@ export function Wordmark({ size = 'md' }: { size?: 'md' | 'lg' }) {
   )
 }
 
+/**
+ * Thin bar with the service's logo on a tournament's pages (fans and the organiser panel),
+ * so it is always clear the tournament runs on SportLiveArena.
+ */
+export function BrandBar() {
+  const account = useAccount()
+  return (
+    <div className="brand-bar">
+      <div className="brand-bar-inner">
+        <Wordmark />
+        {account.status === 'signed-in' && (
+          <a className="pf-btn ghost" href={IS_PLATFORM_HOST ? '/#lista-turniejow' : '#lista-turniejow'}>{t('Moje turnieje')}</a>
+        )}
+      </div>
+    </div>
+  )
+}
+
 /** Top bar of the service pages: the logo, and signing in / up, or the account and signing out. */
 export function PlatformNav() {
   const account = useAccount()

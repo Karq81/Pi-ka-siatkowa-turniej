@@ -5,6 +5,7 @@ import { AccountPage } from './views/Account'
 import { Admin, PrintCards } from './views/Admin'
 import { Court, CourtPicker } from './views/Court'
 import { Public } from './views/Public'
+import { BrandBar } from './views/Platform'
 import { Correction } from './views/Correction'
 import { Organizer } from './views/Organizer'
 import { Tv } from './views/Tv'
@@ -92,7 +93,7 @@ function Screen({ route }: { route: string }) {
   if (court) return <Court key={court[1]} court={Number(court[1])} />
   const result = /^wynik-(\d+)$/.exec(route)
   if (result) return <Court key={`w${result[1]}`} court={Number(result[1])} manual />
-  if (/^panel(-[a-z]+)?$/.test(route)) return <Organizer route={route} />
+  if (/^panel(-[a-z]+)?$/.test(route)) return <><BrandBar /><Organizer route={route} /></>
   const fix = /^korekta-(.+)$/.exec(route)
   if (fix) return <Correction key={fix[1]} matchId={fix[1]} />
   if (route === 'sedzia') return <CourtPicker />
@@ -106,5 +107,5 @@ function Screen({ route }: { route: string }) {
   if (route === 'o-systemie') return <About />
   if (route === 'nowy-turniej') return <NewTournament />
   if (['konto', 'rejestracja', 'moje-turnieje', 'kredyty', 'lista-turniejow'].includes(route) || route.startsWith('moj-turniej-')) return <AccountPage key={route} view={route} />
-  return <Public route={route} />
+  return <><BrandBar /><Public route={route} /></>
 }
