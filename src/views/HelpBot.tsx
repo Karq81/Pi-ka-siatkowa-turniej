@@ -13,7 +13,7 @@ const LIMIT = 30
 
 function kind(route: string): { key: string; name: string } {
   if (route === 'nowy-turniej') return { key: 'new', name: 'Załóż turniej (formularz i asystent AI)' }
-  if (['konto', 'rejestracja', 'moje-turnieje', 'kredyty'].includes(route)) return { key: 'account', name: `Konto: ${route}` }
+  if (['konto', 'rejestracja', 'moje-turnieje', 'kredyty', 'lista-turniejow'].includes(route) || route.startsWith('moj-turniej-')) return { key: 'account', name: `Konto: ${route}` }
   if (route.startsWith('panel') || ['admin', 'kartki', 'sedzia', 'tv'].includes(route)) return { key: 'panel', name: `Panel organizatora: ${route || 'panel'}` }
   return { key: 'start', name: 'Strona główna serwisu' }
 }

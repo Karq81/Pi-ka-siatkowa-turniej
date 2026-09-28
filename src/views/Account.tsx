@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { ALBATROS_ALIAS, IS_PLATFORM_HOST } from '../config'
 import {
   accountError, changePassword, createAccount, deleteTournament, forgetTournament, loadUsage, loginProblem, normalizeLogin, saveProfile, signInAccount, useAccount, type Account,
-  type AccountProfile, type AccountTournament, type TournamentUsage,
+  type AccountProfile, type TournamentUsage,
 } from '../store/accounts'
 import { PlatformNav, Wordmark } from './Platform'
 import {
@@ -19,10 +19,11 @@ function tournamentLink(id: string, hash = ''): string {
 
 /**
  * The organiser's pages. Signed out: signing in (#konto, #moje-turnieje) or up (#rejestracja)
- * next to a short pitch. Signed in: "Moje turnieje" (#moje-turnieje) or the account's
- * details and password (#konto).
+ * next to a short pitch. Signed in: the account's start (#moje-turnieje: a new tournament and
+ * the button to the list), the list (#lista-turniejow), one tournament with its data usage
+ * (#moj-turniej-{id}), or the account's details and password (#konto).
  */
-export function AccountPage({ view }: { view: 'konto' | 'rejestracja' | 'moje-turnieje' | 'kredyty' }) {
+export function AccountPage({ view }: { view: string }) {
   const register = view === 'rejestracja'
   const account = useAccount()
   return (
@@ -48,6 +49,8 @@ export function AccountPage({ view }: { view: 'konto' | 'rejestracja' | 'moje-tu
         {account.status === 'signed-in' && (view === 'konto'
           ? <Profile key={`${account.account.uid}-${account.account.loaded ? 1 : 0}`} account={account.account} />
           : view === 'kredyty' ? <Credits account={account.account} />
+          : view === 'lista-turniejow' ? <TournamentList account={account.account} />
+          : view.startsWith('moj-turniej-') ? <MyTournament account={account.account} id={view.slice('moj-turniej-'.length)} />
           : <MyTournaments account={account.account} />)}
       </main>
     </div>
@@ -138,33 +141,12 @@ function SignIn({ initial }: { initial: 'in' | 'new' }) {
   )
 }
 
+/** A message shown on the list after a tournament was deleted from its own page. */
+let listMessage = ''
+
+/** "Moje turnieje" (#moje-turnieje): a new tournament on top, and one button to the list. */
 function MyTournaments({ account }: { account: Account }) {
-  const usage = useUsage(account)
-  // Deleting a tournament: asked first; if the database refuses, it can still leave the list.
-  const [asking, setAsking] = useState<AccountTournament | null>(null)
-  const [busy, setBusy] = useState('')
-  const [failed, setFailed] = useState<AccountTournament | null>(null)
-  const [done, setDone] = useState('')
-  const remove = async (tr: AccountTournament) => {
-    setAsking(null)
-    setFailed(null)
-    setDone('')
-    setBusy(tr.id)
-    try {
-      await deleteTournament(tr.id)
-      setDone(t('Turniej „{name}” został usunięty.', { name: tr.name }))
-    } catch (e) {
-      console.warn('delete tournament', e)
-      setFailed(tr)
-    } finally {
-      setBusy('')
-    }
-  }
-  const forget = async (tr: AccountTournament) => {
-    setFailed(null)
-    await forgetTournament(tr.id)
-    setDone(t('Turniej „{name}” zniknął z listy.', { name: tr.name }))
-  }
+  const n = account.tournaments.length
   return (
     <>
       <header className="acc-head">
@@ -174,71 +156,142 @@ function MyTournaments({ account }: { account: Account }) {
           <span className="muted">{t('Login')}: {account.login} · <a href="#konto">{t('Dane konta i hasło')}</a></span>
         </div>
       </header>
-      {/* 1. A new tournament, set apart from the list below. */}
       <section className="acc-zone acc-zone-new">
-      <p className="acc-zone-label">{t('Nowy turniej')}</p>
-      <a className="acc-new" href="#nowy-turniej">
-        <span className="acc-new-icon" aria-hidden>＋</span>
-        <span className="acc-new-text">
-          <b>{t('Załóż nowy turniej')}</b>
-          <span>{t('Dyscyplina, drużyny, grupy i terminarz w kilka minut. Asystent AI pomoże.')}</span>
+        <p className="acc-zone-label">{t('Nowy turniej')}</p>
+        <a className="acc-new" href="#nowy-turniej">
+          <span className="acc-new-icon" aria-hidden>＋</span>
+          <span className="acc-new-text">
+            <b>{t('Załóż nowy turniej')}</b>
+            <span>{t('Dyscyplina, drużyny, grupy i terminarz w kilka minut. Asystent AI pomoże.')}</span>
+          </span>
+          <span className="acc-new-go" aria-hidden>›</span>
+        </a>
+      </section>
+      <a className="acc-open-list" href="#lista-turniejow">
+        <span className="acc-open-icon" aria-hidden>🏆</span>
+        <span className="acc-open-text">
+          <b>{t('Moje turnieje')}</b>
+          <span>{n ? t('Zobacz swoje turnieje, zużycie danych i ustawienia.') : t('Nie masz jeszcze turniejów.')}</span>
         </span>
+        <span className="acc-count">{n}</span>
         <span className="acc-new-go" aria-hidden>›</span>
       </a>
+    </>
+  )
+}
+
+/** #lista-turniejow: the account's tournaments, one button each. */
+export function TournamentList({ account }: { account: Account }) {
+  const [done] = useState(() => { const m = listMessage; listMessage = ''; return m })
+  return (
+    <>
+      <a className="acc-back" href="#moje-turnieje">← {t('Konto organizatora')}</a>
+      <h1 className="acc-page-title">🏆 {t('Moje turnieje')} <span className="acc-count">{account.tournaments.length}</span></h1>
+      {done && <p className="ok" role="status">{done}</p>}
+      {account.tournaments.length === 0 ? (
+        <div className="panel acc-empty">
+          <p>{t('Nie masz jeszcze turniejów. Załóż pierwszy, zapisze się na tym koncie.')}</p>
+          <a className="btn btn-primary" href="#nowy-turniej">+ {t('Załóż nowy turniej')}</a>
+        </div>
+      ) : (
+        <ul className="acc-t-list">
+          {account.tournaments.map((tr) => (
+            <li key={tr.id}>
+              <a className="acc-t-item" href={`#moj-turniej-${tr.id}`}>
+                <span className="acc-t-name">{tr.name}</span>
+                <span className="muted small">{tournamentLink(tr.id).replace(/^\/?/, location.host + '/')}</span>
+                <span className="acc-new-go" aria-hidden>›</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      )}
+    </>
+  )
+}
+
+/** #moj-turniej-{id}: one tournament – its links, PIN, data usage and deleting it. */
+export function MyTournament({ account, id }: { account: Account; id: string }) {
+  const tr = account.tournaments.find((x) => x.id === id)
+  const usage = useUsage(account)
+  const [asking, setAsking] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [failed, setFailed] = useState(false)
+  if (!tr) {
+    return (
+      <>
+        <a className="acc-back" href="#lista-turniejow">← {t('Moje turnieje')}</a>
+        <p className="notice-inline">{t('Tego turnieju nie ma na Twoim koncie.')}</p>
+      </>
+    )
+  }
+  const mine = usage ? { [tr.id]: usage[tr.id] ?? { today: 0, days: [] } } : null
+  const remove = async () => {
+    setAsking(false)
+    setFailed(false)
+    setBusy(true)
+    try {
+      await deleteTournament(tr.id)
+      listMessage = t('Turniej „{name}” został usunięty.', { name: tr.name })
+      location.hash = 'lista-turniejow'
+    } catch (e) {
+      console.warn('delete tournament', e)
+      setFailed(true)
+      setBusy(false)
+    }
+  }
+  const forget = async () => {
+    await forgetTournament(tr.id)
+    listMessage = t('Turniej „{name}” zniknął z listy.', { name: tr.name })
+    location.hash = 'lista-turniejow'
+  }
+  return (
+    <>
+      <a className="acc-back" href="#lista-turniejow">← {t('Moje turnieje')}</a>
+      <header className="acc-t-head">
+        <p className="eyebrow">{t('Mój turniej')}</p>
+        <h1>{tr.name}</h1>
+        <p className="muted acc-t-address">{tournamentLink(tr.id).replace(/^\/?/, location.host + '/')}</p>
+      </header>
+      <section className="panel account-t">
+        <div className="actions">
+          <a className="btn btn-primary btn-lg" href={tournamentLink(tr.id, '#panel')}>{t('Panel organizatora')}</a>
+          <a className="btn btn-lg" href={tournamentLink(tr.id)}>{t('Strona dla kibiców')}</a>
+        </div>
+        <p className="muted small">{t('PIN sędziego głównego:')} <b>{tr.pin}</b>. {t('Po wejściu z tego konta nie trzeba go wpisywać.')}</p>
       </section>
-      {/* 2. The tournaments already made. */}
-      <section className="acc-zone acc-zone-list">
-        <h2 className="acc-bar">🏆 {t('Moje turnieje')} <span className="acc-count">{account.tournaments.length}</span></h2>
-        <div className="account-list">
-        {done && <p className="ok" role="status">{done}</p>}
+      <section className="acc-t-usage">
+        <h2>📊 {t('Zużycie danych')}</h2>
+        <div className="panel">{usage ? <TournamentChart usage={usage[tr.id]} test={isTestAccount(account)} /> : <p className="muted">{t('Wczytuję…')}</p>}</div>
+        <UsageSummary account={account} usage={mine} />
+      </section>
+      <section className="panel danger-zone">
+        <h2>🗑 {t('Usuń turniej')}</h2>
+        <p className="muted">{t('Usuwa cały turniej: mecze, wyniki, tabele, zgłoszenia i PIN-y. Adres strony znów będzie wolny. Tego nie da się cofnąć, więc najpierw możesz pobrać wyniki do Excela (przycisk na górze panelu).')}</p>
         {failed && (
           <div className="error" role="alert">
-            <p>{t('Nie udało się usunąć turnieju „{name}”. Sprawdź internet. Jeśli PIN sędziego głównego był zmieniany na innym urządzeniu, wejdź do panelu turnieju i spróbuj jeszcze raz.', { name: failed.name })}</p>
-            <button type="button" className="btn btn-sm" onClick={() => void forget(failed)}>{t('Usuń tylko z mojej listy')}</button>
+            <p>{t('Nie udało się usunąć turnieju „{name}”. Sprawdź internet. Jeśli PIN sędziego głównego był zmieniany na innym urządzeniu, wejdź do panelu turnieju i spróbuj jeszcze raz.', { name: tr.name })}</p>
+            <button type="button" className="btn btn-sm" onClick={() => void forget()}>{t('Usuń tylko z mojej listy')}</button>
           </div>
         )}
-        {asking && (
-          <ConfirmDialog
-            question={<>
-              <b>{t('Czy na pewno usunąć turniej „{name}”?', { name: asking.name })}</b>
-              <p>{t('Znikną wszystkie mecze, wyniki, tabele i zgłoszenia. Strona turnieju przestanie działać. Tego nie da się cofnąć.')}</p>
-            </>}
-            yes={t('Tak, usuń turniej')}
-            no={t('Nie, zostaw')}
-            onYes={() => void remove(asking)}
-            onNo={() => setAsking(null)}
-          />
+        {tr.id !== 'main' && (
+          <button type="button" className="btn btn-danger account-delete" disabled={busy} onClick={() => setAsking(true)}>
+            🗑 {busy ? t('Usuwam…') : t('Usuń turniej')}
+          </button>
         )}
-        {account.tournaments.length === 0 && (
-          <p className="muted">{t('Nie masz jeszcze turniejów. Załóż pierwszy, zapisze się na tym koncie.')}</p>
-        )}
-        <div className="acc-grid">
-          {account.tournaments.map((tr) => (
-            <article key={tr.id} className="panel account-t">
-              <h3>{tr.name}</h3>
-              <p className="muted small acc-t-address">{tournamentLink(tr.id).replace(/^\/?/, location.host + '/')}</p>
-              <div className="actions">
-                <a className="btn btn-primary" href={tournamentLink(tr.id, '#panel')}>{t('Panel organizatora')}</a>
-                <a className="btn" href={tournamentLink(tr.id)}>{t('Strona dla kibiców')}</a>
-              </div>
-              <p className="muted small">{t('PIN sędziego głównego:')} <b>{tr.pin}</b>. {t('Po wejściu z tego konta nie trzeba go wpisywać.')}</p>
-              {usage && <TournamentChart usage={usage[tr.id]} test={isTestAccount(account)} />}
-              {/* Albatros CUP ("main") stays. */}
-              {tr.id !== 'main' && (
-                <button type="button" className="btn btn-sm btn-danger account-delete" disabled={busy === tr.id} onClick={() => setAsking(tr)}>
-                  🗑 {busy === tr.id ? t('Usuwam…') : t('Usuń turniej')}
-                </button>
-              )}
-            </article>
-          ))}
-        </div>
-        </div>
       </section>
-      {/* 3. Visits, credits and cost, folded at the end. */}
-      <details className="acc-zone acc-usage">
-        <summary className="acc-usage-sum">📊 {t('Zużycie i kredyty')}</summary>
-        <UsageSummary account={account} usage={usage} />
-      </details>
+      {asking && (
+        <ConfirmDialog
+          question={<>
+            <b>{t('Czy na pewno usunąć turniej „{name}”?', { name: tr.name })}</b>
+            <p>{t('Znikną wszystkie mecze, wyniki, tabele i zgłoszenia. Strona turnieju przestanie działać. Tego nie da się cofnąć.')}</p>
+          </>}
+          yes={t('Tak, usuń turniej')}
+          no={t('Nie, zostaw')}
+          onYes={() => void remove()}
+          onNo={() => setAsking(false)}
+        />
+      )}
     </>
   )
 }
@@ -278,7 +331,7 @@ function Profile({ account }: { account: Account }) {
         <div>
           <p className="eyebrow">{t('Moje konto')}</p>
           <h1>{account.name || account.login}</h1>
-          <span className="muted">{t('Login')}: <b>{account.login}</b> · <a href="#moje-turnieje">{t('Moje turnieje')} ({account.tournaments.length})</a></span>
+          <span className="muted">{t('Login')}: <b>{account.login}</b> · <a href="#lista-turniejow">{t('Moje turnieje')} ({account.tournaments.length})</a></span>
         </div>
       </header>
       <div className="acc-cols">

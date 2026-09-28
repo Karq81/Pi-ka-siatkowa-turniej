@@ -41,7 +41,7 @@ export function Organizer({ route }: { route: string }) {
         <div>
           <p className="eyebrow">
             {t('Panel organizatora')}{state.tournament.rules.sport ? ` · ${sportLabelOf(state.tournament.rules)}` : ''}
-            {account.status === 'signed-in' && <> · <a className="plain-link" href={IS_PLATFORM_HOST ? '/#moje-turnieje' : '#moje-turnieje'}>← {t('Moje turnieje')}</a></>}
+            {account.status === 'signed-in' && <> · <a className="plain-link" href={IS_PLATFORM_HOST ? '/#lista-turniejow' : '#lista-turniejow'}>← {t('Moje turnieje')}</a></>}
           </p>
           <h1>{state.tournament.name}</h1>
           <button type="button" className="btn btn-sm export-btn" onClick={() => downloadResults(state)}
@@ -91,7 +91,7 @@ function DeleteTournament({ state }: { state: State }) {
       if (!pins) throw new Error('no pins')
       await deleteTournamentData(TOURNAMENT_ID, pins.adminPin)
       if (account.status === 'signed-in') await forgetTournament(TOURNAMENT_ID).catch(() => {})
-      location.href = `${location.origin}${location.pathname}${account.status === 'signed-in' ? '#moje-turnieje' : ''}`
+      location.href = `${location.origin}${location.pathname}${account.status === 'signed-in' ? '#lista-turniejow' : ''}`
     } catch (e) {
       console.warn('delete tournament', e)
       setError(t('Nie udało się usunąć turnieju. Sprawdź internet i spróbuj jeszcze raz.'))

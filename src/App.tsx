@@ -24,7 +24,7 @@ import { useTermsOf } from './logic/terms'
  * result entry, corrections) keep the normal phone layout with big buttons.
  */
 const DESKTOP_LIKE_WIDTH = 640
-const PHONE_LAYOUT = /^(zgloszenie|boisko-\d+|tablica-\d+|kamera|wynik-\d+|korekta-.+|sedzia|kartki|o-systemie|nowy-turniej|konto|rejestracja|moje-turnieje|kredyty)$/
+const PHONE_LAYOUT = /^(zgloszenie|boisko-\d+|tablica-\d+|kamera|wynik-\d+|korekta-.+|sedzia|kartki|o-systemie|nowy-turniej|konto|rejestracja|moje-turnieje|kredyty|lista-turniejow|moj-turniej-.+)$/
 
 function isPhone() {
   const touch = matchMedia('(pointer: coarse)').matches
@@ -62,21 +62,23 @@ function useScrollTop(route: string) {
 }
 
 /** The service's own pages; on the front-page address these are the only screens. */
-const PLATFORM_ROUTES = ['o-systemie', 'nowy-turniej', 'konto', 'rejestracja', 'moje-turnieje', 'kredyty']
+const PLATFORM_ROUTES = ['o-systemie', 'nowy-turniej', 'konto', 'rejestracja', 'moje-turnieje', 'kredyty', 'lista-turniejow']
+/** The service's pages, also one of the account's tournaments (#moj-turniej-{id}). */
+const isPlatformRoute = (route: string) => PLATFORM_ROUTES.includes(route) || route.startsWith('moj-turniej-')
 
 export function App() {
   const route = useRoute()
   const state = useStore()
   // The discipline's words (mata, kort, walka…) on this tournament's pages; the service's own
   // pages (front page, new tournament, account) keep the usual ones.
-  useTermsOf(IS_LANDING || PLATFORM_ROUTES.includes(route) ? undefined : state.tournament.rules.sport)
+  useTermsOf(IS_LANDING || isPlatformRoute(route) ? undefined : state.tournament.rules.sport)
   return (
     <>
       {/* The service pages show no tournament, so no connection notices either. */}
-      {!(IS_LANDING || PLATFORM_ROUTES.includes(route) || route.startsWith('tablica-') || route === 'kamera') && <SyncBanner />}
+      {!(IS_LANDING || isPlatformRoute(route) || route.startsWith('tablica-') || route === 'kamera') && <SyncBanner />}
       <Screen route={route} />
       {/* The AI help desk on the service's and the organiser's screens (not on fans' or scoring screens). */}
-      {(IS_LANDING || PLATFORM_ROUTES.includes(route) || /^(panel(-[a-z]+)?|admin|kartki|sedzia)$/.test(route)) && <HelpBot route={route} />}
+      {(IS_LANDING || isPlatformRoute(route) || /^(panel(-[a-z]+)?|admin|kartki|sedzia)$/.test(route)) && <HelpBot route={route} />}
     </>
   )
 }
@@ -85,7 +87,7 @@ function Screen({ route }: { route: string }) {
   useViewport(route)
   useScrollTop(route)
   // The front page (sportlivearena.com with no tournament) has no tournament screens.
-  if (IS_LANDING && !PLATFORM_ROUTES.includes(route)) return <About />
+  if (IS_LANDING && !isPlatformRoute(route)) return <About />
   const court = /^boisko-(\d+)$/.exec(route)
   if (court) return <Court key={court[1]} court={Number(court[1])} />
   const result = /^wynik-(\d+)$/.exec(route)
@@ -103,6 +105,6 @@ function Screen({ route }: { route: string }) {
   if (route === 'zgloszenie') return <RegistrationPage />
   if (route === 'o-systemie') return <About />
   if (route === 'nowy-turniej') return <NewTournament />
-  if (route === 'konto' || route === 'rejestracja' || route === 'moje-turnieje' || route === 'kredyty') return <AccountPage key={route} view={route} />
+  if (['konto', 'rejestracja', 'moje-turnieje', 'kredyty', 'lista-turniejow'].includes(route) || route.startsWith('moj-turniej-')) return <AccountPage key={route} view={route} />
   return <Public route={route} />
 }

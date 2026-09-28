@@ -127,7 +127,7 @@ export function NewTournament() {
         </p>
       )}
       {account.status === 'signed-in' && (
-        <p className="muted">{t('Turniej zapisze się na koncie:')} <b>{account.account.name || account.account.login}</b>. <a href="#moje-turnieje">{t('Moje turnieje')}</a></p>
+        <p className="muted">{t('Turniej zapisze się na koncie:')} <b>{account.account.name || account.account.login}</b>. <a href="#lista-turniejow">{t('Moje turnieje')}</a></p>
       )}
       <Assistant signedIn={account.status === 'signed-in'} onDraft={applyDraft} />
       {preset && preset.some((p) => p.teams.length) && (
