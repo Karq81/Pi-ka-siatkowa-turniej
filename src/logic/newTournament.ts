@@ -90,9 +90,18 @@ function presetTeams(draft: TournamentDraft): Pick<State, 'categories' | 'groups
   const categories = draft.categories.map((name, i) => ({ id: `k${i + 1}`, name }))
   const teams: Team[] = []
   const groups: Group[] = []
-  for (const c of categories) {
-    const preset = draft.preset?.find((p) => p.category.trim().toLowerCase() === c.name.trim().toLowerCase())
-    if (!preset) continue
+  const presets = (draft.preset ?? []).filter((p) => p.teams.length)
+  const key = (s: string) => s.trim().toLowerCase()
+  // The names typed in the assistant's notes come with the tournament even when the category
+  // was renamed in the form (or the notes had none): by name, else in the same order, and with
+  // one category every list goes to it.
+  const presetFor = (name: string, i: number) =>
+    presets.find((p) => key(p.category) === key(name))
+    ?? (presets.length === categories.length && !presets.some((p) => categories.some((c) => key(c.name) === key(p.category))) ? presets[i] : undefined)
+    ?? (categories.length === 1 ? { category: name, teams: presets.flatMap((p) => p.teams), groups: presets.flatMap((p) => p.groups) } : undefined)
+  for (const [i, c] of categories.entries()) {
+    const preset = presetFor(c.name, i)
+    if (!preset || !preset.teams.length) continue
     const own = parseTeamList(preset.teams.join('\n'), c.id)
     teams.push(...own)
     const idOf = (name: string) => own.find((t) => t.name.toLowerCase() === name.trim().toLowerCase())?.id

@@ -15,7 +15,7 @@ export function assistantInstructions(): string {
 Zasady:
 - Wybierz dyscyplinę i format meczu tylko z katalogu poniżej. Format musi należeć do wybranej dyscypliny. Gdy zasady nie pasują dokładnie, wybierz najbliższy format i napisz o tym w notes.
 - Gdy dyscypliny nie ma w katalogu (np. zapasy, boks, taekwondo, siatkonoga), wybierz "inna-wynik" albo "inna-sety" (to, co pasuje do sposobu liczenia) i wpisz prawdziwą nazwę dyscypliny w sportName, np. "Zapasy". Gdy dyscyplina jest w katalogu, sportName zostaw pusty.
-- Przepisz wszystkie drużyny z notatek, bez pomijania i bez wymyślania nowych. Klub, z którego jest kilka drużyn, zapisz przed dwukropkiem, np. "UKS Orzeł: Orzeł 1".
+- Przepisz do teams wszystkie drużyny z notatek, a w sportach indywidualnych wszystkich zawodników (imię i nazwisko, samo imię albo pseudonim, tak jak napisano), bez pomijania i bez wymyślania nowych. Organizator nie powinien wpisywać ich drugi raz. Klub, z którego jest kilka drużyn, zapisz przed dwukropkiem, np. "UKS Orzeł: Orzeł 1".
 - Jeśli notatki podają podział na grupy, przepisz go w groups (nazwy dokładnie jak w teams, bez części przed dwukropkiem). Jeśli nie podają, zostaw groups pustą listę: organizator rozlosuje grupy.
 - Kategorie wiekowe lub płci (np. "Dziewczęta U12", "Dwójki") to osobne kategorie. Gdy nie ma podziału, użyj jednej kategorii "Turniej".
 - Brakujące dane: date, time, dayEnd jako pusty tekst; courts i slotMinutes rozsądne dla dyscypliny. Wszystko, co przyjąłeś sam, wymień w notes.

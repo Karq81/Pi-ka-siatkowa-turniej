@@ -71,4 +71,18 @@ describe('assistant preset', () => {
     expect(s.matches).toHaveLength(2)
     expect(s.matches[0].start).toBe('2027-01-16T09:00')
   })
+
+  it('keeps the names when the category was renamed or had no name', () => {
+    // One category in the form ("Turniej"), the notes' list under another name or none.
+    const one = blankState({ ...draft, categories: ['Turniej'], preset: [{ category: '', teams: ['Jan Kowalski', 'Adam Nowak', 'Piotr Wiśniewski'], groups: [] }] })
+    expect(one.teams.map((t) => t.name)).toEqual(['Jan Kowalski', 'Adam Nowak', 'Piotr Wiśniewski'])
+    const open = blankState({ ...draft, categories: ['Turniej'], preset: [{ category: 'Open', teams: ['A', 'B'], groups: [] }] })
+    expect(open.teams.map((t) => t.name)).toEqual(['A', 'B'])
+    // Two categories renamed in the form: in the same order.
+    const two = blankState({ ...draft, categories: ['Kobiety', 'Mężczyźni'], preset: [{ category: 'K', teams: ['A', 'B'], groups: [] }, { category: 'M', teams: ['C', 'D'], groups: [] }] })
+    expect(two.teams.map((t) => `${t.categoryId}:${t.name}`)).toEqual(['k1:A', 'k1:B', 'k2:C', 'k2:D'])
+    // Names that match go by name, whatever the order.
+    const swapped = blankState({ ...draft, categories: ['Chłopcy', 'Dziewczęta'], preset: [{ category: 'Dziewczęta', teams: ['A', 'B'], groups: [] }, { category: 'Chłopcy', teams: ['C', 'D'], groups: [] }] })
+    expect(swapped.teams.map((t) => `${t.categoryId}:${t.name}`)).toEqual(['k1:C', 'k1:D', 'k2:A', 'k2:B'])
+  })
 })
