@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { TOURNAMENT_ID, tournamentUrl } from '../config'
+import { IS_PLATFORM_HOST, TOURNAMENT_ID, tournamentUrl } from '../config'
 import { t } from '../i18n'
 import { streamEmbed } from '../logic/stream'
 import { store } from '../store/store'
@@ -238,6 +238,8 @@ export function cameraCode(key: string): string {
  */
 export function cameraAppUrl(key: string): string {
   const url = new URL(tournamentUrl())
+  // Always the main domain: only there (and on web.app) the app's links are confirmed.
+  if (IS_PLATFORM_HOST) url.host = 'sportlivearena.com'
   url.pathname = '/kamera'
   url.searchParams.set('cam', cameraCode(key))
   url.hash = 'kamera'
