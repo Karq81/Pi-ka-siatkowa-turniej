@@ -52,6 +52,11 @@ jobs:
           node scripts/create-rtdb.mjs turniej-siatkowki-faf22
           npx firebase deploy --only database --project turniej-siatkowki-faf22 --non-interactive \
             || echo "::warning::Realtime Database rules not deployed. Create the Realtime Database in the Firebase console (Belgium, europe-west1)."
+      - name: Check the Realtime Database address used by the site
+        run: |
+          for url in https://turniej-siatkowki-faf22-default-rtdb.europe-west1.firebasedatabase.app https://turniej-siatkowki-faf22-default-rtdb.firebaseio.com; do
+            echo "$url -> $(curl -s -m 10 "$url/live.json" | head -c 200)"
+          done
       - name: Deploy the AI assistant (Cloud Functions)
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
