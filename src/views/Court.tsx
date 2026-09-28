@@ -1,3 +1,4 @@
+import { CorrectButton } from './Correction'
 import { t, tp } from '../i18n'
 import { useEffect, useState } from 'react'
 import { canAddPoint, isMatchDecided, isScore, scoreUnit, setCap, setTarget, setWinner, tally } from '../logic/scoring'
@@ -158,6 +159,7 @@ function CourtPanel({ state, court, manualFirst }: { state: State; court: number
         <h2>{side(finished, 'a')} {tl.setsA}:{tl.setsB} {side(finished, 'b')}</h2>
         <p className="muted">{finished.sets.map((s) => `${s.a}:${s.b}`).join(', ')}</p>
         <p>{t('Wynik jest już na stronie. Pomyłkę może poprawić tylko sędzia główny.')}</p>
+        <div className="center"><CorrectButton match={finished} /></div>
         {current && (
           <p className="next-on-court">
             {t('Następny mecz na tym boisku:')} <b>{formatTime(current.start)}</b> {t('(2 minuty po zakończeniu)')}<br />
@@ -239,6 +241,7 @@ function CourtPanel({ state, court, manualFirst }: { state: State; court: number
           {t('Licz wynik na żywo')}
         </button>
         {manualLink}
+        <UndoMatch match={current} />
       </section>
     )
   }
@@ -247,7 +250,25 @@ function CourtPanel({ state, court, manualFirst }: { state: State; court: number
     <>
       <LiveScoring state={state} match={current} meta={meta} onFinish={() => setJustFinished(current.id)} />
       <button className="btn btn-lg" onClick={() => setManual(current.id)}>{t('Nie liczę na żywo, podaj wynik z kartki')}</button>
+      <UndoMatch match={current} />
     </>
+  )
+}
+
+/**
+ * A match started by mistake (or with a wrong score): back to "not started", 0:0, after a
+ * confirmation. The chief referee can also open the full correction.
+ */
+export function UndoMatch({ match }: { match: Match }) {
+  return (
+    <div className="undo-match">
+      <button type="button" className="btn btn-danger" onClick={() => {
+        if (confirm(t('Anulować ten mecz? Wynik zniknie, a mecz wróci do stanu „nie rozpoczęty”. Będzie można zacząć go od nowa.'))) {
+          store.updateMatch(match.id, (m) => ({ ...m, status: 'scheduled', sets: [] }))
+        }
+      }}>↺ {t('Anuluj mecz (wróć do 0:0)')}</button>
+      <CorrectButton match={match} />
+    </div>
   )
 }
 

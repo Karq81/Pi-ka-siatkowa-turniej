@@ -1,3 +1,4 @@
+import { CorrectButton } from './Correction'
 import { StreamPlayer } from './Stream'
 import { LangPicker } from './LangPicker'
 import { t, tk } from '../i18n'
@@ -85,6 +86,7 @@ export function CourtCard({ state, court, big = false, referee = false }: { stat
     <div className="ref-links">
       <a className="btn btn-ref" href={`#boisko-${court}`}>{t('Sędziuj na żywo')}</a>
       <a className="btn btn-ref" href={`#wynik-${court}`}>{t('Podaj wynik')}</a>
+      {board.match && board.match.status !== 'scheduled' && <CorrectButton match={board.match} />}
     </div>
   )
   const current = board.match

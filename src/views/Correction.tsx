@@ -30,7 +30,7 @@ export function Correction({ matchId }: { matchId: string }) {
           <p className="muted">{t('Nie znaleziono meczu.')}</p>
         ) : (
           <section className="ref-card">
-            <p className="muted">{categoryName(m.categoryId)} · {stageName(m)} · {formatDay(m.start)} {formatTime(m.start)} · Boisko {courtLabel(m.court)}</p>
+            <p className="muted">{categoryName(m.categoryId)} · {stageName(m)} · {formatDay(m.start)} {formatTime(m.start)} · {t('Boisko {n}', { n: courtLabel(m.court) })}</p>
             <h2 className="vs">
               <span>{side(m, 'a')}</span>
               <span className="muted">{t('vs')}</span>

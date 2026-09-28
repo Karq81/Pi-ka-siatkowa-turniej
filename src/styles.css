@@ -1237,3 +1237,4 @@ label.lang-pick select { width: auto; min-height: 0; font: inherit; border: 0; b
 .stream-courts { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
 .photo-tip { margin: 4px 0 0; padding: 10px 12px; border-radius: 12px; background: color-mix(in srgb, var(--ball) 18%, var(--surface)); border: 1px solid color-mix(in srgb, var(--ball) 55%, var(--line)); font-size: 0.92rem; }
 .stream-settings label.check { display: flex; justify-content: flex-start; } .stream-settings label.check input { width: auto; flex: none; }
+.undo-match { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: center; margin-top: 18px; padding-top: 14px; border-top: 1px dashed var(--line); }
