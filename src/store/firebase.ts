@@ -8,7 +8,7 @@ import {
 import { applyMatchUpdate } from '../logic/knockout'
 import { boardKey, publicBoard } from '../logic/publicBoard'
 import { dayKey } from '../logic/usage'
-import type { Entry, Match, Pins, Session, State } from '../types'
+import type { Entry, Match, Pins, Session, State, LiveClock } from '../types'
 import type { Store, SyncInfo } from './types'
 import { backups, backupScore, dropBackup, openLive, type LiveChannel, type LiveEntry } from './live'
 
@@ -139,6 +139,7 @@ export function createFirebaseStore(config: FirebaseOptions, tournamentId: strin
     ? openLive(app, tournamentId, !!import.meta.env.VITE_USE_EMULATOR).catch(() => null)
     : Promise.resolve(null)
   let live: LiveChannel | null = null
+  let clocks = new Map<number, LiveClock>()
 
   // Documents in `matches` that are not court sheets (the old one-document-per-match layout).
   let legacy: string[] = []
@@ -163,6 +164,7 @@ export function createFirebaseStore(config: FirebaseOptions, tournamentId: strin
       setSync({ pending: snap.metadata.hasPendingWrites, connected: !snap.metadata.fromCache })
     }, fail(tk('Odczyt meczów'))))
     if (live) {
+      stops.push(live.followClocks((map) => { clocks = map; notify() }))
       stops.push(live.follow((map) => {
         liveScores = map
         state = { ...state, matches: withLive(state.matches) }
@@ -332,6 +334,14 @@ export function createFirebaseStore(config: FirebaseOptions, tournamentId: strin
     session: () => session,
     login,
     logout: () => saveSession(null),
+    publishClock(court, clock) {
+      if (clock) clocks.set(court, clock)
+      else clocks.delete(court)
+      live?.writeClock(court, clock)
+      notify()
+    },
+    clock: (court) => clocks.get(court) ?? null,
+    now: () => live?.serverNow() ?? Date.now(),
     updateMatch(id, update) {
       const before = state.matches.find((m) => m.id === id)
       // Also fills in knockout teams that follow from this result, in one atomic write.

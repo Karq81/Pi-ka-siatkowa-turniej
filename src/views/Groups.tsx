@@ -1,3 +1,4 @@
+import { FanClock } from './ContestClock'
 import { t } from '../i18n'
 import { isJudo, setsText, tally } from '../logic/scoring'
 import { judoOf, judoSideText } from '../logic/judo'
@@ -44,6 +45,7 @@ export function MatchPage({ state, matchId }: { state: State; matchId: string })
         {!single && m.sets.length > 0 && (
           <p className="center muted">{t('Sety:')} {setsText(rules, m.sets)}</p>
         )}
+        <FanClock match={m} className="fan-clock-big" />
         {judo && cur && m.status !== 'scheduled' && <JudoNote rules={rules} set={cur} live={m.status === 'live'} />}
         {cur && m.status !== 'scheduled' && <KarateNote rules={rules} set={cur} />}
         {cur && m.status !== 'scheduled' && <ChessNote rules={rules} set={cur} />}

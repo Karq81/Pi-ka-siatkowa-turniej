@@ -150,6 +150,24 @@ export interface JudoScore {
   decision?: 'a' | 'b'
 }
 
+/**
+ * The game clock of a match in progress, sent by the referee's phone so fans see the time
+ * too. `ms` is the time left (or, counting up, the time played) at the moment `at`
+ * (server time, ms); while `run` is true it keeps counting from there.
+ */
+export interface LiveClock {
+  match: string
+  ms: number
+  run: boolean
+  at: number
+  /** Counts up (judo golden score). */
+  up?: boolean
+  /** The part being played (2 = second half, quarter…). */
+  part?: number
+  /** Judo: golden score. */
+  golden?: boolean
+}
+
 export type MatchStatus = 'scheduled' | 'live' | 'finished'
 
 /** QF: first round of a tier, SF: second round, P: match for a place (the final is P for place 1). */

@@ -2,12 +2,15 @@ import { useEffect, useState } from 'react'
 import { t } from '../i18n'
 import { TOURNAMENT_ID } from '../config'
 import { clock } from '../logic/judo'
+import { partLabel, playOf } from '../logic/sports'
 import { useNow } from '../ui'
+import type { LiveClock, Match } from '../types'
+import { store } from '../store/store'
 
 /*
  * The match clock on the referee's phone: counts down each part of the game (a bout, a half,
- * a quarter), start and stop, corrections of a few seconds, and the next part. It lives on
- * this phone only (kept over a reload); the score goes to the fans as usual.
+ * a quarter), start and stop, corrections of a few seconds, and the next part. The phone
+ * keeps it over a reload and sends every start, stop and correction to the fans' scoreboard.
  */
 
 interface Saved {
@@ -21,8 +24,10 @@ interface Saved {
 const EMPTY: Saved = { used: 0, since: null, part: 1 }
 const key = (id: string) => `sla:clock:${TOURNAMENT_ID}:${id}`
 
-export function clearContestClock(id: string) {
+/** After the match: forgets the clock here and takes it off the fans' scoreboard. */
+export function clearContestClock(id: string, court?: number) {
   try { localStorage.removeItem(key(id)) } catch { /* no storage */ }
+  if (court && store.clock(court)?.match === id) store.publishClock(court, null)
 }
 
 /**
@@ -54,8 +59,10 @@ export function PenaltyTimers({ id, seconds }: { id: string; seconds: number }) 
 }
 
 /** `parts`: how many parts the game has (2 halves, 4 quarters…); `partName`: "połowa", "kwarta"… */
-export function ContestClock({ id, seconds, parts = 1, partName, onTimeUp }: {
+export function ContestClock({ id, court, seconds, parts = 1, partName, onTimeUp }: {
   id: string
+  /** The court whose scoreboard shows this clock to the fans. */
+  court?: number
   seconds: number
   parts?: number
   partName?: (n: number) => string
@@ -65,12 +72,24 @@ export function ContestClock({ id, seconds, parts = 1, partName, onTimeUp }: {
   const [c, setC] = useState<Saved>(() => {
     try { return { ...EMPTY, ...JSON.parse(localStorage.getItem(key(id)) ?? 'null') } } catch { return EMPTY }
   })
+  const total = seconds * 1000
+  const publish = (s: Saved) => {
+    if (!court) return
+    const t0 = Date.now()
+    const used = Math.min(total, s.used + (s.since !== null ? t0 - s.since : 0))
+    store.publishClock(court, {
+      match: id, ms: total - used, run: s.since !== null && used < total, at: store.now(),
+      ...(parts > 1 ? { part: s.part } : {}),
+    })
+  }
   const save = (next: Saved) => {
     setC(next)
     try { localStorage.setItem(key(id), JSON.stringify(next)) } catch { /* no storage */ }
+    publish(next)
   }
+  // Opening the match (or reloading the page) shows the clock to the fans again.
+  useEffect(() => { publish(c) }, [id, court])
   const now = useNow(250)
-  const total = seconds * 1000
   const left = Math.max(0, total - c.used - (c.since !== null ? now - c.since : 0))
   const partOver = left <= 0
   const lastPart = c.part >= parts
@@ -112,5 +131,33 @@ export function ContestClock({ id, seconds, parts = 1, partName, onTimeUp }: {
         </div>
       </details>
     </div>
+  )
+}
+
+/** The time a court's clock shows now (ms), counting on from the referee's last message. */
+export function clockShows(c: LiveClock, now: number): number {
+  if (!c.run) return c.ms
+  const ran = Math.max(0, now - c.at)
+  return c.up ? c.ms + ran : Math.max(0, c.ms - ran)
+}
+
+/**
+ * The game clock for the fans (live courts, the match page, the TV and the camera
+ * scoreboard): shown while the referee runs a clock for this match.
+ */
+export function FanClock({ match, className = '' }: { match: Match; className?: string }) {
+  useNow(500)
+  const c = store.clock(match.court)
+  if (!c || c.match !== match.id || match.status !== 'live') return null
+  const ms = clockShows(c, store.now())
+  const play = c.part ? playOf(store.get().tournament.rules) : null
+  const label = c.golden ? 'Golden score' : c.part ? partLabel(play?.part ?? 'część', c.part) : ''
+  return (
+    <p className={`fan-clock ${c.run ? 'run' : 'stop'} ${!c.up && ms <= 0 ? 'over' : ''} ${className}`}>
+      <span className="fc-icon" aria-hidden>⏱</span>
+      {label && <span className="fc-label">{label}</span>}
+      <b className="fc-time">{clock(ms / 1000)}</b>
+      {!c.run && <span className="fc-note">{!c.up && ms <= 0 ? t('koniec czasu') : t('zegar zatrzymany')}</span>}
+    </p>
   )
 }

@@ -12,8 +12,8 @@ import { ConfirmDialog, NumberField, useLookups, useNow } from '../ui'
 /*
  * Judo on the referee's phone, laid out like a judo scoreboard: the contest clock
  * (Hajime / Matte), golden score, osaekomi with the scores it gives, and for each judoka
- * Ippon, Waza-ari, Yuko and Shido with a way to take a mistake back. The clock lives on this
- * phone only (kept over a reload); the scores go to the fans at once.
+ * Ippon, Waza-ari, Yuko and Shido with a way to take a mistake back. The phone keeps the
+ * clock over a reload and shows it on the fans' scoreboard; the scores go to the fans at once.
  */
 
 interface Clock {
@@ -96,6 +96,15 @@ export function JudoScoring({ state, match, meta, onFinish }: { state: State; ma
     if (stopped && (c.since !== null || c.hold)) setClock({ ...pause(), hold: null })
   }, [stopped])
 
+  // Every start, stop and correction goes to the fans' scoreboard too.
+  useEffect(() => {
+    const t0 = Date.now()
+    const ran = c.since !== null ? t0 - c.since : 0
+    store.publishClock(match.court, j.golden
+      ? { match: match.id, ms: c.golden + ran, run: c.since !== null, at: store.now(), up: true, golden: true }
+      : { match: match.id, ms: Math.max(0, fightMs - c.used - ran), run: c.since !== null, at: store.now() })
+  }, [c, j.golden, match.id])
+
   const toGolden = () => {
     change((x) => ({ ...x, golden: true }))
     setClock({ ...c, since: null, golden: 0, hold: null })
@@ -103,6 +112,7 @@ export function JudoScoring({ state, match, meta, onFinish }: { state: State; ma
   const finish = () => {
     store.updateMatch(match.id, (m) => (judoResult(judoOf(m.sets[0])) ? { ...m, status: 'finished' } : m))
     try { localStorage.removeItem(clockKey(match.id)) } catch { /* no storage */ }
+    if (store.clock(match.court)?.match === match.id) store.publishClock(match.court, null)
     onFinish()
   }
 

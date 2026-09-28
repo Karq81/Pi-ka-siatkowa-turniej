@@ -1,7 +1,8 @@
 import { t } from '../i18n'
 import { publicBoard } from '../logic/publicBoard'
 import { useStore } from '../store/store'
-import { formatTime, useNow } from '../ui'
+import { courtMatch, formatTime, useNow } from '../ui'
+import { FanClock } from './ContestClock'
 
 /**
  * One court's scoreboard, the same one the SportCast app draws on the video. Opens when
@@ -13,6 +14,7 @@ export function Scoreboard({ court, note = true }: { court: number; note?: boole
   const now = useNow(5000)
   const b = publicBoard(state, court, now)
   const sets = b.scoring === 'sets'
+  const live = courtMatch(state, court).current
   return (
     <div className={note ? 'scoreboard-page' : undefined}>
       <div className="scoreboard">
@@ -34,6 +36,7 @@ export function Scoreboard({ court, note = true }: { court: number; note?: boole
                   : t('Początek o {time}', { time: formatTime(b.start) })}
               {sets && b.sets.length > 1 && <span className="muted"> · {b.sets.map((s) => `${s.a}:${s.b}`).join(', ')}</span>}
             </div>
+            {live && <FanClock match={live} className="sb-clock" />}
           </>
         )}
       </div>

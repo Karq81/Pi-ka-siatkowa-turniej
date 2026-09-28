@@ -74,6 +74,25 @@
       }
     },
 
+    "clock": {
+      "$t": {
+        ".read": true,
+        ".write": "auth != null && root.child('sessions/' + $t + '/' + auth.uid + '/role').val() === 'admin' && root.child('sessions/' + $t + '/' + auth.uid + '/pin').val() === root.child('pins/' + $t + '/admin').val()",
+        "$court": {
+          ".write": "auth != null && ((root.child('sessions/' + $t + '/' + auth.uid + '/role').val() === 'admin' && root.child('sessions/' + $t + '/' + auth.uid + '/pin').val() === root.child('pins/' + $t + '/admin').val()) || (root.child('sessions/' + $t + '/' + auth.uid + '/role').val() === 'court' && root.child('sessions/' + $t + '/' + auth.uid + '/court').val() + '' === $court && root.child('sessions/' + $t + '/' + auth.uid + '/pin').val() === root.child('pins/' + $t + '/courts/' + $court).val()))",
+          ".validate": "newData.hasChildren(['match', 'ms', 'run', 'at']) && newData.child('match').isString() && newData.child('match').val().length < 200 && newData.child('ms').isNumber() && newData.child('ms').val() >= 0 && newData.child('ms').val() < 86400000 && newData.child('run').isBoolean() && newData.child('at').isNumber()",
+          "match": { ".validate": true },
+          "ms": { ".validate": true },
+          "run": { ".validate": true },
+          "at": { ".validate": true },
+          "up": { ".validate": "newData.isBoolean()" },
+          "golden": { ".validate": "newData.isBoolean()" },
+          "part": { ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 20" },
+          "$other": { ".validate": false }
+        }
+      }
+    },
+
     "live": {
       "$t": {
         ".read": true,

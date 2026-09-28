@@ -27,14 +27,14 @@ export function KarateScoring({ state, match, meta, onFinish }: { state: State; 
   })
   const finish = () => {
     store.updateMatch(match.id, (m) => ({ ...m, status: 'finished' }))
-    clearContestClock(match.id)
+    clearContestClock(match.id, match.court)
     onFinish()
   }
 
   return (
     <section className="scoring judo karate">
       <p className="muted center">{meta}</p>
-      <ContestClock id={match.id} seconds={rules.fightSeconds ?? 180} onTimeUp={setTimeUp} />
+      <ContestClock id={match.id} court={match.court} seconds={rules.fightSeconds ?? 180} onTimeUp={setTimeUp} />
       <div className="pads jd-pads">
         {(['a', 'b'] as const).map((sd) => {
           const pen = sd === 'a' ? k.pa : k.pb

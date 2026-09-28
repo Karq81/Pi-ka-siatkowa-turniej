@@ -69,6 +69,22 @@ describe('realtime database rules', () => {
     await assertFails(set(ref(as('ref1'), 'pins/main'), PINS))
   })
 
+  it('game clock: fans read it, only the court\'s referee writes it, and only its fields', async () => {
+    const clock = { match: 'm1', ms: 600000, run: true, at: 1, part: 2 }
+    await assertSucceeds(get(ref(as(null), 'clock/main')))
+    await assertFails(set(ref(as('fan'), 'clock/main/1'), clock))
+    await login('ref1', '1111', 1)
+    await assertSucceeds(set(ref(as('ref1'), 'clock/main/1'), clock))
+    await assertSucceeds(set(ref(as('ref1'), 'clock/main/1'), { match: 'm1', ms: 5000, run: false, at: 2, up: true, golden: true }))
+    await assertFails(set(ref(as('ref1'), 'clock/main/2'), clock))
+    await assertFails(set(ref(as('ref1'), 'clock/main/1'), { ...clock, note: 'x' }))
+    await assertFails(set(ref(as('ref1'), 'clock/main/1'), { ...clock, ms: -1 }))
+    await assertSucceeds(remove(ref(as('ref1'), 'clock/main/1')))
+    await assertFails(remove(ref(as('ref1'), 'clock/main')))
+    await login('boss', '1234')
+    await assertSucceeds(remove(ref(as('boss'), 'clock/main')))
+  })
+
   it('does not let a court referee clear all courts', async () => {
     await login('ref1', '1111', 1)
     await assertFails(remove(ref(as('ref1'), 'live/main')))

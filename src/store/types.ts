@@ -1,4 +1,4 @@
-import type { Entry, Match, Pins, Session, State, Team } from '../types'
+import type { Entry, LiveClock, Match, Pins, Session, State, Team } from '../types'
 
 export interface SyncInfo {
   /** 'local' = data only in this browser; 'online' = shared database. */
@@ -28,6 +28,12 @@ export interface Store {
   login(pin: string, court?: number): Promise<boolean>
   logout(): void
   updateMatch(id: string, update: (m: Match) => Match): void
+  /** The referee: the court's game clock for the fans (null: stopped for good). */
+  publishClock(court: number, clock: LiveClock | null): void
+  /** The game clock on a court, as the referee last sent it. */
+  clock(court: number): LiveClock | null
+  /** Time (ms) that clocks are compared with: the server's where there is one. */
+  now(): number
   /** Admin: replace the whole tournament (teams, groups, schedule). */
   replace(state: State): Promise<void>
   /** Admin: change tournament settings only. */

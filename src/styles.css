@@ -1427,3 +1427,15 @@ input.num-bad { border-color: #dc2626; box-shadow: 0 0 0 3px #dc262622; }
 
 /* Organiser: results as an Excel file */
 .export-btn { margin-top: 6px; }
+
+/* The game clock for the fans (sent by the referee's phone) */
+.fan-clock { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: center; gap: 4px 8px; margin: 6px 0; font-variant-numeric: tabular-nums; }
+.fan-clock .fc-time { font-size: 1.6rem; letter-spacing: .02em; }
+.fan-clock .fc-label, .fan-clock .fc-note { white-space: nowrap; font-size: .85rem; color: var(--muted, #667); }
+.fan-clock.run .fc-time { color: var(--live, #d11); }
+.fan-clock.stop .fc-time { opacity: .75; }
+.fan-clock.over .fc-time { color: var(--muted, #667); }
+.fan-clock-big .fc-time { font-size: 2.6rem; }
+.court-big .fan-clock .fc-time { font-size: 2.4rem; }
+.sb-clock { margin: 4px 0 0; }
+.sb-clock .fc-time { font-size: 2rem; }

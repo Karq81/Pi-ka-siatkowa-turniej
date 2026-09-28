@@ -1,5 +1,5 @@
 import { applyMatchUpdate } from '../logic/knockout'
-import type { Pins, Session, State } from '../types'
+import type { Pins, Session, State, LiveClock } from '../types'
 import type { Store, SyncInfo } from './types'
 
 const PINS_KEY = 'siatkalive:pins'
@@ -43,6 +43,8 @@ export function createLocalStore(tournamentId: string, initial: State): Store {
   const sync: SyncInfo = { mode: 'local', connected: true, pending: false, empty: false, error: null }
   const listeners = new Set<() => void>()
   const notify = () => listeners.forEach((l) => l())
+  // Game clocks: in this browser only, like everything else here.
+  const clocks = new Map<number, LiveClock>()
 
   let channel: BroadcastChannel | null = null
   try {
@@ -87,6 +89,13 @@ export function createLocalStore(tournamentId: string, initial: State): Store {
     updateTournament(patch) {
       commit({ ...state, tournament: { ...state.tournament, ...patch } })
     },
+    publishClock(court, clock) {
+      if (clock) clocks.set(court, clock)
+      else clocks.delete(court)
+      notify()
+    },
+    clock: (court) => clocks.get(court) ?? null,
+    now: () => Date.now(),
     async cameraKey() { return null },
     async submitEntry() { throw new Error('offline') },
     async listEntries() { return [] },

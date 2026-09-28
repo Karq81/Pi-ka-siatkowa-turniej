@@ -19,6 +19,7 @@ import { Competition, NextMatch, TeamBadge, TeamPage } from './Competition'
 import { MatchPage } from './Groups'
 import { CourtQueue } from './CourtQueue'
 import { Info, InfoHero } from './Info'
+import { FanClock } from './ContestClock'
 import { BackBar, courtLabel, formatDay, formatTime, ScoreLine, StatusPill, useLookups, useNow } from '../ui'
 
 /**
@@ -129,6 +130,7 @@ export function CourtCard({ state, court, big = false, referee = false }: { stat
         <TeamRow name={side(current, 'a')} sets={multi ? tl.setsA : undefined} points={judo && cur ? judoSideText(judoOf(cur).a) : cur?.a === 0.5 ? '½' : cur?.a} shido={judo && cur ? judoOf(cur).a.shido : undefined} live={shown} win={winA} mine={mine.includes(current.teamA)} />
         <TeamRow name={side(current, 'b')} sets={multi ? tl.setsB : undefined} points={judo && cur ? judoSideText(judoOf(cur).b) : cur?.b === 0.5 ? '½' : cur?.b} shido={judo && cur ? judoOf(cur).b.shido : undefined} live={shown} win={winB} mine={mine.includes(current.teamB)} />
       </a>
+      {live && <FanClock match={current} />}
       {judo && cur && shown && <JudoNote rules={rules} set={cur} live={live} />}
       {cur && shown && <KarateNote rules={rules} set={cur} />}
       {cur && shown && <ChessNote rules={rules} set={cur} />}

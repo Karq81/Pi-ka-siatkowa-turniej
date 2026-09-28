@@ -331,7 +331,7 @@ function LiveScoring({ state, match, meta, onFinish }: { state: State; match: Ma
       : m)
   const finish = () => {
     store.updateMatch(match.id, (m) => (isMatchDecided(rules, m.sets) ? { ...m, status: 'finished' } : m))
-    clearContestClock(match.id)
+    clearContestClock(match.id, match.court)
     onFinish()
   }
 
@@ -350,7 +350,7 @@ function LiveScoring({ state, match, meta, onFinish }: { state: State; match: Ma
               ].join(' · ')}
       </p>
       {play && play.periodMinutes > 0 && (
-        <ContestClock id={match.id} seconds={play.periodMinutes * 60} parts={play.periods} partName={(n) => partLabel(play.part, n)} />
+        <ContestClock id={match.id} court={match.court} seconds={play.periodMinutes * 60} parts={play.periods} partName={(n) => partLabel(play.part, n)} />
       )}
       {gameSet && (
         <p className="tn-game">

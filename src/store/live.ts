@@ -1,6 +1,6 @@
 import type { FirebaseApp } from 'firebase/app'
 import type { PublicBoard } from '../logic/publicBoard'
-import type { Pins, SetScore } from '../types'
+import type { LiveClock, Pins, SetScore } from '../types'
 
 /**
  * Live scores through the Realtime Database. A point changes a few bytes there, and
@@ -12,6 +12,7 @@ import type { Pins, SetScore } from '../types'
  *   pins/{t}               { admin, courts: { "1": key, … } }, a copy of the Firestore keys
  *   sessions/{t}/{uid}     { role, court?, pin }: a device's role, accepted when the key matches
  *   live/{t}/{court}/{id}  { sets, at }: the score of a match in progress, readable by all
+ *   clock/{t}/{court}      the game clock of the court's match (see LiveClock), readable by all
  *   pins/{t}/stream        the camera apps' key, set by the chief referee, readable by referees
  *   board/{t}/{key}/{court} the court's scoreboard for camera apps (see logic/publicBoard.ts):
  *                          readable by whoever knows the key (the organiser's QR code), and
@@ -31,6 +32,12 @@ export interface LiveChannel {
   /** Sends a score; `onRefused` runs when the database does not accept it (then use Firestore). */
   write(court: number, matchId: string, entry: LiveEntry, onRefused: () => void): void
   clear(court: number, matchId: string): void
+  /** Sends a court's game clock (null: no clock running there). */
+  writeClock(court: number, clock: LiveClock | null): void
+  /** Follows the game clocks of all courts; returns the unsubscribe function. */
+  followClocks(onChange: (clocks: Map<number, LiveClock>) => void): () => void
+  /** The server's time (ms), so clocks on different phones agree. */
+  serverNow(): number
   /** Publishes a court's scoreboard for camera apps under the organiser's key. */
   writeBoard(key: string, court: number, board: PublicBoard): void
   /** Follows the camera apps' key (null: turned off or not allowed); returns the unsubscribe function. */
@@ -62,6 +69,8 @@ export async function openLive(app: FirebaseApp, tournamentId: string, emulator:
   let writable = false
   let online = false
   onValue(ref(db, '.info/connected'), (snap) => { online = snap.val() === true })
+  let offset = 0
+  onValue(ref(db, '.info/serverTimeOffset'), (snap) => { offset = Number(snap.val()) || 0 })
 
   return {
     canWrite: () => writable,
@@ -82,6 +91,21 @@ export async function openLive(app: FirebaseApp, tournamentId: string, emulator:
       set(ref(db, `live/${tournamentId}/${court}/${matchId}`), { sets: entry.sets.map((s) => JSON.parse(JSON.stringify(s)) as SetScore), at: entry.at })
         .catch((e) => { console.warn('live write', e); writable = false; onRefused() })
     },
+    serverNow: () => Date.now() + offset,
+    writeClock(court, clock) {
+      if (!writable) return
+      const r = ref(db, `clock/${tournamentId}/${court}`)
+      ;(clock ? set(r, JSON.parse(JSON.stringify(clock))) : remove(r)).catch((e) => console.warn('clock write', e))
+    },
+    followClocks(onChange) {
+      return onValue(ref(db, `clock/${tournamentId}`), (snap) => {
+        const map = new Map<number, LiveClock>()
+        for (const [court, c] of Object.entries((snap.val() ?? {}) as Record<string, LiveClock>)) {
+          if (c && typeof c.match === 'string' && typeof c.ms === 'number') map.set(Number(court), c)
+        }
+        onChange(map)
+      }, () => onChange(new Map()))
+    },
     writeBoard(key, court, board) {
       if (writable) set(ref(db, `board/${tournamentId}/${key}/${court}`), JSON.parse(JSON.stringify(board))).catch((e) => console.warn('board write', e))
     },
@@ -98,6 +122,7 @@ export async function openLive(app: FirebaseApp, tournamentId: string, emulator:
     },
     clearAll() {
       if (writable) remove(ref(db, `live/${tournamentId}`)).catch(() => {})
+      if (writable) remove(ref(db, `clock/${tournamentId}`)).catch(() => {})
     },
     clear(court, matchId) {
       if (writable) remove(ref(db, `live/${tournamentId}/${court}/${matchId}`)).catch(() => {})
