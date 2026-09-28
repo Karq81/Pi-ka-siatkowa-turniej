@@ -1282,3 +1282,4 @@ button.btn-correct { font: inherit; cursor: pointer; }
 .sb-note { max-width: 560px; color: #94a3b8; font-size: 0.85rem; text-align: center; margin: 0; }
 .scoreboards { display: grid; gap: 12px; }
 .camera-code { font-size: 1.1rem; padding: 2px 8px; user-select: all; }
+.usage-test .usage-big b { font-size: 1.4rem; color: var(--ok, #15803d); }

@@ -18,6 +18,16 @@ export const PLN_PER_USD = 4
 /** Visits per day per account that cost the organiser nothing. */
 export const FREE_VIEWS_PER_DAY = 1000
 
+/**
+ * Test tournaments' organisers (logins): everything free, no daily limit, no credits needed.
+ * Their visits are still counted, to learn what a real tournament uses.
+ */
+export const TEST_ACCOUNTS = ['optymielno']
+
+export function isTestAccount(account: { login?: string }): boolean {
+  return TEST_ACCOUNTS.includes((account.login ?? '').trim().toLowerCase())
+}
+
 /** Credit packages: visits over the free allowance, and their price. */
 export const PACKAGES = [
   { views: 5_000, pln: 9 },

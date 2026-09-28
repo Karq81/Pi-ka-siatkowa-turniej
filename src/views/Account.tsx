@@ -7,7 +7,7 @@ import {
 } from '../store/accounts'
 import { PlatformNav, Wordmark } from './Platform'
 import {
-  FREE_VIEWS_PER_DAY, PACKAGES, firebaseCostPln, formatPln, freeUsedPercent, pricePln, READS_PER_VIEW,
+  FREE_VIEWS_PER_DAY, PACKAGES, firebaseCostPln, formatPln, freeUsedPercent, isTestAccount, pricePln, READS_PER_VIEW,
 } from '../logic/usage'
 
 /** Address of one of the account's tournaments (Albatros CUP is "main" in the database). */
@@ -142,7 +142,7 @@ function MyTournaments({ account }: { account: Account }) {
                 <a className="btn" href={tournamentLink(tr.id)}>{t('Strona dla kibiców')}</a>
               </div>
               <p className="muted small">{t('PIN sędziego głównego:')} <b>{tr.pin}</b>. {t('Po wejściu z tego konta nie trzeba go wpisywać.')}</p>
-              {usage && <TournamentChart usage={usage[tr.id]} />}
+              {usage && <TournamentChart usage={usage[tr.id]} test={isTestAccount(account)} />}
             </article>
           ))}
         </div>
@@ -296,6 +296,7 @@ function UsageSummary({ account, usage }: { account: Account; usage: Record<stri
   const over = Math.max(0, today - FREE_VIEWS_PER_DAY)
   const credits = account.credits ?? 0
   const level = pct >= 100 ? 'over' : pct >= 80 ? 'warn' : 'ok'
+  if (isTestAccount(account)) return <TestAccountNote today={usage ? today : null} />
   return (
     <section className="usage">
       <div className="panel usage-card">
@@ -326,14 +327,28 @@ function UsageSummary({ account, usage }: { account: Account; usage: Record<stri
   )
 }
 
+/** A test tournament's organiser: free, without limits; visits only counted. */
+function TestAccountNote({ today }: { today: number | null }) {
+  return (
+    <section className="usage">
+      <div className="panel usage-card usage-test">
+        <p className="eyebrow">{t('Turniej testowy')}</p>
+        <div className="usage-big"><b>{t('Za darmo, bez limitu')}</b></div>
+        <p className="muted small">{t('To pierwszy turniej testowy serwisu. Korzystasz ze wszystkiego za darmo, bez dziennego limitu i bez doładowywania kredytów. Liczymy tylko wejścia, żeby wiedzieć, ile ruchu robi prawdziwy turniej.')}</p>
+        {today !== null && <p className="small"><b>{t('Dziś: {n} wejść', { n: today.toLocaleString(locale()) })}</b></p>}
+      </div>
+    </section>
+  )
+}
+
 /** Visits per day for the last week, as small bars. */
-function TournamentChart({ usage }: { usage: TournamentUsage | undefined }) {
+function TournamentChart({ usage, test }: { usage: TournamentUsage | undefined; test?: boolean }) {
   if (!usage || usage.days.length === 0) return <p className="muted small">{t('Wejścia: jeszcze nikt nie otwierał strony turnieju.')}</p>
   const days = [...usage.days].reverse()
   const max = Math.max(...days.map((d) => d.views), 1)
   return (
     <div className="t-usage">
-      <p className="small"><b>{t('Dziś: {n} wejść', { n: usage.today.toLocaleString(locale()) })}</b> · {t('{pct}% dziennego limitu', { pct: freeUsedPercent(usage.today) })}</p>
+      <p className="small"><b>{t('Dziś: {n} wejść', { n: usage.today.toLocaleString(locale()) })}</b>{!test && <> · {t('{pct}% dziennego limitu', { pct: freeUsedPercent(usage.today) })}</>}</p>
       <div className="t-bars" aria-label={t('Wejścia w ostatnich dniach')}>
         {days.map((d) => (
           <div key={d.day} className="t-bar" title={`${d.day}: ${t('{n} wejść', { n: d.views })}`}>
@@ -352,6 +367,19 @@ export function Credits({ account }: { account: Account }) {
   const [days, setDays] = useState(2)
   const perDayOver = Math.max(0, views - FREE_VIEWS_PER_DAY)
   const total = perDayOver * days
+  if (isTestAccount(account)) {
+    return (
+      <>
+        <header className="acc-head">
+          <div>
+            <p className="eyebrow">{t('Kredyty')}</p>
+            <h1>{t('Turniej testowy: za darmo, bez limitu')}</h1>
+            <span className="muted">{t('Nic nie doładowujesz. Wszystkie wejścia kibiców są darmowe.')}</span>
+          </div>
+        </header>
+      </>
+    )
+  }
   return (
     <>
       <header className="acc-head">
