@@ -1,17 +1,23 @@
 import { t } from '../i18n'
 import { useSession, store, useStore } from '../store/store'
 import type { Match } from '../types'
-import { BackBar, courtLabel, formatDay, formatTime, PinGate, useLookups } from '../ui'
+import { BackBar, ConfirmButton, courtLabel, formatDay, formatTime, PinGate, useLookups } from '../ui'
 import { ResultForm } from './ResultForm'
 
 /** Small button shown only to the chief referee: opens the result correction for a match. */
 export function CorrectButton({ match }: { match: Match }) {
   const session = useSession()
   if (session?.role !== 'admin' || !match.teamA || !match.teamB) return null
+  const go = () => { location.hash = `korekta-${match.id}` }
+  if (match.status === 'scheduled') return <button type="button" className="btn-correct" onClick={go}>✎ {t('Wpisz wynik')}</button>
   return (
-    <a className="btn-correct" href={`#korekta-${match.id}`}>
-      ✎ {match.status === 'scheduled' ? t('Wpisz wynik') : t('Korekta wyniku')}
-    </a>
+    <ConfirmButton
+      className="btn-correct"
+      label={`✎ ${t('Korekta wyniku')}`}
+      question={t('Czy na pewno chcesz poprawić wynik tego meczu?')}
+      yes={t('Tak, popraw wynik')}
+      onYes={go}
+    />
   )
 }
 

@@ -9,7 +9,7 @@ import { store, useSession, useStore } from '../store/store'
 import type { Match, State } from '../types'
 import { ResultForm } from './ResultForm'
 import { Upcoming } from './Public'
-import { BackBar, courtLabel, courtMatch, formatTime, PinGate, StatusPill, useLookups, useNow } from '../ui'
+import { BackBar, ConfirmButton, courtLabel, courtMatch, formatTime, PinGate, StatusPill, useLookups, useNow } from '../ui'
 
 /** List of courts for referees to pick from. */
 export function CourtPicker() {
@@ -262,11 +262,13 @@ function CourtPanel({ state, court, manualFirst }: { state: State; court: number
 export function UndoMatch({ match }: { match: Match }) {
   return (
     <div className="undo-match">
-      <button type="button" className="btn btn-danger" onClick={() => {
-        if (confirm(t('Anulować ten mecz? Wynik zniknie, a mecz wróci do stanu „nie rozpoczęty”. Będzie można zacząć go od nowa.'))) {
-          store.updateMatch(match.id, (m) => ({ ...m, status: 'scheduled', sets: [] }))
-        }
-      }}>↺ {t('Anuluj mecz (wróć do 0:0)')}</button>
+      <ConfirmButton
+        className="btn btn-danger"
+        label={`↺ ${t('Anuluj mecz (wróć do 0:0)')}`}
+        question={t('Czy na pewno anulować ten mecz? Wynik zniknie, a mecz wróci do stanu „nie rozpoczęty”. Będzie można zacząć go od nowa.')}
+        yes={t('Tak, anuluj mecz')}
+        onYes={() => store.updateMatch(match.id, (m) => ({ ...m, status: 'scheduled', sets: [] }))}
+      />
       <CorrectButton match={match} />
     </div>
   )

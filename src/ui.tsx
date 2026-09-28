@@ -192,3 +192,29 @@ export function SyncBanner() {
   }
   return null
 }
+
+/**
+ * A button that asks first: a clear window in the middle of the screen with the question
+ * and two big answers, so a slip of the finger on the phone changes nothing.
+ */
+export function ConfirmButton({ className, label, question, yes, onYes }: {
+  className: string; label: ReactNode; question: string; yes: string; onYes: () => void
+}) {
+  const [open, setOpen] = useState(false)
+  return (
+    <>
+      <button type="button" className={className} onClick={() => setOpen(true)}>{label}</button>
+      {open && (
+        <div className="confirm-back" role="presentation" onClick={() => setOpen(false)}>
+          <div className="confirm-box" role="alertdialog" aria-modal="true" aria-label={question} onClick={(e) => e.stopPropagation()}>
+            <p className="confirm-q">{question}</p>
+            <div className="confirm-actions">
+              <button type="button" className="btn btn-lg" autoFocus onClick={() => setOpen(false)}>{t('Nie')}</button>
+              <button type="button" className="btn btn-danger btn-lg" onClick={() => { setOpen(false); onYes() }}>{yes}</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  )
+}
