@@ -8,8 +8,7 @@
   "hosting": {
     "public": "dist",
     "ignore": [
-      "firebase.json",
-      "**/.*"
+      "firebase.json"
     ],
     "rewrites": [
       {

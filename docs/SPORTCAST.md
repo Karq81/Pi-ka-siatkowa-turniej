@@ -12,7 +12,8 @@ Organizator otwiera: panel → **Więcej** (PIN sędziego głównego) → **📺
 (10 znaków `A–Z`, `2–9`) i pokazuje:
 
 - **kod QR** z adresem, np.
-  `https://sportlivearena.com/?t=albatros&cam=main/Y7EE8MVL42#kamera`
+  `https://sportlivearena.com/kamera?t=albatros&cam=main/Y7EE8MVL42#kamera`
+  (osobna ścieżka `/kamera`, żeby aplikacja mogła przejmować tylko te linki)
 - **kod do wpisania**, np. `main/Y7EE8MVL42` (`{turniej}/{klucz}`).
 
 Aplikacja przyjmuje jedno i drugie: z adresu bierze parametr `cam`, a wpisany tekst bierze wprost.
@@ -22,7 +23,7 @@ Tablice są zapisane **pod kluczem**, więc bez kodu nie da się ich odczytać a
 Kibice i trenerzy nie widzą tej opcji. „Nowy kod” odcina stary: kamery podłączone starym kodem
 przestają dostawać wynik. Dopóki organizator nie włączy kodu, telefony sędziów nie zapisują tablic.
 
-Zeskanowany zwykłym aparatem ten sam adres otwiera w przeglądarce tablice wszystkich boisk
+Zeskanowany zwykłym aparatem otwiera aplikację (gdy ta obsługuje linki `/kamera`, patrz niżej), a bez niej otwiera w przeglądarce tablice wszystkich boisk
 (podgląd tego, co dostaje aplikacja).
 
 ## Adresy danych
@@ -123,3 +124,10 @@ pojawić w przyszłości – ignoruj nieznane.
 
 Kto może pisać: tylko telefon zalogowany PIN-em tego boiska albo PIN-em sędziego głównego
 (reguły w `database.rules.json`). Aplikacja z kamerą tylko czyta.
+
+## Otwieranie aplikacji zwykłym aparatem (Android App Links)
+
+Aplikacja rejestruje linki `https://sportlivearena.com/kamera…` (także `.pl`, `.online` i
+`turniej-siatkowki-faf22.web.app`). Żeby Android otwierał je od razu w aplikacji, strona musi mieć
+plik `/.well-known/assetlinks.json` z nazwą pakietu (`com.handballcam`) i odciskiem SHA-256
+certyfikatu, którym podpisano APK (`gradlew signingReport`). Odcisk nie jest tajny.

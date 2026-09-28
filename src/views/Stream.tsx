@@ -231,10 +231,17 @@ export function cameraCode(key: string): string {
   return `${TOURNAMENT_ID}/${key}`
 }
 
-/** The QR code's address; in a browser it opens the courts' scoreboards. */
+/**
+ * The QR code's address. Its own path (/kamera) lets the SportCast app claim just these links:
+ * the phone's camera opens the app straight away. Without the app (or in a browser) the page
+ * shows the courts' scoreboards.
+ */
 export function cameraAppUrl(key: string): string {
-  const base = tournamentUrl()
-  return `${base}${base.includes('?') ? '&' : '?'}cam=${cameraCode(key)}#kamera`
+  const url = new URL(tournamentUrl())
+  url.pathname = '/kamera'
+  url.searchParams.set('cam', cameraCode(key))
+  url.hash = 'kamera'
+  return url.toString().replace('%2F', '/')
 }
 
 /**
