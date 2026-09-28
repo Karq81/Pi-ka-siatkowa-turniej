@@ -1,5 +1,7 @@
 import { t } from '../i18n'
-import { tally } from '../logic/scoring'
+import { isJudo, setsText, tally } from '../logic/scoring'
+import { judoOf, judoSideText } from '../logic/judo'
+import { JudoNote } from './JudoScoring'
 import type { Match, State } from '../types'
 import { CorrectButton } from './Correction'
 import { CourtQueue } from './CourtQueue'
@@ -17,8 +19,9 @@ export function MatchPage({ state, matchId }: { state: State; matchId: string })
   const cur = m.sets[m.sets.length - 1]
   const single = rules.sets === 1
   const back = m.groupId ? `#grupa-${m.groupId}` : '#drabinka'
-  const scoreA = single ? cur?.a : tl.setsA
-  const scoreB = single ? cur?.b : tl.setsB
+  const judo = isJudo(rules)
+  const scoreA = judo && cur ? judoSideText(judoOf(cur).a) : single ? cur?.a : tl.setsA
+  const scoreB = judo && cur ? judoSideText(judoOf(cur).b) : single ? cur?.b : tl.setsB
   return (
     <>
       <BackBar fallback={back.slice(1)} />
@@ -36,8 +39,9 @@ export function MatchPage({ state, matchId }: { state: State; matchId: string })
         <div className="center"><CorrectButton match={m} /></div>
         {isUnderway(m, now) && !m.sets.length && <p className="center muted">{t('Mecz trwa. Wynik pojawi się po meczu.')}</p>}
         {!single && m.sets.length > 0 && (
-          <p className="center muted">{t('Sety:')} {m.sets.map((s) => `${s.a}:${s.b}`).join(', ')}</p>
+          <p className="center muted">{t('Sety:')} {setsText(rules, m.sets)}</p>
         )}
+        {judo && cur && m.status !== 'scheduled' && <JudoNote rules={rules} set={cur} live={m.status === 'live'} />}
         {m.status === 'live' && <p className="center muted small">{t('Wynik zmienia się na bieżąco.')}</p>}
         {m.status === 'scheduled' && !isUnderway(m, now) && <p className="center muted">{t('Mecz jeszcze się nie zaczął.')}</p>}
       </article>
@@ -52,7 +56,7 @@ function isWin(m: Match, tl: ReturnType<typeof tally>, s: 'a' | 'b') {
 }
 
 /** Team names lead to the team's page (its other matches), once the team is known. */
-function MatchSide({ teamId, name, score, win }: { teamId: string; name: string; score?: number; win: boolean }) {
+function MatchSide({ teamId, name, score, win }: { teamId: string; name: string; score?: number | string; win: boolean }) {
   return (
     <div className={`mp-side ${win ? 'mp-win' : ''}`}>
       <span className="mp-score">{score ?? '–'}</span>

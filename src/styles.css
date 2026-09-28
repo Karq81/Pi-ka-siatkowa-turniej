@@ -1328,3 +1328,49 @@ button.btn-correct { font: inherit; cursor: pointer; }
 .account-form .field-bad input { border-color: var(--live, #dc2626); box-shadow: 0 0 0 3px #dc262622; }
 /* The floating help button must not cover the form's button on a phone. */
 .account-form { margin-bottom: 84px; }
+
+/* Judo: referee panel and scoreboard (white and blue judoka, I W Y, shido cards) */
+.judo .jd-clock { display: grid; justify-items: center; gap: 10px; padding: 14px; border-radius: 14px; background: #0b1220; color: #fff; }
+.jd-time { font-family: var(--display); font-size: clamp(2.6rem, 12vw, 4rem); line-height: 1; letter-spacing: 0.02em; font-variant-numeric: tabular-nums; }
+.jd-clock.gs .jd-time { color: #fbbf24; }
+.jd-clock.up .jd-time { color: #f87171; }
+.jd-clock .btn { min-width: 60%; }
+.jd-hajime { background: #16a34a; border-color: #16a34a; }
+.jd-hold { display: grid; gap: 8px; padding: 12px; border-radius: 12px; background: #fef3c7; color: #78350f; border: 1px solid #fbbf24; text-align: center; }
+.jd-hold-time { font-size: 1.4rem; font-variant-numeric: tabular-nums; }
+.jd-pads { align-items: stretch; }
+.jd-pad { gap: 10px; }
+.jd-pad.jd-white { background: #ffffff; color: #111827; border: 2px solid #d1d5db; }
+.jd-pad.jd-blue { background: #1d4ed8; color: #fff; border: 2px solid #1e40af; }
+.jd-pad.jd-blue .muted, .jd-pad.jd-blue .linklike { color: #dbeafe; }
+.jd-board { display: flex; align-items: stretch; justify-content: center; gap: 6px; }
+.jd-board > span { display: grid; justify-items: center; min-width: 44px; padding: 4px 6px; border-radius: 8px; background: #0b1220; color: #fff; }
+.jd-board > span.on { background: #dc2626; }
+.jd-board small { font-size: 0.7rem; opacity: 0.75; font-weight: 700; }
+.jd-board b { font-family: var(--display); font-size: 1.8rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.jd-board .jd-cards { background: transparent; flex-direction: row; display: flex; gap: 3px; align-items: center; min-width: 0; padding: 0; }
+.jd-cards i, .team-row .shido i { display: inline-block; width: 12px; height: 18px; border-radius: 2px; background: #facc15; border: 1px solid #a16207; }
+.jd-cards i.red { background: #dc2626; border-color: #7f1d1d; }
+.jd-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.jd-btn { font: inherit; font-weight: 800; font-size: 1.05rem; padding: 16px 6px; border-radius: 12px; border: 0; cursor: pointer; color: #fff; touch-action: manipulation; }
+.jd-btn:disabled { opacity: 0.4; cursor: default; }
+.jd-ippon { background: #dc2626; }
+.jd-waza { background: #ea580c; }
+.jd-yuko { background: #0891b2; }
+.jd-shido { background: #facc15; color: #422006; }
+.jd-osae { width: 100%; }
+.jd-undo { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: center; }
+.jd-more { margin-top: 8px; }
+.jd-more summary { cursor: pointer; color: var(--muted); }
+.jd-note { margin: 4px 0 0; font-size: 0.85rem; color: var(--muted); text-align: center; }
+.jd-note b { color: var(--ink); }
+.team-row .shido { display: inline-flex; gap: 2px; margin-right: 6px; }
+.team-row .shido i { width: 7px; height: 11px; }
+.points.points-judo { font-size: 0.95em; letter-spacing: 0; white-space: nowrap; }
+.jd-form-table { border-collapse: collapse; width: 100%; }
+.jd-form-table th, .jd-form-table td { padding: 6px; text-align: center; }
+.jd-form-table th.rf-team { text-align: left; }
+.jd-form-table input[type=number] { width: 4.2em; text-align: center; }
+.jd-form-table input[type=checkbox] { width: 22px; height: 22px; }
+.jd-clock .jd-matte { background: #fff; color: #111827; border-color: #fff; }
+.jd-pad .jd-osae { background: #fff; color: #111827; border: 1px solid #d1d5db; }

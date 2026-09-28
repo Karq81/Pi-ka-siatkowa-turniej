@@ -1,14 +1,31 @@
 import { t } from '../i18n'
 import type { Group, Match, Rules, SetScore, Team } from '../types'
+import { judoLine, judoOf, judoResult, judoStopped } from './judo'
 
-/** One score per match (goals or points) instead of sets. */
+/** One score per match (goals, points, or a judo contest) instead of sets. */
 export function isScore(rules: Rules): boolean {
-  return rules.scoring === 'score'
+  return rules.scoring === 'score' || rules.scoring === 'judo'
+}
+
+/** Judo contests: ippon, waza-ari, yuko and shido (see judo.ts). */
+export function isJudo(rules: Rules): boolean {
+  return rules.scoring === 'judo'
 }
 
 /** What the small numbers in the table count: "małe punkty", or the score's unit ("bramki"). */
 export function scoreUnit(rules: Rules): string {
+  if (isJudo(rules)) return t('punkty techniczne')
   return t(isScore(rules) ? rules.unit ?? 'bramki' : rules.unit === 'gemy' ? 'gemy' : 'małe punkty')
+}
+
+/** A set (or a whole score, or a judo contest) as shown to people: "25:20", "W1 Y2 : Y1". */
+export function setText(rules: Rules, s: SetScore): string {
+  return isJudo(rules) ? judoLine(s) : `${s.a}:${s.b}`
+}
+
+/** All sets of a match in one line. */
+export function setsText(rules: Rules, sets: SetScore[]): string {
+  return sets.map((s) => setText(rules, s)).join(', ')
 }
 
 /** Target points for set number `index` (0-based). */
@@ -28,6 +45,7 @@ export function setCap(rules: Rules, index: number): number | undefined {
 
 /** Winner of a single set, or null while it is still in play. */
 export function setWinner(rules: Rules, index: number, s: SetScore): 'a' | 'b' | null {
+  if (isJudo(rules)) return judoResult(judoOf(s))?.winner ?? null
   if (isScore(rules)) return s.a > s.b ? 'a' : s.b > s.a ? 'b' : null
   const target = setTarget(rules, index)
   const cap = setCap(rules, index)
@@ -57,12 +75,18 @@ export function setProblem(rules: Rules, index: number, s: SetScore): 'unfinishe
 
 /** Whether another point can be added to this set (false once the set is won). */
 export function canAddPoint(rules: Rules, index: number, s: SetScore): boolean {
+  if (isJudo(rules)) return !judoStopped(judoOf(s))
   if (isScore(rules)) return true
   return setWinner(rules, index, s) === null
 }
 
 /** Problem with a full result typed from a score sheet, or null when it is a valid finished match. */
 export function resultProblem(rules: Rules, sets: SetScore[]): string | null {
+  if (isJudo(rules)) {
+    if (!sets.length) return t('Wpisz wynik walki.')
+    if (!judoResult(judoOf(sets[0]))) return t('Walka nie jest rozstrzygnięta. Przy równym wyniku jest golden score: wygrywa pierwsza ocena. Możesz też zaznaczyć decyzję sędziów.')
+    return null
+  }
   if (isScore(rules)) {
     if (!sets.length) return t('Wpisz wynik meczu.')
     if (!rules.draws && sets[0].a === sets[0].b) return t('Remis nie jest możliwy: wpisz wynik po dogrywce lub rzutach karnych.')
@@ -107,6 +131,7 @@ export function tally(rules: Rules, sets: SetScore[]): MatchTally {
 
 /** True once the match result is decided under the rules. */
 export function isMatchDecided(rules: Rules, sets: SetScore[]): boolean {
+  if (isJudo(rules)) return sets.length > 0 && !!judoResult(judoOf(sets[0]))
   if (isScore(rules)) return sets.length > 0 && (!!rules.draws || sets[0].a !== sets[0].b)
   const t = tally(rules, sets)
   if (rules.setsMode === 'fixed') return t.completeSets >= rules.sets

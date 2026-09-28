@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { ALBATROS_ALIAS, TOURNAMENT_SLUG } from '../config'
 import { MAX_COURTS, saveDraft, slugify, type TournamentDraft } from '../logic/newTournament'
 import { Assistant, type AssistantDraft } from './Assistant'
+import { clock } from '../logic/judo'
 import { describeSets, SPORTS, sportById, sportName, sportRules } from '../logic/sports'
 import { store } from '../store/store'
 import { useAccount } from '../store/accounts'
@@ -29,13 +30,18 @@ export function NewTournament() {
   const sport = sportById(sportId)
   const [format, setFormat] = useState(sport.formats[0].id)
   const [setPoints, setSetPoints] = useState(25)
+  // Judo: contest minutes typed by the organiser ('' = the format's time).
+  const [fightMinutes, setFightMinutes] = useState('')
   const pickSport = (id: string) => {
     const next = sportById(id)
     setSportId(id)
     setFormat(next.formats[0].id)
     setSlotMinutes(next.slot)
+    setFightMinutes('')
   }
-  const rules = sportRules(sport, format, setPoints)
+  const fightSeconds = fightMinutes ? Math.round(Number(fightMinutes.replace(',', '.')) * 60) || undefined : undefined
+  const rules = sportRules(sport, format, setPoints, fightSeconds)
+  const judo = rules.scoring === 'judo'
   const score = rules.scoring === 'score'
   const [categories, setCategories] = useState('')
   const [preset, setPreset] = useState<TournamentDraft['preset']>()
@@ -82,6 +88,7 @@ export function NewTournament() {
     saveDraft(address, {
       name: name.trim(), start: `${date}T${time}`, courts, slotMinutes, dayEnd,
       categories: cats.length ? cats : [t('Turniej')], sport: sportId, format, setPoints: sport.custom ? setPoints : undefined,
+      fightSeconds: judo ? rules.fightSeconds : undefined,
       preset,
     })
     location.href = `${location.pathname}?t=${address}#panel`
@@ -124,11 +131,18 @@ export function NewTournament() {
         </label>
         <div className="form-row">
           <label>{t('Format meczu')}
-            <select value={format} onChange={(e) => setFormat(e.target.value)}>
+            <select value={format} onChange={(e) => { setFormat(e.target.value); setFightMinutes('') }}>
               {sport.formats.map((f) => <option key={f.id} value={f.id}>{f.label}</option>)}
             </select>
           </label>
-          {sport.custom && !score && (
+          {judo && (
+            <label>{t('Czas walki (minuty)')}
+              <input inputMode="decimal" value={fightMinutes || String((rules.fightSeconds ?? 240) / 60).replace('.', ',')}
+                onChange={(e) => setFightMinutes(e.target.value.replace(/[^\d.,]/g, '').slice(0, 4))} />
+              <span className="muted small">{t('Np. 4, 3, 2 albo 1,5. Po czasie przy remisie: golden score.')}</span>
+            </label>
+          )}
+          {sport.custom && !score && !judo && (
             <label>{t('Set do punktów')}
               <input type="number" min={3} max={99} value={setPoints}
                 onChange={(e) => setSetPoints(Math.max(3, Math.min(99, Number(e.target.value) || 25)))} />
@@ -138,9 +152,11 @@ export function NewTournament() {
         <div className="sport-note">
           <p>{sport.note}</p>
           <p className="muted small">
-            {score
-              ? `${t('Wynik:')} ${t(rules.unit ?? 'punkty')}, ${rules.draws ? t('remis możliwy') : t('bez remisów')}.`
-              : `${t('Zasady:')} ${describeSets(rules)}.`}
+            {judo
+              ? `${t('Czas walki: {time}, przy remisie golden score (bez limitu czasu).', { time: clock(rules.fightSeconds ?? 240) })}`
+              : score
+                ? `${t('Wynik:')} ${t(rules.unit ?? 'punkty')}, ${rules.draws ? t('remis możliwy') : t('bez remisów')}.`
+                : `${t('Zasady:')} ${describeSets(rules)}.`}
             {' '}{t('Tabela:')} {t('wygrana {n} pkt', { n: sport.table[0] })}
             {rules.draws || rules.setsMode === 'fixed' && rules.sets % 2 === 0 ? `, ${t('remis {n} pkt', { n: sport.table[1] })}` : ''}
             , {t('porażka {n} pkt', { n: sport.table[2] })}.
@@ -177,13 +193,14 @@ export function NewTournament() {
           </label>
         </div>
         <div className="form-row">
-          <label>{t('Liczba boisk (kortów, stołów)')}
+          <label>{judo ? t('Liczba mat') : t('Liczba boisk (kortów, stołów)')}
             <input type="number" min={1} max={MAX_COURTS} value={courts}
               onChange={(e) => setCourts(Math.max(1, Math.min(MAX_COURTS, Number(e.target.value) || 1)))} />
           </label>
-          <label>{t('Mecz co ile minut')}
-            <input type="number" min={5} max={120} step={5} value={slotMinutes}
-              onChange={(e) => setSlotMinutes(Math.max(5, Math.min(120, Number(e.target.value) || 5)))} />
+          <label>{judo ? t('Walka co ile minut (z przerwą)') : t('Mecz co ile minut')}
+            <input type="number" min={2} max={120} step={1} value={slotMinutes}
+              onChange={(e) => setSlotMinutes(Math.max(2, Math.min(120, Number(e.target.value) || 2)))} />
+            {judo && <span className="muted small">{t('Czas walki z zatrzymaniami i przerwą na zmianę zawodników. Zwykle 5–7 minut.')}</span>}
           </label>
         </div>
         <label>{t('Kategorie (każda w osobnej linii lub po przecinku)')}

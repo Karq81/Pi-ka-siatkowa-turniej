@@ -6,7 +6,7 @@ import { addTournamentToAccount, updateTournamentPin } from '../store/accounts'
 import { initialState, restoreTimetable } from '../logic/demo'
 import { blankState, readDraft, replanTimetable } from '../logic/newTournament'
 import { resetResults } from '../logic/draw'
-import { tally } from '../logic/scoring'
+import { setsText, tally } from '../logic/scoring'
 import { store, useStore, useSync } from '../store/store'
 import { courtKeys } from '../logic/pins'
 import type { Match, MatchStatus, Pins, SetScore, State } from '../types'
@@ -226,7 +226,7 @@ function exportCsv(state: State): string {
       m.start.slice(0, 10), formatTime(m.start), courtLabel(m.court), cat.get(m.categoryId) ?? '', grp.get(m.groupId) ?? '',
       team.get(m.teamA) ?? '', team.get(m.teamB) ?? '',
       m.status === 'scheduled' ? '' : String(score.setsA), m.status === 'scheduled' ? '' : String(score.setsB),
-      m.sets.map((s) => `${s.a}:${s.b}`).join(' '), statusName[m.status],
+      setsText(state.tournament.rules, m.sets), statusName[m.status],
     ])
   }
   return rows.map((r) => r.map((c) => (/[;"\n]/.test(c) ? `"${c.replace(/"/g, '""')}"` : c)).join(';')).join('\n')
@@ -255,7 +255,7 @@ function Settings({ state }: { state: State }) {
         <div className="form-grid">
           <label>{t('Nazwa')}<input id="set-name" value={tour.name} onChange={(e) => update({ name: e.target.value })} /></label>
           <label>{t('Podtytuł')}<input id="set-subtitle" value={tour.subtitle} onChange={(e) => update({ subtitle: e.target.value })} /></label>
-          <label>{t('Liczba boisk')}<input id="set-courts" type="number" min={1} value={tour.courts} onChange={(e) => update({ courts: num(e.target.value, 1) })} /></label>
+          <label>{r.scoring === 'judo' ? t('Liczba mat') : t('Liczba boisk')}<input id="set-courts" type="number" min={1} value={tour.courts} onChange={(e) => update({ courts: num(e.target.value, 1) })} /></label>
         </div>
       </section>
       {/* Changing the admin PIN is switched off while the organisers test the app, so nobody locks the others out. */}
@@ -263,7 +263,12 @@ function Settings({ state }: { state: State }) {
       <section className="panel">
         <h2>{t('Zasady meczu')}</h2>
         <div className="form-grid">
-          {r.scoring === 'score' ? (
+          {r.scoring === 'judo' ? (
+            <label>{t('Czas walki (minuty)')}
+              <input id="set-fight" type="number" min={0.5} max={10} step={0.5} value={(r.fightSeconds ?? 240) / 60}
+                onChange={(e) => rules({ fightSeconds: Math.round(Math.max(0.5, Math.min(10, Number(e.target.value) || 4)) * 60) })} />
+            </label>
+          ) : r.scoring === 'score' ? (
             <label>{t('Remis możliwy')}
               <select id="set-draws" value={r.draws ? 'tak' : 'nie'} onChange={(e) => rules({ draws: e.target.value === 'tak' })}>
                 <option value="tak">{t('Tak')}</option>

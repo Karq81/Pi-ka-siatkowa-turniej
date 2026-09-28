@@ -17,7 +17,7 @@ export interface Rules {
    * 'sets' (default: volleyball, badminton, table tennis…) or 'score': one score per match,
    * goals or points (football, handball, basketball…), kept as the match's only "set".
    */
-  scoring?: 'sets' | 'score'
+  scoring?: 'sets' | 'score' | 'judo'
   /** Score mode: whether a match may end level. */
   draws?: boolean
   /** Score mode: what the score counts, e.g. "bramki" or "punkty". */
@@ -31,6 +31,8 @@ export interface Rules {
   cap?: number
   /** The same for a deciding set of its own length (e.g. none for a super tie-break to 10). */
   lastSetCap?: number
+  /** Judo: regular contest time in seconds (seniors 240); golden score follows a level result. */
+  fightSeconds?: number
   /** Volleyball: a match won in the deciding set gives the winner one point less and the loser one more (3:2 → 2 and 1 points). */
   tieBreakSplit?: boolean
 }
@@ -79,6 +81,28 @@ export interface Team {
 export interface SetScore {
   a: number
   b: number
+  /**
+   * Judo: the contest in detail (one "set" per contest). `a` and `b` then hold technical
+   * points, 100 for ippon, 10 per waza-ari and 1 per yuko, for tables and old screens.
+   */
+  judo?: JudoScore
+}
+
+/** One judoka's scores and penalties. */
+export interface JudoSide {
+  ippon: number
+  wazaari: number
+  yuko: number
+  shido: number
+}
+
+export interface JudoScore {
+  a: JudoSide
+  b: JudoSide
+  /** The contest went to golden score (the first score wins). */
+  golden?: boolean
+  /** Decided by the referees (hantei, e.g. in children's contests) or by withdrawal (kiken). */
+  decision?: 'a' | 'b'
 }
 
 export type MatchStatus = 'scheduled' | 'live' | 'finished'

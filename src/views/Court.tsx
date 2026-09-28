@@ -1,7 +1,8 @@
 import { CorrectButton } from './Correction'
 import { t, tp } from '../i18n'
 import { useEffect, useState } from 'react'
-import { canAddPoint, isMatchDecided, isScore, scoreUnit, setCap, setTarget, setWinner, tally } from '../logic/scoring'
+import { canAddPoint, isJudo, isMatchDecided, isScore, scoreUnit, setCap, setsText, setTarget, setText, setWinner, tally } from '../logic/scoring'
+import { JudoScoring } from './JudoScoring'
 import { courtBoard } from '../logic/courtBoard'
 import { setNextOnCourt } from '../logic/schedule'
 import { canScore } from '../logic/pins'
@@ -54,7 +55,7 @@ export function CourtList() {
                 {current ? (
                   <>
                     <b>{formatTime(current.start)}</b> {side(current, 'a')} – {side(current, 'b')}
-                    {board.mode === 'finished' && res && <b> · {res.a}:{res.b}</b>}
+                    {board.mode === 'finished' && res && <b> · {setText(state.tournament.rules, res)}</b>}
                   </>
                 ) : t('Brak meczów')}
               </span>
@@ -157,7 +158,7 @@ function CourtPanel({ state, court, manualFirst }: { state: State; court: number
       <section className="ref-card">
         <p className="eyebrow">{t('Mecz zakończony')}</p>
         <h2>{side(finished, 'a')} {tl.setsA}:{tl.setsB} {side(finished, 'b')}</h2>
-        <p className="muted">{finished.sets.map((s) => `${s.a}:${s.b}`).join(', ')}</p>
+        <p className="muted">{setsText(state.tournament.rules, finished.sets)}</p>
         <p>{t('Wynik jest już na stronie. Pomyłkę może poprawić tylko sędzia główny.')}</p>
         <div className="center"><CorrectButton match={finished} /></div>
         {current && (
@@ -217,7 +218,9 @@ function CourtPanel({ state, court, manualFirst }: { state: State; court: number
           disabled={!current.teamA || !current.teamB}
           onClick={() => store.updateMatch(current.id, (m) => ({ ...m, status: 'live', sets: [{ a: 0, b: 0 }] }))}
         >
-          {known ? t('Rozpocznij mecz i licz: {unit}', { unit: isScore(state.tournament.rules) ? scoreUnit(state.tournament.rules) : t('punkty') }) : t('Czekamy na wyniki poprzednich meczów')}
+          {!known ? t('Czekamy na wyniki poprzednich meczów')
+            : isJudo(state.tournament.rules) ? t('Rozpocznij walkę')
+              : t('Rozpocznij mecz i licz: {unit}', { unit: isScore(state.tournament.rules) ? scoreUnit(state.tournament.rules) : t('punkty') })}
         </button>
         {manualLink}
         {next && <p className="muted small">{t('Potem:')} {formatTime(next.start)} {side(next, 'a')} – {side(next, 'b')}</p>}
@@ -248,7 +251,9 @@ function CourtPanel({ state, court, manualFirst }: { state: State; court: number
 
   return (
     <>
-      <LiveScoring state={state} match={current} meta={meta} onFinish={() => setJustFinished(current.id)} />
+      {isJudo(state.tournament.rules)
+        ? <JudoScoring state={state} match={current} meta={meta} onFinish={() => setJustFinished(current.id)} />
+        : <LiveScoring state={state} match={current} meta={meta} onFinish={() => setJustFinished(current.id)} />}
       <button className="btn btn-lg" onClick={() => setManual(current.id)}>{t('Nie liczę na żywo, podaj wynik z kartki')}</button>
       <UndoMatch match={current} />
     </>

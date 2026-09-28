@@ -10,7 +10,7 @@ import type { Rules } from '../types'
  */
 
 type MatchRules = Pick<Rules,
-  'scoring' | 'setsMode' | 'sets' | 'setPoints' | 'lastSetPoints' | 'winBy' | 'cap' | 'lastSetCap' | 'draws' | 'unit'>
+  'scoring' | 'setsMode' | 'sets' | 'setPoints' | 'lastSetPoints' | 'winBy' | 'cap' | 'lastSetCap' | 'draws' | 'unit' | 'fightSeconds'>
 
 export interface SportFormat {
   id: string
@@ -22,7 +22,7 @@ export interface Sport {
   id: string
   label: string
   /** Heading in the discipline list. */
-  group: 'Siatkówka' | 'Sporty rakietowe' | 'Gry zespołowe' | 'Inne'
+  group: 'Siatkówka' | 'Sporty rakietowe' | 'Gry zespołowe' | 'Sporty walki' | 'Inne'
   /** Who is entered: teams, players, pairs. */
   entrants: 'drużyny' | 'zawodnicy' | 'pary' | 'zawodnicy lub pary'
   /** Table points for a win, a draw and a loss. */
@@ -53,6 +53,11 @@ function sets(n: number, points: number, o: SetOpts = {}): MatchRules {
 
 function score(unit: string, draws: boolean): MatchRules {
   return { scoring: 'score', setsMode: 'fixed', sets: 1, setPoints: 0, lastSetPoints: 0, winBy: 1, draws, unit }
+}
+
+/** A judo contest of `seconds` regular time, then golden score (see judo.ts). */
+function judo(seconds: number): MatchRules {
+  return { scoring: 'judo', setsMode: 'fixed', sets: 1, setPoints: 0, lastSetPoints: 0, winBy: 1, draws: false, fightSeconds: seconds }
 }
 
 /** Goals or points: draws allowed or decided by extra time / penalties. */
@@ -224,6 +229,16 @@ export const SPORTS: Sport[] = [
     formats: scoreFormats('punkty', true),
   },
   {
+    id: 'judo', label: 'Judo', group: 'Sporty walki', entrants: 'zawodnicy', table: [1, 0, 0], slot: 6,
+    note: t('Punktacja IJF: ippon kończy walkę, dwa waza-ari to ippon, yuko nie sumują się w waza-ari. Trzecie shido to przegrana (hansoku-make). Remis po czasie: golden score, wygrywa pierwsza ocena. Trzymanie: yuko od 5 s, waza-ari od 10 s, ippon po 20 s.'),
+    formats: [
+      { id: '4min', label: t('Seniorzy, juniorzy i kadeci: 4 minuty'), rules: judo(240) },
+      { id: '3min', label: t('Młodzicy (U15): 3 minuty'), rules: judo(180) },
+      { id: '2min', label: t('Dzieci (U13): 2 minuty'), rules: judo(120) },
+      { id: '90s', label: t('Najmłodsi: 1,5 minuty'), rules: judo(90) },
+    ],
+  },
+  {
     id: 'dart', label: 'Dart', group: 'Inne', entrants: 'zawodnicy', table: [2, 0, 0], slot: 20,
     note: t('Wynik w legach (np. 3:1). Bez remisów: gra się do wygrania określonej liczby legów.'),
     formats: [{ id: 'legi', label: t('Wynik w legach'), rules: score('legi', false) }],
@@ -262,11 +277,15 @@ export function formatById(sport: Sport, id: string | undefined): SportFormat {
   return sport.formats.find((f) => f.id === id) ?? sport.formats[0]
 }
 
-/** Match rules for a sport and format; `setPoints` only for "Inna dyscyplina: wynik w setach". */
-export function sportRules(sport: Sport, formatId?: string, setPoints?: number): Rules {
+/**
+ * Match rules for a sport and format; `setPoints` only for "Inna dyscyplina: wynik w setach",
+ * `fightSeconds` only for judo (a contest time other than the format's).
+ */
+export function sportRules(sport: Sport, formatId?: string, setPoints?: number, fightSeconds?: number): Rules {
   const f = formatById(sport, formatId).rules
   const [pointsWin, pointsDraw, pointsLoss] = sport.table
   const rules: Rules = { ...f, pointsWin, pointsDraw, pointsLoss, sport: sport.label, tieBreakSplit: sport.tieBreakSplit }
+  if (f.scoring === 'judo' && fightSeconds && fightSeconds >= 30) rules.fightSeconds = Math.round(fightSeconds)
   if (sport.custom && f.scoring === 'sets' && setPoints) {
     return { ...rules, setPoints, lastSetPoints: setPoints }
   }

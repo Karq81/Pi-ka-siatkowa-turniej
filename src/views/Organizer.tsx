@@ -143,8 +143,8 @@ function MatchInterval({ state }: { state: State }) {
       <PinGate label={t('Zmiana godzin meczów (sędzia główny)')}>
         <div className="form-row">
           <label>{t('Minut od meczu do meczu')}
-            <input id="slot-minutes" type="number" min={5} max={90} step={5} value={minutes}
-              onChange={(e) => setMinutes(Math.max(5, Math.min(90, Number(e.target.value) || current)))} />
+            <input id="slot-minutes" type="number" min={2} max={120} step={1} value={minutes}
+              onChange={(e) => setMinutes(Math.max(2, Math.min(120, Number(e.target.value) || current)))} />
           </label>
         </div>
         <button className="btn btn-primary" disabled={minutes === current} onClick={save}>{t('Zapisz i przelicz godziny')}</button>

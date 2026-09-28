@@ -4,7 +4,9 @@ import { LangPicker } from './LangPicker'
 import { t, tk } from '../i18n'
 import { useState } from 'react'
 import { BRAND, IS_PLATFORM_HOST } from '../config'
-import { formatRatio, isScore, scoreUnit, standings, tally } from '../logic/scoring'
+import { formatRatio, isJudo, isScore, scoreUnit, setsText, setText, standings, tally } from '../logic/scoring'
+import { JudoNote } from './JudoScoring'
+import { judoOf, judoSideText } from '../logic/judo'
 import { useFavorites } from '../favorites'
 import { courtBoard, upcomingMatches } from '../logic/courtBoard'
 import { useStore } from '../store/store'
@@ -102,6 +104,7 @@ export function CourtCard({ state, court, big = false, referee = false }: { stat
   const finished = board.mode === 'finished'
   const tl = tally(rules, current.sets)
   const multi = rules.sets > 1
+  const judo = isJudo(rules)
   // Points: the set in progress while playing, the final score once finished.
   const shown = current.sets.length > 0 && (live || finished)
   const cur = shown ? current.sets[current.sets.length - 1] : undefined
@@ -119,9 +122,10 @@ export function CourtCard({ state, court, big = false, referee = false }: { stat
       </header>
       <p className="court-meta">{categoryName(current.categoryId)} · {stageName(current)} · {formatTime(current.start)}</p>
       <a className="board" href={`#mecz-${current.id}`}>
-        <TeamRow name={side(current, 'a')} sets={multi ? tl.setsA : undefined} points={cur?.a} live={shown} win={winA} mine={mine.includes(current.teamA)} />
-        <TeamRow name={side(current, 'b')} sets={multi ? tl.setsB : undefined} points={cur?.b} live={shown} win={winB} mine={mine.includes(current.teamB)} />
+        <TeamRow name={side(current, 'a')} sets={multi ? tl.setsA : undefined} points={judo && cur ? judoSideText(judoOf(cur).a) : cur?.a} shido={judo && cur ? judoOf(cur).a.shido : undefined} live={shown} win={winA} mine={mine.includes(current.teamA)} />
+        <TeamRow name={side(current, 'b')} sets={multi ? tl.setsB : undefined} points={judo && cur ? judoSideText(judoOf(cur).b) : cur?.b} shido={judo && cur ? judoOf(cur).b.shido : undefined} live={shown} win={winB} mine={mine.includes(current.teamB)} />
       </a>
+      {judo && cur && shown && <JudoNote rules={rules} set={cur} live={live} />}
       {live && !current.sets.length && <p className="court-sets muted">{t('Mecz trwa. Wynik pojawi się po meczu.')}</p>}
       {board.mode === 'next' && current.start && (() => {
         const mins = Math.ceil((new Date(current.start).getTime() - now) / 60000)
@@ -132,12 +136,12 @@ export function CourtCard({ state, court, big = false, referee = false }: { stat
         const last = p.sets[p.sets.length - 1]
         return (
           <p className="court-prev muted">
-            {t('Poprzedni:')} {side(p, 'a')} <b>{multi ? `${tally(rules, p.sets).setsA}:${tally(rules, p.sets).setsB}` : `${last?.a ?? 0}:${last?.b ?? 0}`}</b> {side(p, 'b')}
+            {t('Poprzedni:')} {side(p, 'a')} <b>{multi ? `${tally(rules, p.sets).setsA}:${tally(rules, p.sets).setsB}` : last ? setText(rules, last) : '0:0'}</b> {side(p, 'b')}
           </p>
         )
       })()}
       {multi && current.sets.length > 1 && (live || finished) && (
-        <p className="court-sets muted">{t('Sety:')} {current.sets.map((s) => `${s.a}:${s.b}`).join(', ')}</p>
+        <p className="court-sets muted">{t('Sety:')} {setsText(rules, current.sets)}</p>
       )}
       {!referee && !big && <a className="court-queue-link" href={`#kolejka-${court}`}>{t('Kolejne mecze na boisku ›')}</a>}
       {refLink}
@@ -146,14 +150,15 @@ export function CourtCard({ state, court, big = false, referee = false }: { stat
 }
 
 /** `sets` is left out when the match is a single set. */
-function TeamRow({ name, sets, points, live, win = false, mine = false }: {
-  name: string; sets?: number; points?: number; live: boolean; win?: boolean; mine?: boolean
+function TeamRow({ name, sets, points, shido, live, win = false, mine = false }: {
+  name: string; sets?: number; points?: number | string; shido?: number; live: boolean; win?: boolean; mine?: boolean
 }) {
   return (
     <div className={`team-row ${win ? 'win' : ''} ${mine ? 'mine' : ''}`}>
       <span className="team-name">{mine && <span className="mine-star" aria-label={t('Obserwowana')}>★ </span>}{name}</span>
       {live && sets !== undefined && <span className="sets" title={t('Wygrane sety')}>{sets}</span>}
-      {live && <span className="points">{points ?? 0}</span>}
+      {live && !!shido && <span className="shido" title={t('Shido: {n}', { n: shido })}>{Array.from({ length: shido }, (_, i) => <i key={i} />)}</span>}
+      {live && <span className={`points ${typeof points === 'string' ? 'points-judo' : ''}`}>{points ?? 0}</span>}
     </div>
   )
 }
@@ -286,7 +291,7 @@ export function GroupTable({ state, groupId, title = true }: { state: State; gro
         <table>
           <thead>
             <tr>
-              <th>#</th><th className="left">{t('Drużyna')}</th><th title={t('Mecze')}>{t('M')}</th><th title={t('Wygrane')}>{t('W')}</th>
+              <th>#</th><th className="left">{rules.scoring === 'judo' ? t('Zawodnik') : t('Drużyna')}</th><th title={t('Mecze')}>{t('M')}</th><th title={t('Wygrane')}>{t('W')}</th>
               {draws && <th title={t('Remisy')}>{t('R')}</th>}<th title={t('Przegrane')}>{t('P')}</th><th title={t('Punkty')}>{t('Pkt')}</th>{multi && <th title={t('Sety')}>{t('Sety')}</th>}
               <th title={score ? t('Zdobyte i stracone') : t('Stosunek: {unit}', { unit })}>{!score && rules.unit !== 'gemy' ? t('Małe pkt') : unit[0].toUpperCase() + unit.slice(1)}</th>
             </tr>
@@ -460,11 +465,11 @@ function Results({ state }: { state: State }) {
                       </td>
                       <td className="score">
                         {single ? (
-                          <b>{m.sets[0].a}:{m.sets[0].b}</b>
+                          <b>{setText(state.tournament.rules, m.sets[0])}</b>
                         ) : (
                           <>
                             <b>{tl.setsA}:{tl.setsB}</b>
-                            <span className="muted small">{m.sets.map((s) => `${s.a}:${s.b}`).join(', ')}</span>
+                            <span className="muted small">{setsText(state.tournament.rules, m.sets)}</span>
                           </>
                         )}
                       </td>

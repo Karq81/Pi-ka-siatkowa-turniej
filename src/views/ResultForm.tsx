@@ -4,6 +4,7 @@ import { isMatchDecided, isScore, resultProblem, scoreUnit, setCap, setProblem, 
 import { describeSets } from '../logic/sports'
 import type { Match, SetScore, State } from '../types'
 import { useLookups } from '../ui'
+import { JudoResultForm } from './JudoScoring'
 
 type Field = { a: string; b: string }
 
@@ -22,6 +23,19 @@ export function parseFields(fields: Field[]): SetScore[] {
  * next box, Enter jumps too, and Enter in the last filled box saves.
  */
 export function ResultForm({ state, match, submitLabel, onSubmit, children }: {
+  state: State
+  match: Match
+  submitLabel: string
+  onSubmit: (sets: SetScore[]) => void
+  children?: ReactNode
+}) {
+  if (state.tournament.rules.scoring === 'judo') {
+    return <JudoResultForm state={state} match={match} submitLabel={submitLabel} onSubmit={onSubmit}>{children}</JudoResultForm>
+  }
+  return <SetsResultForm state={state} match={match} submitLabel={submitLabel} onSubmit={onSubmit}>{children}</SetsResultForm>
+}
+
+function SetsResultForm({ state, match, submitLabel, onSubmit, children }: {
   state: State
   match: Match
   submitLabel: string

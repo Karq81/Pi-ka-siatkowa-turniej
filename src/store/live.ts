@@ -72,14 +72,14 @@ export async function openLive(app: FirebaseApp, tournamentId: string, emulator:
         const courts = (snap.val() ?? {}) as Record<string, Record<string, LiveEntry>>
         for (const matches of Object.values(courts)) {
           for (const [id, e] of Object.entries(matches ?? {})) {
-            if (e && Array.isArray(e.sets)) map.set(id, { sets: e.sets.map((s) => ({ a: Number(s.a) || 0, b: Number(s.b) || 0 })), at: Number(e.at) || 0 })
+            if (e && Array.isArray(e.sets)) map.set(id, { sets: e.sets.map((s) => ({ a: Number(s.a) || 0, b: Number(s.b) || 0, ...(s.judo ? { judo: s.judo } : {}) })), at: Number(e.at) || 0 })
           }
         }
         onChange(map)
       }, () => onChange(new Map()))
     },
     write(court, matchId, entry, onRefused) {
-      set(ref(db, `live/${tournamentId}/${court}/${matchId}`), { sets: entry.sets.map((s) => ({ a: s.a, b: s.b })), at: entry.at })
+      set(ref(db, `live/${tournamentId}/${court}/${matchId}`), { sets: entry.sets.map((s) => ({ a: s.a, b: s.b, ...(s.judo ? { judo: JSON.parse(JSON.stringify(s.judo)) } : {}) })), at: entry.at })
         .catch((e) => { console.warn('live write', e); writable = false; onRefused() })
     },
     writeBoard(key, court, board) {

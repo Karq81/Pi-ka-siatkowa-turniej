@@ -19,6 +19,8 @@ export interface TournamentDraft {
   format?: string
   /** "Inna dyscyplina: wynik w setach": points per set. */
   setPoints?: number
+  /** Judo: contest time in seconds, when not the format's. */
+  fightSeconds?: number
   /**
    * Teams (and optionally groups) per category, e.g. prepared by the AI assistant from pasted
    * notes. Groups list team names; empty groups mean the organiser draws them later.
@@ -71,7 +73,7 @@ export function blankState(draft: TournamentDraft): State {
       name: draft.name,
       subtitle,
       courts: draft.courts,
-      rules: sportRules(sportById(draft.sport), draft.format, draft.setPoints),
+      rules: sportRules(sportById(draft.sport), draft.format, draft.setPoints, draft.fightSeconds),
       slotMinutes: draft.slotMinutes,
       start: draft.start,
       dayEnd: draft.dayEnd,

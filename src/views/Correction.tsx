@@ -3,6 +3,7 @@ import { useSession, store, useStore } from '../store/store'
 import type { Match } from '../types'
 import { BackBar, ConfirmButton, courtLabel, formatDay, formatTime, PinGate, useLookups } from '../ui'
 import { ResultForm } from './ResultForm'
+import { setsText } from '../logic/scoring'
 
 /** Small button shown only to the chief referee: opens the result correction for a match. */
 export function CorrectButton({ match }: { match: Match }) {
@@ -43,7 +44,7 @@ export function Correction({ matchId }: { matchId: string }) {
               <span>{side(m, 'b')}</span>
             </h2>
             {m.status === 'finished' && (
-              <p className="muted small">{t('Obecny wynik:')} <b>{m.sets.map((s) => `${s.a}:${s.b}`).join(', ')}</b>{t('. Wpisz poprawny i zapisz.')}</p>
+              <p className="muted small">{t('Obecny wynik:')} <b>{setsText(state.tournament.rules, m.sets)}</b>{t('. Wpisz poprawny i zapisz.')}</p>
             )}
             <ResultForm
               state={state}

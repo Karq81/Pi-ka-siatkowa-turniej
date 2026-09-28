@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { sourceLabel } from './logic/knockout'
-import { tally } from './logic/scoring'
+import { setsText, setText, tally } from './logic/scoring'
 import { canScore } from './logic/pins'
 import { store, useSession, useSync } from './store/store'
 import type { Match, Rules, State } from './types'
@@ -119,12 +119,12 @@ export function StatusPill({ status }: { status: Match['status'] }) {
 export function ScoreLine({ match, rules }: { match: Match; rules: Rules }) {
   if (match.status === 'scheduled') return <span className="muted">{formatTime(match.start)}</span>
   if (!match.sets.length) return <span className="muted">{t('wynik po meczu')}</span>
-  if (match.sets.length === 1) return <span className="scoreline"><b>{match.sets[0].a}:{match.sets[0].b}</b></span>
+  if (match.sets.length === 1) return <span className="scoreline"><b>{setText(rules, match.sets[0])}</b></span>
   const score = tally(rules, match.sets)
   return (
     <span className="scoreline">
       <b>{score.setsA}:{score.setsB}</b>
-      <span className="muted">({match.sets.map((s) => `${s.a}:${s.b}`).join(', ')})</span>
+      <span className="muted">({setsText(rules, match.sets)})</span>
     </span>
   )
 }
