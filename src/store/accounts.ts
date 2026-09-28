@@ -58,10 +58,11 @@ export type AccountState =
 /** Logins without "@" become addresses in this domain (no mail is ever sent to them). */
 const LOGIN_DOMAIN = 'konta.sportlivearena.com'
 
-export const LOGIN_PATTERN = /^[a-z0-9][a-z0-9._-]{2,29}$/
+import { normalizeLogin } from '../logic/login'
+export { LOGIN_PATTERN, loginProblem, normalizeLogin } from '../logic/login'
 
 export function loginToEmail(login: string): string {
-  const l = login.trim().toLowerCase()
+  const l = normalizeLogin(login)
   return l.includes('@') ? l : `${l}@${LOGIN_DOMAIN}`
 }
 
@@ -126,7 +127,7 @@ const MESSAGES: Record<string, string> = {
 
 export function accountError(e: unknown): string {
   const code = (e as { code?: string }).code ?? ''
-  return MESSAGES[code] ? t(MESSAGES[code]) : t('Nie udało się. Spróbuj jeszcze raz.')
+  return MESSAGES[code] ? t(MESSAGES[code]) : `${t('Nie udało się. Spróbuj jeszcze raz.')}${code ? ` (${code})` : ''}`
 }
 
 export async function signInAccount(login: string, password: string) {
@@ -144,7 +145,7 @@ export async function createAccount(login: string, password: string, name: strin
   const cred = await createUserWithEmailAndPassword(auth, loginToEmail(login), password)
   if (name) await updateProfile(cred.user, { displayName: name })
   await setDoc(doc(db, 'accounts', cred.user.uid), {
-    login: login.trim().toLowerCase(), name, tournaments: [], createdAt: Date.now(),
+    login: normalizeLogin(login), name, tournaments: [], createdAt: Date.now(),
   })
 }
 

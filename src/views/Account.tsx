@@ -2,7 +2,7 @@ import { locale, t, tk } from '../i18n'
 import { useEffect, useState } from 'react'
 import { ALBATROS_ALIAS, IS_PLATFORM_HOST } from '../config'
 import {
-  accountError, changePassword, createAccount, loadUsage, LOGIN_PATTERN, saveProfile, signInAccount, useAccount, type Account,
+  accountError, changePassword, createAccount, loadUsage, loginProblem, normalizeLogin, saveProfile, signInAccount, useAccount, type Account,
   type AccountProfile, type TournamentUsage,
 } from '../store/accounts'
 import { PlatformNav, Wordmark } from './Platform'
@@ -61,13 +61,28 @@ function SignIn({ initial }: { initial: 'in' | 'new' }) {
   const [password2, setPassword2] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+  const [tried, setTried] = useState(false)
   const creating = mode === 'new'
-  const loginOk = login.includes('@') || LOGIN_PATTERN.test(login.trim().toLowerCase())
-  const ready = loginOk && password.length >= 6 && (!creating || password === password2)
+
+  // What still stops the form, in plain words. Shown next to the field (in red) once the
+  // user tried to send the form, instead of a grey button that says nothing.
+  const lp = loginProblem(login)
+  const loginMsg = lp === 'empty' ? t('Wpisz login.')
+    : lp === 'short' ? t('Login jest za krótki: co najmniej 3 znaki.')
+      : lp === 'long' ? t('Login jest za długi: najwyżej 30 znaków.')
+        : lp === 'email' ? t('To nie wygląda na adres e-mail.')
+          : lp === 'chars' ? t('W loginie mogą być tylko litery, cyfry, kropka i myślnik (bez znaków typu ! ? / #).')
+            : ''
+  const passMsg = !password ? t('Wpisz hasło.') : creating && password.length < 6 ? t('Hasło jest za krótkie: co najmniej 6 znaków.') : ''
+  const pass2Msg = creating && !passMsg && password !== password2 ? (password2 ? t('Hasła się różnią.') : t('Powtórz hasło.')) : ''
+  const problems = [loginMsg, passMsg, pass2Msg].filter(Boolean)
+  const normalized = normalizeLogin(login)
+  const showLogin = creating && !lp && !login.includes('@') && normalized !== login.trim()
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!ready) return
+    setTried(true)
+    if (problems.length) return
     setBusy(true)
     setError('')
     try {
@@ -80,35 +95,42 @@ function SignIn({ initial }: { initial: 'in' | 'new' }) {
       setBusy(false)
     }
   }
+  const bad = (msg: string, typed: string) => (tried || (typed && msg !== t('Powtórz hasło.'))) && msg
 
   return (
-    <form className="panel account-form" onSubmit={submit}>
+    <form className="panel account-form" onSubmit={submit} noValidate>
       <h2>{creating ? t('Załóż konto') : t('Zaloguj się')}</h2>
       <div className="seg" role="tablist">
-        <button type="button" role="tab" aria-selected={!creating} className={!creating ? 'on' : ''} onClick={() => { setMode('in'); location.hash = 'konto' }}>{t('Mam konto')}</button>
-        <button type="button" role="tab" aria-selected={creating} className={creating ? 'on' : ''} onClick={() => { setMode('new'); location.hash = 'rejestracja' }}>{t('Nowe konto')}</button>
+        <button type="button" role="tab" aria-selected={!creating} className={!creating ? 'on' : ''} onClick={() => { setMode('in'); setTried(false); setError(''); location.hash = 'konto' }}>{t('Mam konto')}</button>
+        <button type="button" role="tab" aria-selected={creating} className={creating ? 'on' : ''} onClick={() => { setMode('new'); setTried(false); setError(''); location.hash = 'rejestracja' }}>{t('Nowe konto')}</button>
       </div>
-      <label>{t('Login')}
-        <input value={login} onChange={(e) => setLogin(e.target.value)} autoComplete="username" autoCapitalize="none" placeholder={t('np. optymielno')} />
-        {creating && <span className="muted small">{t('Małe litery, cyfry, kropka lub myślnik (3–30 znaków). Może być też adres e-mail.')}</span>}
+      <label className={bad(loginMsg, tried ? login : '') ? 'field-bad' : undefined}>{t('Login')}
+        <input value={login} onChange={(e) => { setLogin(e.target.value); setError('') }} autoComplete="username" autoCapitalize="none" autoCorrect="off" spellCheck={false} placeholder={t('np. optymielno')} aria-invalid={!!(tried && loginMsg)} />
+        {tried && loginMsg ? <span className="error small">{loginMsg}</span>
+          : creating && <span className="muted small">{t('Np. nazwa klubu albo miasta. Może być też adres e-mail.')}</span>}
+        {showLogin && <span className="ok small">{t('Twój login będzie: {login}', { login: normalized })}</span>}
       </label>
       {creating && (
-        <label>{t('Nazwa klubu lub organizatora')}
+        <label>{t('Nazwa klubu lub organizatora')} <span className="muted small">({t('nieobowiązkowo')})</span>
           <input value={name} onChange={(e) => setName(e.target.value)} placeholder={t('np. UKS Opty Mielno')} />
         </label>
       )}
-      <label>{t('Hasło')}
-        <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete={creating ? 'new-password' : 'current-password'} />
-        {creating && <span className="muted small">{t('Co najmniej 6 znaków.')}</span>}
+      <label className={tried && passMsg ? 'field-bad' : undefined}>{t('Hasło')}
+        <input type="password" value={password} onChange={(e) => { setPassword(e.target.value); setError('') }} autoComplete={creating ? 'new-password' : 'current-password'} aria-invalid={!!(tried && passMsg)} />
+        {(tried || (creating && password)) && passMsg ? <span className="error small">{passMsg}</span>
+          : creating && <span className="muted small">{t('Co najmniej 6 znaków.')}</span>}
       </label>
       {creating && (
-        <label>{t('Powtórz hasło')}
-          <input type="password" value={password2} onChange={(e) => setPassword2(e.target.value)} autoComplete="new-password" />
-          {password2 && password !== password2 && <span className="error small">{t('Hasła się różnią.')}</span>}
+        <label className={bad(pass2Msg, password2) ? 'field-bad' : undefined}>{t('Powtórz hasło')}
+          <input type="password" value={password2} onChange={(e) => setPassword2(e.target.value)} autoComplete="new-password" aria-invalid={!!bad(pass2Msg, password2)} />
+          {bad(pass2Msg, password2) && <span className="error small">{pass2Msg}</span>}
         </label>
       )}
-      {error && <p className="error">{error}</p>}
-      <button className="btn btn-primary btn-lg" type="submit" disabled={!ready || busy}>
+      {tried && problems.length > 0 && (
+        <p className="error" role="alert">{t('Popraw to, co jest zaznaczone na czerwono:')} {problems.join(' ')}</p>
+      )}
+      {error && <p className="error" role="alert">{error}</p>}
+      <button className="btn btn-primary btn-lg" type="submit" disabled={busy}>
         {busy ? t('Chwileczkę…') : creating ? t('Załóż konto') : t('Zaloguj się')}
       </button>
     </form>

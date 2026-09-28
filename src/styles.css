@@ -1325,3 +1325,6 @@ button.btn-correct { font: inherit; cursor: pointer; }
 .sd-live { position: absolute; top: 10px; right: 10px; background: #dc2626; color: #fff; font-weight: 800; font-size: 0.75rem; padding: 3px 8px; border-radius: 4px; }
 .sd-caption { position: absolute; left: 0; right: 0; bottom: 0; margin: 0; padding: 8px 12px; background: linear-gradient(transparent, #000a); color: #fff; font-size: 0.85rem; text-align: center; }
 @media (prefers-reduced-motion: reduce) { .sd-scanline { animation: none; top: 50%; } }
+.account-form .field-bad input { border-color: var(--live, #dc2626); box-shadow: 0 0 0 3px #dc262622; }
+/* The floating help button must not cover the form's button on a phone. */
+.account-form { margin-bottom: 84px; }
