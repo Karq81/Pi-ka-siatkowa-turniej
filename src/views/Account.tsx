@@ -169,15 +169,23 @@ function MyTournaments({ account }: { account: Account }) {
     <>
       <header className="acc-head">
         <div>
-          <p className="eyebrow">{t('Moje turnieje')}</p>
+          <p className="eyebrow">{t('Konto organizatora')}</p>
           <h1>{account.name || account.login}</h1>
           <span className="muted">{t('Login')}: {account.login} · <a href="#konto">{t('Dane konta i hasło')}</a></span>
         </div>
-        <a className="btn btn-primary btn-lg" href="#nowy-turniej">+ {t('Załóż nowy turniej')}</a>
       </header>
-      <UsageSummary account={account} usage={usage} />
+      {/* 1. A new tournament, set apart from the list below. */}
+      <a className="acc-new" href="#nowy-turniej">
+        <span className="acc-new-icon" aria-hidden>＋</span>
+        <span className="acc-new-text">
+          <b>{t('Załóż nowy turniej')}</b>
+          <span>{t('Dyscyplina, drużyny, grupy i terminarz w kilka minut. Asystent AI pomoże.')}</span>
+        </span>
+        <span className="acc-new-go" aria-hidden>›</span>
+      </a>
+      {/* 2. The tournaments already made. */}
       <section className="account-list">
-        <h2>{t('Moje turnieje')}</h2>
+        <h2 className="acc-list-title">🏆 {t('Moje turnieje')} <span className="acc-count">{account.tournaments.length}</span></h2>
         {done && <p className="ok" role="status">{done}</p>}
         {failed && (
           <div className="error" role="alert">
@@ -204,6 +212,7 @@ function MyTournaments({ account }: { account: Account }) {
           {account.tournaments.map((tr) => (
             <article key={tr.id} className="panel account-t">
               <h3>{tr.name}</h3>
+              <p className="muted small acc-t-address">{tournamentLink(tr.id).replace(/^\/?/, location.host + '/')}</p>
               <div className="actions">
                 <a className="btn btn-primary" href={tournamentLink(tr.id, '#panel')}>{t('Panel organizatora')}</a>
                 <a className="btn" href={tournamentLink(tr.id)}>{t('Strona dla kibiców')}</a>
@@ -219,6 +228,11 @@ function MyTournaments({ account }: { account: Account }) {
             </article>
           ))}
         </div>
+      </section>
+      {/* 3. Visits, credits and cost, at the end. */}
+      <section className="acc-usage">
+        <h2 className="acc-list-title">📊 {t('Zużycie i kredyty')}</h2>
+        <UsageSummary account={account} usage={usage} />
       </section>
     </>
   )

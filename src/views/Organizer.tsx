@@ -10,11 +10,11 @@ import { retimeSchedule } from '../logic/schedule'
 import { store, useSession, useStore, useSync } from '../store/store'
 import { AdminPinForm, PinSettings, ResetPanel, setupTournament } from './Admin'
 import type { Category, State } from '../types'
-import { NumberField, courtLabel, formatDay, formatTime, PinGate, useLookups } from '../ui'
+import { ConfirmDialog, NumberField, courtLabel, formatDay, formatTime, PinGate, useLookups } from '../ui'
 import { CourtList } from './Court'
 import { Setup } from './Setup'
-import { IS_ALBATROS, IS_PLATFORM_HOST } from '../config'
-import { useAccount } from '../store/accounts'
+import { IS_ALBATROS, IS_PLATFORM_HOST, TOURNAMENT_ID } from '../config'
+import { deleteTournamentData, forgetTournament, useAccount } from '../store/accounts'
 import { Competition } from './Competition'
 
 const TABS = [
@@ -71,7 +71,54 @@ export function Organizer({ route }: { route: string }) {
       {/* Albatros CUP keeps its PIN 1234 (the organisers agreed on it); other tournaments can change theirs. */}
       {tab === 'panel-wiecej' && <PinGate label={t('Transmisja wideo (sędzia główny)')}><StreamSettings state={state} /></PinGate>}
       {tab === 'panel-wiecej' && !IS_ALBATROS && <PinGate label={t('Zmiana PIN-u (sędzia główny)')}><PinSettings /></PinGate>}
+      {tab === 'panel-wiecej' && !IS_ALBATROS && <PinGate label={t('Usuwanie turnieju (sędzia główny)')}><DeleteTournament state={state} /></PinGate>}
     </div>
+  )
+}
+
+/** The chief referee deletes the whole tournament (asked first); then back to "Moje turnieje". */
+function DeleteTournament({ state }: { state: State }) {
+  const account = useAccount()
+  const [asking, setAsking] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const remove = async () => {
+    setAsking(false)
+    setBusy(true)
+    setError('')
+    try {
+      const pins = await store.getPins()
+      if (!pins) throw new Error('no pins')
+      await deleteTournamentData(TOURNAMENT_ID, pins.adminPin)
+      if (account.status === 'signed-in') await forgetTournament(TOURNAMENT_ID).catch(() => {})
+      location.href = `${location.origin}${location.pathname}${account.status === 'signed-in' ? '#moje-turnieje' : ''}`
+    } catch (e) {
+      console.warn('delete tournament', e)
+      setError(t('Nie udało się usunąć turnieju. Sprawdź internet i spróbuj jeszcze raz.'))
+      setBusy(false)
+    }
+  }
+  return (
+    <section className="panel danger-zone">
+      <h2>🗑 {t('Usuń turniej')}</h2>
+      <p className="muted">{t('Usuwa cały turniej: mecze, wyniki, tabele, zgłoszenia i PIN-y. Adres strony znów będzie wolny. Tego nie da się cofnąć, więc najpierw możesz pobrać wyniki do Excela (przycisk na górze panelu).')}</p>
+      {error && <p className="error">{error}</p>}
+      <button type="button" className="btn btn-danger" disabled={busy} onClick={() => setAsking(true)}>
+        🗑 {busy ? t('Usuwam…') : t('Usuń turniej')}
+      </button>
+      {asking && (
+        <ConfirmDialog
+          question={<>
+            <b>{t('Czy na pewno usunąć turniej „{name}”?', { name: state.tournament.name })}</b>
+            <p>{t('Znikną wszystkie mecze, wyniki, tabele i zgłoszenia. Strona turnieju przestanie działać. Tego nie da się cofnąć.')}</p>
+          </>}
+          yes={t('Tak, usuń turniej')}
+          no={t('Nie, zostaw')}
+          onYes={() => void remove()}
+          onNo={() => setAsking(false)}
+        />
+      )}
+    </section>
   )
 }
 

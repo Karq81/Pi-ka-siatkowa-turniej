@@ -1443,3 +1443,24 @@ input.num-bad { border-color: #dc2626; box-shadow: 0 0 0 3px #dc262622; }
 /* "Moje turnieje": deleting a tournament */
 .account-t .account-delete { margin-top: 10px; }
 .confirm-q p { font-weight: 400; margin: 8px 0 0; }
+
+/* "Moje turnieje": new tournament on top, set apart from the list */
+.acc-new {
+  display: flex; align-items: center; gap: 14px; padding: 18px 20px; margin: 0 0 28px;
+  border-radius: 18px; color: #fff; text-decoration: none;
+  background: linear-gradient(135deg, var(--accent), #6d28d9);
+  box-shadow: 0 10px 24px rgba(29, 78, 216, .25);
+}
+.acc-new:hover { filter: brightness(1.05); }
+.acc-new-icon { flex: none; display: grid; place-items: center; width: 48px; height: 48px; border-radius: 14px; background: rgba(255, 255, 255, .18); font-size: 1.8rem; font-weight: 700; }
+.acc-new-text { display: grid; gap: 2px; flex: 1; }
+.acc-new-text b { font-size: 1.25rem; }
+.acc-new-text span { opacity: .9; font-size: .92rem; }
+.acc-new-go { font-size: 2rem; opacity: .8; }
+.acc-list-title { display: flex; align-items: center; gap: 10px; margin: 0 0 4px; padding-top: 18px; border-top: 2px solid var(--line); }
+.acc-count { display: inline-grid; place-items: center; min-width: 30px; height: 30px; padding: 0 8px; border-radius: 15px; background: var(--accent); color: #fff; font-size: .95rem; }
+.acc-usage { margin-top: 32px; display: grid; gap: 12px; }
+.acc-t-address { margin: -4px 0 10px; word-break: break-all; }
+.account-t { border-left: 5px solid var(--accent); }
+.danger-zone { border: 1px solid var(--danger); }
+.danger-zone h2 { color: var(--danger); }

@@ -212,9 +212,17 @@ export async function forgetTournament(id: string) {
  */
 export async function deleteTournament(id: string) {
   const account = currentAccount()
-  if (!account || !firebaseHandles || id === 'main') throw new Error('not allowed')
+  if (!account) throw new Error('signed out')
   const entry = account.tournaments.find((x) => x.id === id)
   if (!entry) throw new Error('not on the account')
+  await deleteTournamentData(id, entry.pin)
+  await forgetTournament(id)
+}
+
+/** Deletes a tournament's data with its chief referee's PIN (also from the organiser panel). */
+export async function deleteTournamentData(id: string, pin: string) {
+  if (!firebaseHandles || id === 'main') throw new Error('not allowed')
+  const entry = { pin }
   const { auth, db } = firebaseHandles
   const uid = auth.currentUser?.uid
   if (!uid) throw new Error('signed out')
@@ -242,7 +250,6 @@ export async function deleteTournament(id: string) {
   await deleteDoc(tRef)
   await deleteDoc(doc(tRef, 'private', 'pins'))
   await deleteDoc(doc(tRef, 'sessions', uid)).catch(() => {})
-  await forgetTournament(id)
 }
 
 /** Visits of one tournament: today and each of the last days (newest first). */
