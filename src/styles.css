@@ -1520,3 +1520,5 @@ a.btn-back { text-decoration: none; }
 .elim-places { display: flex; flex-wrap: wrap; gap: 8px; }
 .elim-place { padding: 8px 12px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); font-weight: 700; }
 .elim-place.p1 { background: var(--ball); color: #0e1b2c; border-color: var(--ball); }
+.stage2-open { list-style: none; padding: 0; margin: 0 0 10px; display: grid; gap: 6px; }
+.stage2-open li { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; padding: 8px 10px; border: 1px solid var(--live); border-radius: 10px; background: var(--surface); }

@@ -28,8 +28,13 @@ function firstStage(state: State, categoryId: string): Group[] {
 
 /** Group matches of the first stage still to be played. */
 export function openFirstStage(state: State, categoryId: string): number {
+  return openFirstStageMatches(state, categoryId).length
+}
+
+export function openFirstStageMatches(state: State, categoryId: string): Match[] {
   const ids = new Set(firstStage(state, categoryId).map((g) => g.id))
-  return state.matches.filter((m) => ids.has(m.groupId) && m.status !== 'finished').length
+  return state.matches.filter((m) => ids.has(m.groupId) && m.status !== 'finished')
+    .sort((a, b) => a.start.localeCompare(b.start) || a.court - b.court)
 }
 
 const ratio = (won: number, lost: number) => (lost === 0 ? (won === 0 ? 0 : Number.POSITIVE_INFINITY) : won / lost)

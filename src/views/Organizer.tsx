@@ -1,6 +1,6 @@
 import { EntriesPanel } from './Registration'
 import { STAGE2 } from '../content/stage2'
-import { buildStage2, openFirstStage, removeStage2, stage2Groups, stage2Played } from '../logic/stage2'
+import { buildStage2, openFirstStage, openFirstStageMatches, removeStage2, stage2Groups, stage2Played } from '../logic/stage2'
 import { downloadResults } from '../logic/export'
 import { sportLabelOf } from '../logic/sports'
 import { StreamSettings } from './Stream'
@@ -134,6 +134,7 @@ function DeleteTournament({ state }: { state: State }) {
  * the ranking of group places makes the new groups and their timetable.
  */
 function Stage2Panel({ state }: { state: State }) {
+  const { teamName, groupName } = useLookups(state)
   const [msg, setMsg] = useState('')
   const [busy, setBusy] = useState('')
   const run = async (categoryId: string, name: string) => {
@@ -161,6 +162,16 @@ function Stage2Panel({ state }: { state: State }) {
         return (
           <div key={c.id} className="stage2-cat">
             <p><b>{c.name}</b> · {open ? tp(open, 'faza grupowa: został {n} mecz|faza grupowa: zostały {n} mecze|faza grupowa: zostało {n} meczów') : t('faza grupowa zakończona')}{made ? ` · ${t('drugi etap uruchomiony')}` : ''}</p>
+            {open > 0 && (
+              <ul className="stage2-open">
+                {openFirstStageMatches(state, c.id).map((m) => (
+                  <li key={m.id}>
+                    <span>{groupName(m.groupId)} · {t('Boisko {n}', { n: courtLabel(m.court) })} · {formatTime(m.start)}: <b>{teamName(m.teamA)}</b> – <b>{teamName(m.teamB)}</b></span>
+                    <a className="btn btn-sm btn-primary" href={`#korekta-${m.id}`}>{t('Wpisz wynik')}</a>
+                  </li>
+                ))}
+              </ul>
+            )}
             <div className="actions">
               <button type="button" className="btn btn-primary" disabled={busy === c.id} onClick={() => void run(c.id, c.name)}>
                 {busy === c.id ? t('Zapisuję…') : made ? t('Ułóż drugi etap od nowa') : t('Uruchom drugi etap')}
