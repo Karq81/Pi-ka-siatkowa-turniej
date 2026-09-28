@@ -175,6 +175,8 @@ function MyTournaments({ account }: { account: Account }) {
         </div>
       </header>
       {/* 1. A new tournament, set apart from the list below. */}
+      <section className="acc-zone acc-zone-new">
+      <p className="acc-zone-label">{t('Nowy turniej')}</p>
       <a className="acc-new" href="#nowy-turniej">
         <span className="acc-new-icon" aria-hidden>＋</span>
         <span className="acc-new-text">
@@ -183,9 +185,11 @@ function MyTournaments({ account }: { account: Account }) {
         </span>
         <span className="acc-new-go" aria-hidden>›</span>
       </a>
+      </section>
       {/* 2. The tournaments already made. */}
-      <section className="account-list">
-        <h2 className="acc-list-title">🏆 {t('Moje turnieje')} <span className="acc-count">{account.tournaments.length}</span></h2>
+      <section className="acc-zone acc-zone-list">
+        <h2 className="acc-bar">🏆 {t('Moje turnieje')} <span className="acc-count">{account.tournaments.length}</span></h2>
+        <div className="account-list">
         {done && <p className="ok" role="status">{done}</p>}
         {failed && (
           <div className="error" role="alert">
@@ -228,12 +232,13 @@ function MyTournaments({ account }: { account: Account }) {
             </article>
           ))}
         </div>
+        </div>
       </section>
-      {/* 3. Visits, credits and cost, at the end. */}
-      <section className="acc-usage">
-        <h2 className="acc-list-title">📊 {t('Zużycie i kredyty')}</h2>
+      {/* 3. Visits, credits and cost, folded at the end. */}
+      <details className="acc-zone acc-usage">
+        <summary className="acc-usage-sum">📊 {t('Zużycie i kredyty')}</summary>
         <UsageSummary account={account} usage={usage} />
-      </section>
+      </details>
     </>
   )
 }

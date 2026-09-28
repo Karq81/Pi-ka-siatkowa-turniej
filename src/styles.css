@@ -1444,10 +1444,13 @@ input.num-bad { border-color: #dc2626; box-shadow: 0 0 0 3px #dc262622; }
 .account-t .account-delete { margin-top: 10px; }
 .confirm-q p { font-weight: 400; margin: 8px 0 0; }
 
-/* "Moje turnieje": new tournament on top, set apart from the list */
+/* "Moje turnieje": three separate zones – a new tournament, my tournaments, usage */
+.acc-zone { border-radius: 20px; margin: 0 0 32px; }
+.acc-zone-label { margin: 0 0 10px; font: 700 .8rem/1 var(--body); letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
+.acc-zone-new { padding: 16px; background: var(--surface); border: 2px dashed var(--accent); }
 .acc-new {
-  display: flex; align-items: center; gap: 14px; padding: 18px 20px; margin: 0 0 28px;
-  border-radius: 18px; color: #fff; text-decoration: none;
+  display: flex; align-items: center; gap: 14px; padding: 18px 20px;
+  border-radius: 16px; color: #fff; text-decoration: none;
   background: linear-gradient(135deg, var(--accent), #6d28d9);
   box-shadow: 0 10px 24px rgba(29, 78, 216, .25);
 }
@@ -1457,10 +1460,20 @@ input.num-bad { border-color: #dc2626; box-shadow: 0 0 0 3px #dc262622; }
 .acc-new-text b { font-size: 1.25rem; }
 .acc-new-text span { opacity: .9; font-size: .92rem; }
 .acc-new-go { font-size: 2rem; opacity: .8; }
-.acc-list-title { display: flex; align-items: center; gap: 10px; margin: 0 0 4px; padding-top: 18px; border-top: 2px solid var(--line); }
-.acc-count { display: inline-grid; place-items: center; min-width: 30px; height: 30px; padding: 0 8px; border-radius: 15px; background: var(--accent); color: #fff; font-size: .95rem; }
-.acc-usage { margin-top: 32px; display: grid; gap: 12px; }
+/* My tournaments: a dark bar like a scoreboard, the cards on a tinted background below it */
+.acc-zone-list { overflow: hidden; background: var(--surface-2); border: 1px solid var(--line); box-shadow: 0 6px 20px rgba(14, 27, 44, .08); }
+.acc-bar {
+  display: flex; align-items: center; gap: 10px; margin: 0; padding: 16px 20px;
+  background: var(--board); color: var(--board-ink);
+  font-family: var(--display); font-size: 1.7rem; letter-spacing: .02em; text-transform: uppercase;
+}
+.acc-count { display: inline-grid; place-items: center; min-width: 32px; height: 32px; padding: 0 9px; border-radius: 16px; background: var(--ball); color: #0e1b2c; font: 700 1rem/1 var(--body); }
+.acc-zone-list .account-list { margin: 0; padding: 16px; }
+.acc-zone-list .account-list > p.muted { margin: 4px 0; }
 .acc-t-address { margin: -4px 0 10px; word-break: break-all; }
-.account-t { border-left: 5px solid var(--accent); }
+.account-t { border-left: 5px solid var(--accent); box-shadow: 0 2px 8px rgba(14, 27, 44, .06); }
+.acc-usage { padding: 0; background: var(--surface); border: 1px solid var(--line); }
+.acc-usage-sum { cursor: pointer; padding: 16px 20px; font-weight: 700; font-size: 1.1rem; }
+.acc-usage[open] > .usage { padding: 0 16px 16px; }
 .danger-zone { border: 1px solid var(--danger); }
 .danger-zone h2 { color: var(--danger); }
