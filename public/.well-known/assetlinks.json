@@ -1,0 +1,8 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.handballcam",
+    "sha256_cert_fingerprints": ["52:AD:50:95:20:3E:79:F6:1B:4E:45:BB:12:FA:D7:00:6D:80:A6:BC:25:B8:D6:CD:81:0B:82:80:ED:08:3A:4F"]
+  }
+}]
