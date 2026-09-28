@@ -71,6 +71,9 @@ function entrantsLabel(state: State): string {
   return t({ 'drużyny': tk('Zespoły'), zawodnicy: tk('Zawodnicy'), pary: tk('Pary'), 'zawodnicy lub pary': tk('Zawodnicy lub pary') }[e])
 }
 
+/** The last draw's message per category: it stays when the list redraws after the draw. */
+const drawMessages = new Map<string, string>()
+
 /** One category: its team list and the draw into groups. */
 function CategorySetup({ state, category }: { state: State; category: Category }) {
   const current = state.teams.filter((t) => t.categoryId === category.id)
@@ -91,7 +94,9 @@ function CategorySetup({ state, category }: { state: State; category: Category }
   // Suggested from the list (about 5 per group) until the organiser sets it.
   const [chosenGroups, setGroups] = useState<number | null>(drawn || null)
   const groups = chosenGroups ?? Math.max(1, Math.min(12, Math.round(teams.length / 5)))
-  const [msg, setMsg] = useState('')
+  const msgKey = `${TOURNAMENT_ID}:${category.id}`
+  const [msg, setMsgState] = useState(() => drawMessages.get(msgKey) ?? '')
+  const setMsg = (m: string) => { drawMessages.set(msgKey, m); setMsgState(m) }
   const [aiBusy, setAiBusy] = useState(false)
   const [aiError, setAiError] = useState('')
 

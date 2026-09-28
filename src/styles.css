@@ -1424,3 +1424,6 @@ input.num-bad { border-color: #dc2626; box-shadow: 0 0 0 3px #dc262622; }
 .entry-head > div { flex: 1; min-width: 0; }
 .entry-players { white-space: pre-wrap; font: inherit; font-size: 0.9rem; margin: 6px 0 0; }
 .reg-cta { text-align: center; }
+
+/* Organiser: results as an Excel file */
+.export-btn { margin-top: 6px; }

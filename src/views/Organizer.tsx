@@ -1,4 +1,5 @@
 import { EntriesPanel } from './Registration'
+import { downloadResults } from '../logic/export'
 import { sportLabelOf } from '../logic/sports'
 import { StreamSettings } from './Stream'
 import { t, tk, tp } from '../i18n'
@@ -43,6 +44,10 @@ export function Organizer({ route }: { route: string }) {
             {account.status === 'signed-in' && <> · <a className="plain-link" href={IS_PLATFORM_HOST ? '/#moje-turnieje' : '#moje-turnieje'}>← {t('Moje turnieje')}</a></>}
           </p>
           <h1>{state.tournament.name}</h1>
+          <button type="button" className="btn btn-sm export-btn" onClick={() => downloadResults(state)}
+            title={t('Mecze, wyniki, tabele grup i klasyfikacja w pliku Excel (stan na teraz)')}>
+            📊 {t('Pobierz wyniki do Excela')}
+          </button>
         </div>
         <nav className="tabs" aria-label={t('Panel organizatora')}>
           {tabs.map((x) => (
