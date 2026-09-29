@@ -131,8 +131,9 @@ export function defaultPoster(f: PosterFacts, loc: string, o: PosterOptions = de
   if (o.teams && f.teams > 0) lines.push(t('Zgłoszone drużyny: {n}', { n: f.teams }))
   if (o.registration) lines.push(t('Zgłoszenia drużyn przez stronę turnieju (kod QR)'))
   lines.push(...optionsText(o).split('\n').filter(Boolean))
+  // The contact line is what the organiser ticked on purpose: it is never the one cut off.
   const contact = contactLine(o, f)
-  if (contact) lines.push(contact)
+  const shown = contact ? [...lines.slice(0, MAX_LINES - 1), contact] : lines
   return normalizePoster({
     theme: 'blue',
     kicker: f.sport ? t('Turniej: {sport}', { sport: f.sport }) : t('Turniej'),
@@ -140,7 +141,7 @@ export function defaultPoster(f: PosterFacts, loc: string, o: PosterOptions = de
     tagline: t('Zapraszamy zawodników i kibiców!'),
     when: posterDate(f.start, loc),
     where: f.city || f.subtitle,
-    lines,
+    lines: shown,
     footer: [f.organizer && t('Organizator: {name}', { name: f.organizer }), o.website && f.website].filter(Boolean).join(' · '),
     url: f.url,
   })
