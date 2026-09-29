@@ -69,7 +69,7 @@ export function albatrosTeams(): Team[] {
 export const GROUPS_DEFAULT = GROUPS_PER_CATEGORY
 
 /**
- * The organiser's own groups (Krzysztof's list "LISTA ZESPOŁÓW ALBATROS"), fixed for
+ * The organiser's own groups (the organiser's list "LISTA ZESPOŁÓW ALBATROS"), fixed for
  * this tournament: Dwójki in 4 groups of 7 (1–4), Trójki in 5 groups of 6 (1–5).
  */
 export const ALBATROS_GROUPS: { categoryId: string; name: string; teams: string[] }[] = [

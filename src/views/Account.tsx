@@ -306,7 +306,7 @@ export function MyTournament({ account, id }: { account: Account; id: string }) 
 }
 
 const PROFILE_FIELDS: { key: Exclude<keyof AccountProfile, 'name' | 'about'>; label: string; type?: string; placeholder?: string }[] = [
-  { key: 'contactName', label: tk('Osoba kontaktowa'), placeholder: tk('np. Krzysztof Rywak') },
+  { key: 'contactName', label: tk('Osoba kontaktowa'), placeholder: tk('np. Jan Kowalski') },
   { key: 'phone', label: tk('Telefon'), type: 'tel', placeholder: tk('np. 600 100 200') },
   { key: 'email', label: tk('E-mail kontaktowy'), type: 'email', placeholder: tk('np. klub@example.pl') },
   { key: 'city', label: tk('Miejscowość'), placeholder: tk('np. Mielno') },

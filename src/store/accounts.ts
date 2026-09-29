@@ -62,6 +62,7 @@ const LOGIN_DOMAIN = 'konta.sportlivearena.com'
 
 import { normalizeLogin } from '../logic/login'
 import type { Poster, PosterFacts } from '../logic/poster'
+import { info } from '../content/info'
 import type { State, Tournament } from '../types'
 export { LOGIN_PATTERN, loginProblem, normalizeLogin } from '../logic/login'
 
@@ -326,7 +327,8 @@ export async function loadPosterFacts(id: string, account: Account, url: string,
     courts: tour?.courts ?? 1,
     registration: !!tour?.registration,
     url,
-    organizer: account.name ?? '',
+    // Albatros CUP is organised by the club, always under this name.
+    organizer: id === 'main' ? info.organizer : account.name ?? '',
     city: account.city ?? '',
     website: account.website ?? '',
   }

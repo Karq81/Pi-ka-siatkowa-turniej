@@ -12,7 +12,7 @@ const slug = `plakat-${rnd}`
 let prompt = ''
 await p.route(/generateContent/, async (route) => {
   prompt = route.request().postData() ?? ''
-  const poster = { kicker: 'Turniej piłki siatkowej', title: 'Plakat Cup', tagline: 'Gramy fair play', when: '8 maja 2027, godz. 09:00', where: 'Hala sportowa, Mielno', lines: ['Wpisowe: 100 zł', 'Nagrody dla trzech pierwszych miejsc'], footer: 'UKS Plakat', theme: 'green' }
+  const poster = { kicker: 'Turniej piłki siatkowej', title: 'Plakat Cup', tagline: 'Gramy fair play', when: '8 maja 2027, godz. 09:00', where: 'Hala sportowa, Mielno', lines: ['Wpisowe: 100 zł', 'Nagrody dla trzech pierwszych miejsc'], footer: 'UKS Plakat · Jan Kowalski', theme: 'green' }
   await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ candidates: [{ content: { role: 'model', parts: [{ text: JSON.stringify(poster) }] }, finishReason: 'STOP', index: 0 }] }) })
 })
 await p.goto(U + '#rejestracja'); await p.waitForTimeout(2500)
@@ -20,7 +20,7 @@ await p.getByLabel(/^Login/).fill('plak' + Date.now() % 100000); await p.getByLa
 await p.locator('input[type=password]').nth(0).fill('haslo123'); await p.locator('input[type=password]').nth(1).fill('haslo123')
 await p.getByRole('button', { name: 'Załóż konto' }).last().click(); await p.waitForTimeout(3000)
 await p.goto(U + '#konto'); await p.waitForTimeout(1500)
-await p.getByLabel('Miejscowość').fill('Mielno'); await p.getByLabel('Telefon').fill('600 100 200')
+await p.getByLabel('Osoba kontaktowa').fill('Jan Kowalski'); await p.getByLabel('Miejscowość').fill('Mielno'); await p.getByLabel('Telefon').fill('600 100 200')
 await p.getByRole('button', { name: 'Zapisz dane' }).click(); await p.waitForTimeout(1500)
 // A tournament on the account.
 await p.goto(U + '#nowy-turniej'); await p.waitForTimeout(1500)
@@ -57,6 +57,7 @@ await p.locator('.poster-wish textarea').fill('Dodaj wpisowe 100 zł i zielone k
 await p.getByRole('button', { name: /Popraw z pomocą AI/ }).click(); await p.waitForTimeout(3000)
 check('8. Asystent dostaje polecenie, fakty i aktualny plakat', /wpisowe 100/.test(prompt) && /FAKTY/.test(prompt) && /AKTUALNY PLAKAT/.test(prompt) && /Plakat Cup/.test(prompt))
 if (!(await p.locator('.poster-fields').getByLabel('Hasło pod tytułem').isVisible())) await p.locator('.poster-edit summary').click()
+check('9x. Imię osoby kontaktowej nie trafia na plakat (choć AI je dopisało)', !(await p.locator('.poster-fields input').evaluateAll((els) => els.map((e) => e.value).join('|'))).includes('Kowalski'))
 check('9. Poprawiony plakat ma nowe teksty od asystenta', await p.getByLabel('Hasło pod tytułem').inputValue() === 'Gramy fair play' && (await p.locator('.poster-fields textarea').inputValue()).includes('Wpisowe: 100 zł'))
 await p.waitForTimeout(800)
 fs.writeFileSync(`${OUT}/poster-2.png`, Buffer.from((await p.locator('.poster-view img').getAttribute('src')).split(',')[1], 'base64'))

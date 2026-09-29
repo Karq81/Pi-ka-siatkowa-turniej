@@ -138,3 +138,31 @@ export const THEME_COLORS: Record<PosterTheme, ThemeColors> = {
   dark: { bg1: '#0a0d14', bg2: '#232b3d', accent: '#ff9f1c', ink: '#ffffff', card: '#f4f6fb', cardInk: '#0a0d14' },
   gold: { bg1: '#3b2a05', bg2: '#b98811', accent: '#ffffff', ink: '#ffffff', card: '#fff8e0', cardInk: '#3b2a05' },
 }
+
+/**
+ * Takes people's names out of a poster: the poster names the club, never a person. `names` are
+ * the account's contact person(s); the full name and each longer part of it are removed, and
+ * what is left of the sentence (separators, a label with nothing after it) is tidied.
+ */
+export function scrubNames(p: Poster, names: (string | undefined)[]): Poster {
+  const esc = (x: string) => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const parts = new Set<string>()
+  for (const n of names) {
+    const full = (n ?? '').replace(/\s+/g, ' ').trim()
+    if (full.length < 3) continue
+    parts.add(esc(full))
+    for (const w of full.split(' ')) if (w.length >= 5) parts.add(`\\S*${esc(w)}\\S*`)
+  }
+  if (!parts.size) return p
+  const re = new RegExp([...parts].sort((a, b) => b.length - a.length).join('|'), 'giu')
+  const clean = (text: string) => {
+    if (!re.test(text)) return text
+    re.lastIndex = 0
+    return text.replace(re, '').replace(/\s+/g, ' ').replace(/(\s*[·,;–-]\s*){2,}/g, ' · ').replace(/^[\s·,;:–-]+|[\s·,;–-]+$/g, '').replace(/^[^:]{1,30}:$/, '').trim()
+  }
+  return {
+    ...p,
+    kicker: clean(p.kicker), title: clean(p.title), tagline: clean(p.tagline), when: clean(p.when), where: clean(p.where),
+    lines: p.lines.map(clean).filter(Boolean), footer: clean(p.footer),
+  }
+}

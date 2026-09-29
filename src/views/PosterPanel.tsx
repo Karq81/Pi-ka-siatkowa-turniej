@@ -3,7 +3,7 @@ import { ConfirmDialog } from '../ui'
 import { locale, t } from '../i18n'
 import { askPoster } from '../store/assistant'
 import { loadPosterFacts, savePoster, type Account, type AccountTournament } from '../store/accounts'
-import { BUILTIN_SPONSOR, defaultPoster, FIELD_LIMITS, MAX_LINES, MAX_LOGO_CHARS, normalizePoster, withSponsorDefault, POSTER_THEMES, THEME_COLORS, THEME_NAMES, type Poster, type PosterFacts } from '../logic/poster'
+import { BUILTIN_SPONSOR, defaultPoster, FIELD_LIMITS, MAX_LINES, MAX_LOGO_CHARS, normalizePoster, scrubNames, withSponsorDefault, POSTER_THEMES, THEME_COLORS, THEME_NAMES, type Poster, type PosterFacts } from '../logic/poster'
 import { sportLabelOf } from '../logic/sports'
 import { logoFromFile, renderPoster } from './posterCanvas'
 import albatrosSponsor from '../assets/sponsor-albatros.png'
@@ -31,7 +31,9 @@ const fileName = (id: string) => `plakat-${id.replace(/[^a-z0-9-]/gi, '')}.png`
  */
 export function PosterPanel({ account, tr, url }: { account: Account; tr: AccountTournament; url: string }) {
   const saved = account.posters?.[tr.id]
-  const [poster, setPoster] = useState<Poster | null>(saved ? withSponsorDefault(normalizePoster(saved), tr.id) : null)
+  // A poster names the club, never the contact person (their name is taken out of every text).
+  const tidy = (p: Poster) => withSponsorDefault(scrubNames(p, [account.contactName]), tr.id)
+  const [poster, setPoster] = useState<Poster | null>(saved ? tidy(normalizePoster(saved)) : null)
   const [image, setImage] = useState('')
   const [wish, setWish] = useState('')
   const [busy, setBusy] = useState<'' | 'make' | 'ai' | 'delete'>('')
@@ -60,7 +62,7 @@ export function PosterPanel({ account, tr, url }: { account: Account; tr: Accoun
     setError(''); setNote(''); setBusy(withAi ? 'ai' : 'make')
     try {
       const f = await readFacts()
-      const p = withSponsorDefault(withAi ? await askPoster(f, null, wish) : defaultPoster(f, locale()), tr.id)
+      const p = tidy(withAi ? await askPoster(f, null, wish) : defaultPoster(f, locale()))
       setPoster(p)
       await persist(p)
       setWish('')
@@ -72,7 +74,7 @@ export function PosterPanel({ account, tr, url }: { account: Account; tr: Accoun
     if (!poster || !wish.trim()) return
     setError(''); setNote(''); setBusy('ai')
     try {
-      const p = withSponsorDefault(await askPoster(await readFacts(), poster, wish), tr.id)
+      const p = tidy(await askPoster(await readFacts(), poster, wish))
       setPoster(p)
       await persist(p)
       setWish('')

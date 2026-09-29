@@ -1426,7 +1426,7 @@ const dict: Record<string, string> = {
   "np. 7 Jan Kowalski\n10 Adam Nowak": "напр. 7 Іван Коваль\n10 Адам Новак",
   "np. Dziewczęta U12\nChłopcy U12": "напр. Дівчата U12\nХлопці U12",
   "np. Halówka Mielno 2027": "напр. Зимовий кубок 2027",
-  "np. Krzysztof Rywak": "напр. Олена Коваленко",
+  "np. Jan Kowalski": "напр. Іван Петренко",
   "np. Mielno": "напр. Львів",
   "np. Turniej mini siatkówki dziewcząt 14 marca w Mielnie od 9:00, 4 boiska, mecze co 20 minut, 1 set do 25.\nDwójki: UKS Orzeł 1, UKS Orzeł 2, MKS Fala, Sokół Koszalin, Albatros A…\nTrójki: … (możesz wkleić całą listę z kartki albo maila, także z podziałem na grupy)": "напр. Турнір з міні-волейболу серед дівчат 14 березня у Львові з 9:00, 4 майданчики, матчі кожні 20 хвилин, 1 сет до 25.\nДвійки: Орли 1, Орли 2, Хвиля, Соколи, Альбатрос A…\nТрійки: … (можна вставити весь список з аркуша чи листа, також із поділом на групи)",
   "np. UKS Opty Mielno": "напр. ВК «Львів»",

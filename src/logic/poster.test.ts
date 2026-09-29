@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { BUILTIN_SPONSOR, defaultPoster, MAX_LINES, normalizePoster, withSponsorDefault, posterDate, wrapWords, type PosterFacts } from './poster'
+import { BUILTIN_SPONSOR, defaultPoster, MAX_LINES, normalizePoster, scrubNames, withSponsorDefault, posterDate, wrapWords, type PosterFacts } from './poster'
 
 const facts: PosterFacts = {
   name: 'Halówka Mielno', subtitle: 'Hala sportowa', sport: 'Piłka nożna', start: '2026-10-23T09:00',
@@ -53,6 +53,14 @@ describe('poster', () => {
     expect(withSponsorDefault(base, 'main').sponsorLogo).toBe(BUILTIN_SPONSOR)
     expect(withSponsorDefault({ ...base, sponsorLogo: '' }, 'main').sponsorLogo).toBe('')
     expect(withSponsorDefault(base, 'inny').sponsorLogo).toBeUndefined()
+  })
+  it('takes the contact person out of every text', () => {
+    const p = normalizePoster({ title: 'Cup', footer: 'Organizator: UKS Opty Mielno · Jan Kowalski', lines: ['Kontakt: Jan Kowalski', 'Pytania: kowalski@example.pl', 'Wpisowe 100 zł'] })
+    const q = scrubNames(p, ['Jan Kowalski'])
+    expect(JSON.stringify(q)).not.toMatch(/Jan|Kowalski/i)
+    expect(q.footer).toBe('Organizator: UKS Opty Mielno')
+    expect(q.lines).toEqual(['Wpisowe 100 zł'])
+    expect(scrubNames(p, [undefined, ' ']).footer).toBe(p.footer)
   })
   it('wraps words by width and keeps a long word whole', () => {
     expect(wrapWords('aa bb cc dd', (l) => l.length <= 5)).toEqual(['aa bb', 'cc dd'])

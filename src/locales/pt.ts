@@ -1426,7 +1426,7 @@ const dict: Record<string, string> = {
   "np. 7 Jan Kowalski\n10 Adam Nowak": "p. ex. 7 João Silva\n10 Adão Costa",
   "np. Dziewczęta U12\nChłopcy U12": "p. ex. Raparigas Sub-12\nRapazes Sub-12",
   "np. Halówka Mielno 2027": "p. ex. Torneio de Inverno 2027",
-  "np. Krzysztof Rywak": "p. ex. Ana Silva",
+  "np. Jan Kowalski": "p. ex. João Silva",
   "np. Mielno": "p. ex. Coimbra",
   "np. Turniej mini siatkówki dziewcząt 14 marca w Mielnie od 9:00, 4 boiska, mecze co 20 minut, 1 set do 25.\nDwójki: UKS Orzeł 1, UKS Orzeł 2, MKS Fala, Sokół Koszalin, Albatros A…\nTrójki: … (możesz wkleić całą listę z kartki albo maila, także z podziałem na grupy)": "p. ex. Torneio de minivoleibol feminino a 14 de março em Coimbra a partir das 9:00, 4 campos, um jogo a cada 20 minutos, 1 set a 25.\nPares: Águias 1, Águias 2, Onda, Falcões, Albatroz A…\nTrios: … (pode colar a lista toda de um papel ou e-mail, também com a divisão em grupos)",
   "np. UKS Opty Mielno": "p. ex. Clube de Voleibol de Coimbra",
