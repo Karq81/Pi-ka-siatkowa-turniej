@@ -9,8 +9,10 @@ export const POSTER_H = 1754
 const M = 80
 const DISPLAY = '"Barlow Condensed", "Arial Narrow", Impact, sans-serif'
 const BODY = '"Barlow", system-ui, "Segoe UI", Arial, sans-serif'
-/** The lower band with the QR code (taller when a sponsor's logo has its row). */
-const bandTop = (p: Poster) => (p.sponsorLogo ? 1195 : 1330)
+/** The lower band with the QR code. */
+const BAND_TOP = 1330
+/** The sponsor's column at the top right, next to the title. */
+const SPONSOR_W = 270
 
 type Ctx = CanvasRenderingContext2D
 
@@ -35,7 +37,6 @@ function roundRect(ctx: Ctx, x: number, y: number, w: number, h: number, r: numb
 }
 
 function background(ctx: Ctx, p: Poster) {
-  const BAND_TOP = bandTop(p)
   const c = THEME_COLORS[p.theme]
   const g = ctx.createLinearGradient(0, 0, POSTER_W * 0.4, POSTER_H)
   g.addColorStop(0, c.bg1)
@@ -56,10 +57,32 @@ function background(ctx: Ctx, p: Poster) {
   ctx.fillRect(0, 0, POSTER_W, 22)
 }
 
-/** Draws everything above the QR band; returns the bottom of the card. */
-function drawTop(ctx: Ctx, p: Poster, scale: number): number {
+/** The sponsor's logo on a white plaque with its caption, top right (next to the title). */
+function drawSponsor(ctx: Ctx, p: Poster, logo: HTMLImageElement) {
   const c = THEME_COLORS[p.theme]
-  const width = POSTER_W - 2 * M
+  const x = POSTER_W - M - SPONSOR_W
+  const y = 70
+  const ph = Math.round(Math.min(260, Math.max(120, (logo.height / logo.width) * (SPONSOR_W - 44) + 44)))
+  ctx.fillStyle = '#fff'
+  roundRect(ctx, x, y, SPONSOR_W, ph, 22)
+  ctx.fill()
+  const k = Math.min((SPONSOR_W - 44) / logo.width, (ph - 44) / logo.height)
+  ctx.drawImage(logo, x + (SPONSOR_W - logo.width * k) / 2, y + (ph - logo.height * k) / 2, logo.width * k, logo.height * k)
+  ctx.fillStyle = c.accent
+  ctx.font = font(800, 32, DISPLAY)
+  ctx.textAlign = 'center'
+  let ly = y + ph + 42
+  for (const l of lines(ctx, (p.sponsorLabel || t('Sponsor główny turnieju')).toUpperCase(), SPONSOR_W, 3)) { ctx.fillText(l, x + SPONSOR_W / 2, ly); ly += 36 }
+  ctx.textAlign = 'left'
+}
+
+/** Draws everything above the QR band; returns the bottom of the card. */
+function drawTop(ctx: Ctx, p: Poster, scale: number, logo: HTMLImageElement | null): number {
+  const c = THEME_COLORS[p.theme]
+  const full = POSTER_W - 2 * M
+  // With a sponsor's logo the kicker, title and slogan leave its column free on the right.
+  const width = logo ? full - SPONSOR_W - 40 : full
+  if (logo) drawSponsor(ctx, p, logo)
   ctx.textBaseline = 'alphabetic'
   ctx.textAlign = 'left'
   let y = 96
@@ -97,7 +120,7 @@ function drawTop(ctx: Ctx, p: Poster, scale: number): number {
   y += 20 * scale
   const top = y
   const pad = 44 * scale
-  const inner = width - 2 * pad
+  const inner = full - 2 * pad
   type Row = { label?: string; text: string[]; size: number; weight: number; family: string }
   const rows: Row[] = []
   ctx.font = font(800, 78 * scale, DISPLAY)
@@ -109,7 +132,7 @@ function drawTop(ctx: Ctx, p: Poster, scale: number): number {
   let h = pad * 2
   for (const r of rows) h += (r.label ? 34 * scale : 0) + r.text.length * r.size * (r.family === DISPLAY ? 1.02 : 1.28) + 22 * scale
   ctx.fillStyle = c.card
-  roundRect(ctx, M, top, width, h, 34)
+  roundRect(ctx, M, top, full, h, 34)
   ctx.fill()
   ctx.fillStyle = c.accent
   roundRect(ctx, M, top, 16, h, 8)
@@ -136,30 +159,12 @@ function drawTop(ctx: Ctx, p: Poster, scale: number): number {
 }
 
 /** The QR band: the code, what it opens and the footer. */
-function drawBand(ctx: Ctx, p: Poster, qr: HTMLCanvasElement | null, logo: HTMLImageElement | null) {
+function drawBand(ctx: Ctx, p: Poster, qr: HTMLCanvasElement | null) {
   const c = THEME_COLORS[p.theme]
-  const BAND_TOP = bandTop(p)
   ctx.fillStyle = 'rgba(0,0,0,0.28)'
   ctx.fillRect(0, BAND_TOP, POSTER_W, POSTER_H - BAND_TOP)
-  let qy = BAND_TOP + 30
-  if (logo) {
-    // The sponsor's row: the words on the left, the logo on a white plaque on the right.
-    const ph = 172
-    const pw = Math.min(460, Math.max(160, Math.round((logo.width / logo.height) * (ph - 28)) + 44))
-    const px = POSTER_W - M - pw
-    ctx.fillStyle = '#fff'
-    roundRect(ctx, px, qy, pw, ph, 20)
-    ctx.fill()
-    const scale = Math.min((pw - 44) / logo.width, (ph - 28) / logo.height)
-    ctx.drawImage(logo, px + (pw - logo.width * scale) / 2, qy + (ph - logo.height * scale) / 2, logo.width * scale, logo.height * scale)
-    ctx.fillStyle = c.accent
-    ctx.font = font(800, 46, DISPLAY)
-    const words = lines(ctx, (p.sponsorLabel || t('Sponsor główny turnieju')).toUpperCase(), px - M - 30, 2)
-    let ly = qy + ph / 2 - ((words.length - 1) * 48) / 2 + 16
-    for (const l of words) { ctx.fillText(l, M, ly); ly += 48 }
-    qy += ph + 30
-  }
-  const size = logo ? 206 : 240
+  const qy = BAND_TOP + 36
+  const size = 250
   ctx.fillStyle = '#fff'
   roundRect(ctx, M, qy, size + 40, size + 40, 24)
   ctx.fill()
@@ -246,14 +251,14 @@ export async function renderPoster(p: Poster): Promise<HTMLCanvasElement> {
   canvas.height = POSTER_H
   const ctx = canvas.getContext('2d')!
   // Content that is too tall is drawn smaller until the card ends above the QR band.
-  const limit = bandTop(p) - 30
+  const limit = BAND_TOP - 30
   let scale = 1
   for (; scale > 0.55; scale -= 0.05) {
     ctx.clearRect(0, 0, POSTER_W, POSTER_H)
     background(ctx, p)
-    if (drawTop(ctx, p, scale) <= limit) break
+    if (drawTop(ctx, p, scale, logo) <= limit) break
   }
-  drawBand(ctx, p, qrOk ? qr : null, logo)
+  drawBand(ctx, p, qrOk ? qr : null)
   return canvas
 }
 
