@@ -173,18 +173,13 @@ function drawBand(ctx: Ctx, p: Poster, qr: HTMLCanvasElement | null) {
   const tw = POSTER_W - M - tx
   ctx.fillStyle = c.accent
   ctx.font = font(800, 50, DISPLAY)
-  let y = qy + 50
+  const capH = 52 * 2 + 2 + 38 * 3
+  let y = qy + Math.max(50, (size + 40 - capH) / 2 + 40)
   for (const l of lines(ctx, t('Wyniki na żywo w telefonie').toUpperCase(), tw, 2)) { ctx.fillText(l, tx, y); y += 52 }
   ctx.fillStyle = '#fff'
   ctx.font = font(500, 30, BODY)
   y += 2
   for (const l of lines(ctx, t('Zeskanuj kod aparatem telefonu: tabele, terminarz i wyniki bez instalowania aplikacji.'), tw, 3)) { ctx.fillText(l, tx, y); y += 38 }
-  const shown = p.url.replace(/^https?:\/\//, '')
-  let fpx = 32
-  ctx.font = font(700, fpx, BODY)
-  while (ctx.measureText(shown).width > tw && fpx > 16) { fpx -= 2; ctx.font = font(700, fpx, BODY) }
-  ctx.fillStyle = c.accent
-  ctx.fillText(shown, tx, Math.max(y + 12, qy + size + 20))
   if (p.footer) {
     ctx.fillStyle = '#fff'
     ctx.globalAlpha = 0.92

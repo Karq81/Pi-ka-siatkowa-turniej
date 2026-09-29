@@ -191,7 +191,8 @@ function posterInstructions(): string {
 - Bez polecenia wygeneruj estetyczny, zachęcający plakat z danych.
 - Pisz w języku polecenia organizatora; gdy polecenie nie wskazuje języka, w języku: ${langNameEn()}.
 - Kolorystyka (theme): blue, green, red, dark lub gold. Zmień ją tylko gdy organizator o to prosi albo gdy zmieniasz całość plakatu.
-- Adres strony turnieju (kod QR) dodaje strona sama, nie wpisuj go do linii.`
+- Adres strony turnieju (kod QR) dodaje strona sama: nie wpisuj żadnego adresu strony turnieju ani linku do niego.
+- Organizatora podawaj wyłącznie jako nazwę klubu lub organizatora z faktów (np. "Organizator: UKS Opty Mielno"). Nie wpisuj imion i nazwisk osób ani prywatnych numerów telefonu i adresów e-mail, chyba że organizator wyraźnie poda je w poleceniu.`
 }
 
 /** The poster's text from the tournament's facts, the current poster and the organiser's instruction. */

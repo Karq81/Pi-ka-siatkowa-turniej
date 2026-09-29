@@ -4,7 +4,7 @@ import { BUILTIN_SPONSOR, defaultPoster, MAX_LINES, normalizePoster, withSponsor
 const facts: PosterFacts = {
   name: 'Halówka Mielno', subtitle: 'Hala sportowa', sport: 'Piłka nożna', start: '2026-10-23T09:00',
   categories: ['U10', 'U12'], teams: 8, courts: 2, registration: true, url: 'https://x.pl/?t=halowka',
-  organizer: 'UKS Opty', city: 'Mielno', phone: '600 100 200', email: '', website: '',
+  organizer: 'UKS Opty', city: 'Mielno', website: '',
 }
 
 describe('poster', () => {
@@ -15,14 +15,15 @@ describe('poster', () => {
     expect(p.when).toContain('2026')
     expect(p.when).toContain('09:00')
     expect(p.lines.join('|')).toContain('U10, U12')
-    expect(p.lines.join('|')).toContain('600 100 200')
+    expect(p.footer).toBe('Organizator: UKS Opty')
+    expect(JSON.stringify(p)).not.toContain('600 100 200')
     expect(p.url).toBe(facts.url)
   })
   it('does not list a single category', () => {
     expect(defaultPoster({ ...facts, categories: ['Turniej'] }, 'pl').lines.join('|')).not.toContain('Kategorie')
   })
   it('leaves unknown things empty instead of inventing them', () => {
-    const p = defaultPoster({ ...facts, start: undefined, city: '', subtitle: '', categories: [], teams: 0, phone: '', registration: false }, 'pl')
+    const p = defaultPoster({ ...facts, start: undefined, city: '', subtitle: '', categories: [], teams: 0, registration: false }, 'pl')
     expect(p.when).toBe('')
     expect(p.where).toBe('')
     expect(p.lines).toEqual([])

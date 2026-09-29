@@ -407,7 +407,6 @@ const dict: Record<string, string> = {
   "Konkurencja mierzona (czas, odległość, punkty)": "Gara misurata (tempo, distanza, punti)",
   "Konkurencje mierzone": "Gare misurate",
   "Konta działają tylko na stronie z bazą danych.": "Gli account funzionano solo su un sito con database.",
-  "Kontakt": "Contatto",
   "Kontakt (widzi go tylko organizator)": "Contatto (lo vede solo l'organizzatore)",
   "Konto organizatora": "Account organizzatore",
   "Kopiuj": "Copia",

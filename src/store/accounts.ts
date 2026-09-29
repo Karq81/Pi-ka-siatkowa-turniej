@@ -328,8 +328,6 @@ export async function loadPosterFacts(id: string, account: Account, url: string,
     url,
     organizer: account.name ?? '',
     city: account.city ?? '',
-    phone: account.phone ?? '',
-    email: account.email ?? '',
     website: account.website ?? '',
   }
 }

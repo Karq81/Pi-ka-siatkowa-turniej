@@ -51,8 +51,6 @@ export interface PosterFacts {
   url: string
   organizer: string
   city: string
-  phone: string
-  email: string
   website: string
 }
 
@@ -77,8 +75,6 @@ export function defaultPoster(f: PosterFacts, loc: string): Poster {
   if (f.categories.length > 1) lines.push(`${t('Kategorie')}: ${f.categories.join(', ')}`)
   if (f.teams > 0) lines.push(t('Zgłoszone drużyny: {n}', { n: f.teams }))
   if (f.registration) lines.push(t('Zgłoszenia drużyn przez stronę turnieju (kod QR)'))
-  const contact = [f.phone, f.email].filter(Boolean).join(' · ')
-  if (contact) lines.push(`${t('Kontakt')}: ${contact}`)
   return normalizePoster({
     theme: 'blue',
     kicker: f.sport ? t('Turniej: {sport}', { sport: f.sport }) : t('Turniej'),
