@@ -22,6 +22,8 @@ import { Info, InfoHero } from './Info'
 import { FanClock } from './ContestClock'
 import { isElimination } from '../logic/elimination'
 import { BackBar, courtLabel, formatDay, formatTime, ScoreLine, StatusPill, useLookups, useNow } from '../ui'
+import { CardIcons } from './Cards'
+import type { ReactNode } from 'react'
 
 /**
  * What visitors see: the invitation, groups (each with its table and schedule), live
@@ -128,8 +130,8 @@ export function CourtCard({ state, court, big = false, referee = false }: { stat
       </header>
       <p className="court-meta">{categoryName(current.categoryId)} · {stageName(current)} · {formatTime(current.start)}</p>
       <a className="board" href={`#mecz-${current.id}`}>
-        <TeamRow name={side(current, 'a')} sets={multi ? tl.setsA : undefined} points={judo && cur ? judoSideText(judoOf(cur).a) : cur?.a === 0.5 ? '½' : cur?.a} shido={judo && cur ? judoOf(cur).a.shido : undefined} live={shown} win={winA} mine={mine.includes(current.teamA)} />
-        <TeamRow name={side(current, 'b')} sets={multi ? tl.setsB : undefined} points={judo && cur ? judoSideText(judoOf(cur).b) : cur?.b === 0.5 ? '½' : cur?.b} shido={judo && cur ? judoOf(cur).b.shido : undefined} live={shown} win={winB} mine={mine.includes(current.teamB)} />
+        <TeamRow cards={<CardIcons match={current} side="a" />} name={side(current, 'a')} sets={multi ? tl.setsA : undefined} points={judo && cur ? judoSideText(judoOf(cur).a) : cur?.a === 0.5 ? '½' : cur?.a} shido={judo && cur ? judoOf(cur).a.shido : undefined} live={shown} win={winA} mine={mine.includes(current.teamA)} />
+        <TeamRow cards={<CardIcons match={current} side="b" />} name={side(current, 'b')} sets={multi ? tl.setsB : undefined} points={judo && cur ? judoSideText(judoOf(cur).b) : cur?.b === 0.5 ? '½' : cur?.b} shido={judo && cur ? judoOf(cur).b.shido : undefined} live={shown} win={winB} mine={mine.includes(current.teamB)} />
       </a>
       {live && <FanClock match={current} />}
       {judo && cur && shown && <JudoNote rules={rules} set={cur} live={live} />}
@@ -160,12 +162,12 @@ export function CourtCard({ state, court, big = false, referee = false }: { stat
 }
 
 /** `sets` is left out when the match is a single set. */
-function TeamRow({ name, sets, points, shido, live, win = false, mine = false }: {
-  name: string; sets?: number; points?: number | string; shido?: number; live: boolean; win?: boolean; mine?: boolean
+function TeamRow({ name, sets, points, shido, live, win = false, mine = false, cards }: {
+  name: string; sets?: number; points?: number | string; shido?: number; live: boolean; win?: boolean; mine?: boolean; cards?: ReactNode
 }) {
   return (
     <div className={`team-row ${win ? 'win' : ''} ${mine ? 'mine' : ''}`}>
-      <span className="team-name">{mine && <span className="mine-star" aria-label={t('Obserwowana')}>★ </span>}{name}</span>
+      <span className="team-name">{mine && <span className="mine-star" aria-label={t('Obserwowana')}>★ </span>}{name}{cards}</span>
       {live && sets !== undefined && <span className="sets" title={t('Wygrane sety')}>{sets}</span>}
       {live && !!shido && <span className="shido" title={t('Shido: {n}', { n: shido })}>{Array.from({ length: shido }, (_, i) => <i key={i} />)}</span>}
       {live && <span className={`points ${typeof points === 'string' ? 'points-judo' : ''}`}>{points ?? 0}</span>}

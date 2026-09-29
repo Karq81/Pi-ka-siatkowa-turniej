@@ -5,8 +5,10 @@ import { BackBar, ConfirmButton, courtLabel, formatDay, formatTime, PinGate, use
 import { ResultForm, withDecided } from './ResultForm'
 import { setsText } from '../logic/scoring'
 import { logged } from '../logic/special'
-import { LaterRoundsWarning, WalkoverButtons } from './Special'
+import { LaterRoundsWarning, PhaseLockNote, refreshAfterCorrection, WalkoverButtons } from './Special'
+import { laterPhaseStarted } from '../logic/phases'
 import { ManualPoints } from './Points'
+import { CardsEditor } from './Cards'
 
 /** Small button shown only to the chief referee: opens the result correction for a match. */
 export function CorrectButton({ match }: { match: Match }) {
@@ -60,19 +62,22 @@ export function Correction({ matchId }: { matchId: string }) {
                   if (before !== after) store.updateTournament({ log: logged(state.tournament, t('Korekta: {a} – {b}, {before} → {after}', { a: side(m, 'a'), b: side(m, 'b'), before, after })) })
                 }
                 store.updateMatch(m.id, (x) => ({ ...withDecided(x, decidedBy), status: 'finished', sets }))
+                refreshAfterCorrection(m.id)
                 done()
               }}
             >
-              {m.status !== 'scheduled' && (
+              {m.status !== 'scheduled' && !laterPhaseStarted(state, m).length && (
                 <button
                   type="button"
                   className="btn btn-danger"
-                  onClick={() => { store.updateMatch(m.id, (x) => ({ ...x, status: 'scheduled', sets: [] })); done() }}
+                  onClick={() => { store.updateMatch(m.id, (x) => ({ ...x, status: 'scheduled', sets: [] })); refreshAfterCorrection(m.id); done() }}
                 >
                   {t('Cofnij wynik (mecz nierozegrany)')}
                 </button>
               )}
             </ResultForm>
+            <CardsEditor state={state} match={m} />
+            <PhaseLockNote state={state} match={m} />
             <LaterRoundsWarning state={state} match={m} />
             <ManualPoints state={state} match={m} />
             {m.status !== 'finished' && <WalkoverButtons state={state} match={m} onDone={done} />}

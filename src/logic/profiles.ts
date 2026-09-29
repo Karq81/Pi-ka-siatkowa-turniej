@@ -60,7 +60,7 @@ const KNOWN: Tiebreak[] = [
   'h2h', 'wins', 'diff', 'scored', 'setRatio', 'setDiff', 'pointRatio', 'buchholz',
   'win_pct', 'h2h_points', 'h2h_diff', 'h2h_scored', 'h2h_result',
   'buchholz_cut1', 'buchholz_median', 'sonneborn_berger', 'progressive',
-  'seed', 'rating', 'lots', 'shared',
+  'seed', 'rating', 'lots', 'shared', 'fair_play',
 ]
 
 /**

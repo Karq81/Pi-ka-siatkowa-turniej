@@ -28,8 +28,8 @@ describe('rules profiles (JSON)', () => {
   })
 
   it('criteria named as in the specification become table tie-breakers', () => {
-    expect(criteriaToTiebreaks(['points', 'ratio_sets', 'ratio_points', 'h2h_points', 'fair_play', 'lots']))
-      .toEqual(['setRatio', 'pointRatio', 'h2h_points', 'lots'])
+    expect(criteriaToTiebreaks(['points', 'ratio_sets', 'ratio_points', 'h2h_points', 'fair_play', 'away_scored', 'lots']))
+      .toEqual(['setRatio', 'pointRatio', 'h2h_points', 'fair_play', 'lots'])
   })
 
   it('a tournament gets its discipline profile in its rules', () => {

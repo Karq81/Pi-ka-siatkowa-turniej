@@ -31,3 +31,19 @@ describe('points by hand', () => {
     expect(table[0].teamId).toBe('B')
   })
 })
+
+describe('fair play', () => {
+  it('cards count yellow 1, second yellow 3, red 4; the fewer, the higher', () => {
+    const ms = [
+      m('A', 'B', 1, 1, { cards: [{ side: 'a', kind: 'R' }, { side: 'b', kind: 'Y' }] }),
+      m('A', 'C', 1, 0), m('B', 'C', 1, 0),
+      m('C', 'A', 1, 0, { cards: [{ side: 'b', kind: 'YR', player: 'Kowalski', minute: 70 }] }),
+    ]
+    const two = { id: 'g', categoryId: 'k', name: 'G', teamIds: ['A', 'B'] }
+    // A and B level on everything else (1:1, one win each against C); B had fewer cards.
+    const rules2 = { ...rules, tiebreak: ['fair_play' as const] }
+    const table = standings(rules2, group, ms, teams)
+    expect(table.map((r) => r.teamId).slice(0, 2)).toEqual(['B', 'A'])
+    void two
+  })
+})

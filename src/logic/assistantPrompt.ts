@@ -16,7 +16,7 @@ export type AssistantSystem = typeof SYSTEMS[number]
 
 const TIEBREAKS: Tiebreak[] = [
   'h2h_points', 'h2h_diff', 'h2h_scored', 'h2h_result', 'wins', 'win_pct', 'diff', 'scored', 'setRatio', 'setDiff', 'pointRatio',
-  'buchholz', 'buchholz_cut1', 'buchholz_median', 'sonneborn_berger', 'progressive', 'seed', 'rating', 'lots', 'shared',
+  'buchholz', 'buchholz_cut1', 'buchholz_median', 'sonneborn_berger', 'progressive', 'seed', 'rating', 'lots', 'shared', 'fair_play',
 ]
 
 /** The settings the assistant fills in besides the basics (flat, so the model always answers every field). */
@@ -122,7 +122,7 @@ WŁASNY PLAN (matches) – gdy opis nie pasuje do gotowych klocków (repasaże, 
 
 TABELA I REMISY
 - Każda dyscyplina ma swój profil (punkty i kolejność kryteriów w katalogu). Gdy opis podaje inną kolejność (np. "najpierw bezpośredni mecz, potem różnica bramek", "o kolejności decyduje stosunek setów", "Buchholz"), wpisz ją w tiebreak (kolejne kryteria po punktach), inaczej tiebreak = [].
-  Kryteria: h2h_points (punkty w meczach bezpośrednich), h2h_diff (różnica w nich), h2h_scored, h2h_result (kto wygrał mecz bezpośredni), wins, win_pct, diff (różnica bramek/punktów), scored, setRatio, setDiff, pointRatio (małe punkty), buchholz, buchholz_cut1, buchholz_median, sonneborn_berger, progressive, seed, rating, lots (losowanie), shared (miejsce ex aequo).
+  Kryteria: h2h_points (punkty w meczach bezpośrednich), h2h_diff (różnica w nich), h2h_scored, h2h_result (kto wygrał mecz bezpośredni), wins, win_pct, diff (różnica bramek/punktów), scored, setRatio, setDiff, pointRatio (małe punkty), buchholz, buchholz_cut1, buchholz_median, sonneborn_berger, progressive, seed, rating, fair_play (mniej kartek: żółta 1, druga żółta 3, czerwona 4), lots (losowanie), shared (miejsce ex aequo).
 - h2hReapply: true, gdy mecze bezpośrednie liczy się od nowa między drużynami, które nadal są równe (UEFA); dla piłki zwykle true.
 - withdrawal: "A" (wycofana drużyna, która rozegrała mniej niż połowę meczów, znika z tabel; później walkowery) albo "B" (zawsze walkowery), "none" gdy opis nic nie mówi. measuredMode i placePoints: "none", gdy to nie konkurencja mierzona.
 

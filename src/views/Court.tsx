@@ -15,6 +15,7 @@ import { store, useSession, useStore } from '../store/store'
 import type { Match, State } from '../types'
 import { ResultForm, withDecided } from './ResultForm'
 import { isTwoLegged } from '../logic/legs'
+import { CardButtons } from './Cards'
 import { Upcoming } from './Public'
 import { BackBar, ConfirmButton, courtLabel, courtMatch, formatTime, PinGate, StatusPill, useLookups, useNow } from '../ui'
 
@@ -397,6 +398,7 @@ function LiveScoring({ state, match, meta, onFinish }: { state: State; match: Ma
               </>
             )}
             {play?.penaltySeconds && <PenaltyTimers id={`${match.id}-${s}`} seconds={play.penaltySeconds} />}
+            <CardButtons state={state} match={match} side={s} />
           </div>
         ))}
       </div>

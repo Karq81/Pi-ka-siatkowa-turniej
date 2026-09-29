@@ -14,6 +14,7 @@ import { isMeasured } from '../logic/measured'
 import { statusLabel } from '../logic/special'
 import { MeasuredView } from './Measured'
 import { RecView } from './Recreational'
+import { CardIcons, FairPlay } from './Cards'
 import { recreationalOf } from '../logic/recreational'
 import { hasElimination } from '../logic/elimination'
 import { isUnderway } from '../logic/courtBoard'
@@ -231,6 +232,8 @@ function GroupView({ state, groupId }: { state: State; groupId: string }) {
         <p className="legend muted small">{t('Przy równej liczbie punktów:')} {tiebreakOrder(rules).map((k) => t(TIEBREAK_NAMES[k]).toLowerCase()).join(' → ')}.</p>
       </section>
 
+      <FairPlay state={state} teamIds={group.teamIds} matches={matches} />
+
       <h3 className="list-title">{t('Mecze grupy')}</h3>
       <div className="cards">
         {matches.map((m) => <MatchCard key={m.id} state={state} match={m} label={m.swissRound ? t('Runda {r}', { r: m.swissRound }) : undefined} />)}
@@ -269,14 +272,14 @@ export function MatchCard({ state, match: m, label }: { state: State; match: Mat
       <div className="mc-row">
         <span className={`mc-team ${done && tl.setsA > tl.setsB ? 'win' : ''} ${mine.includes(m.teamA) ? 'mine' : ''}`}>
           <TeamBadge team={team(m.teamA)} size="lg" />
-          <span className={m.teamA ? '' : 'tbd'}>{side(m, 'a')}</span>
+          <span className={m.teamA ? '' : 'tbd'}>{side(m, 'a')}<CardIcons match={m} side="a" /></span>
         </span>
         <span className="mc-score">
           {has ? <><b>{scoreA}</b><i>:</i><b>{scoreB}</b></> : <span className="mc-vs">–</span>}
         </span>
         <span className={`mc-team ${done && tl.setsB > tl.setsA ? 'win' : ''} ${mine.includes(m.teamB) ? 'mine' : ''}`}>
           <TeamBadge team={team(m.teamB)} size="lg" />
-          <span className={m.teamB ? '' : 'tbd'}>{side(m, 'b')}</span>
+          <span className={m.teamB ? '' : 'tbd'}>{side(m, 'b')}<CardIcons match={m} side="b" /></span>
         </span>
       </div>
     </>

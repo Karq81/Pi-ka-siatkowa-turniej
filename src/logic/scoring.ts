@@ -206,6 +206,19 @@ export function rulesTablePoints(rules: Rules, m: Match): [number, number] {
   return t.setsA > t.setsB ? [win, loss] : [loss, win]
 }
 
+/** Fair-play points of the cards a team got (UEFA: yellow 1, second yellow 3, straight red 4). */
+export const CARD_POINTS = { Y: 1, YR: 3, R: 4 } as const
+
+export function cardPoints(teamId: string, matches: Match[]): number {
+  let sum = 0
+  for (const m of matches) {
+    const side = m.teamA === teamId ? 'a' : m.teamB === teamId ? 'b' : null
+    if (!side) continue
+    for (const c of m.cards ?? []) if (c.side === side) sum += CARD_POINTS[c.kind]
+  }
+  return sum
+}
+
 /** A fixed pseudo-random number for a team: the "draw of lots" that never changes. */
 function lotOf(id: string): number {
   let h = 2166136261
@@ -336,6 +349,8 @@ export function standings(
       case 'seed': return -(team(r.teamId)?.seed ?? 1000 + group.teamIds.indexOf(r.teamId))
       case 'rating': return team(r.teamId)?.rating ?? 0
       case 'lots': return lotOf(r.teamId)
+      // Fair play: the fewer card points, the better (yellow 1, second yellow 3, red 4).
+      case 'fair_play': return -cardPoints(r.teamId, played)
       case 'shared': return 0
     }
   }
@@ -416,4 +431,5 @@ export const TIEBREAK_NAMES: Record<Tiebreak, string> = {
   rating: tk('Ranking (np. Elo)'),
   lots: tk('Losowanie'),
   shared: tk('Miejsce ex aequo'),
+  fair_play: tk('Fair play (mniej kartek)'),
 }

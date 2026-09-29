@@ -368,6 +368,8 @@ export function createFirebaseStore(config: FirebaseOptions, tournamentId: strin
       // A point in the set being played: only the live score changes.
       const point = changed.length === 1 && before.status === 'live' && m.status === 'live'
         && m.sets.length > 0 && m.sets.length === before.sets.length && m.court === before.court
+        // Cards go with the whole match, not only with the live score.
+        && JSON.stringify(m.cards ?? []) === JSON.stringify(before.cards ?? [])
       if (point && live?.canWrite()) {
         liveScores.set(id, entry)
         sentScores.set(id, [...(sentScores.get(id) ?? []), JSON.stringify(entry.sets)].slice(-30))

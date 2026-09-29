@@ -1,6 +1,7 @@
 import { t } from '../i18n'
 import { useState } from 'react'
 import { asWalkover, canWalkover, logged, playedAfter, statusLabel, withdrawTeam } from '../logic/special'
+import { laterPhaseStarted, refreshedNextPhase } from '../logic/phases'
 import { store } from '../store/store'
 import type { Match, State } from '../types'
 import { ConfirmDialog, formatDay, formatTime, useLookups } from '../ui'
@@ -31,6 +32,29 @@ export function WalkoverButtons({ state, match, onDone }: { state: State; match:
         />
       )}
     </div>
+  )
+}
+
+/**
+ * After a result was saved or corrected: when the next phase was declared but has not
+ * started, it is made again from the new tables (Albatros CUP second stage).
+ */
+export function refreshAfterCorrection(matchId: string) {
+  const s = store.get()
+  const m = s.matches.find((x) => x.id === matchId)
+  if (!m) return
+  const next = refreshedNextPhase(s, m)
+  if (next) void store.replace(next)
+}
+
+/** Why a result cannot be set back to "not played": the next phase already started. */
+export function PhaseLockNote({ state, match }: { state: State; match: Match }) {
+  const later = laterPhaseStarted(state, match)
+  if (!later.length || match.status === 'scheduled') return null
+  return (
+    <p className="notice-inline">
+      {t('Następna faza już się zaczęła ({n} mecz. rozegranych lub trwających), więc tego wyniku nie można cofnąć ani usunąć. Można go tylko poprawić.', { n: later.length })}
+    </p>
   )
 }
 

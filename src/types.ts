@@ -100,7 +100,7 @@ export type Tiebreak =
   | 'h2h' | 'wins' | 'diff' | 'scored' | 'setRatio' | 'setDiff' | 'pointRatio' | 'buchholz'
   | 'win_pct' | 'h2h_points' | 'h2h_diff' | 'h2h_scored' | 'h2h_result'
   | 'buchholz_cut1' | 'buchholz_median' | 'sonneborn_berger' | 'progressive'
-  | 'seed' | 'rating' | 'lots' | 'shared'
+  | 'seed' | 'rating' | 'lots' | 'shared' | 'fair_play'
 
 export interface Tournament {
   name: string
@@ -372,6 +372,8 @@ export interface Match {
   calledAt?: number
   /** How the match was decided, for table points (hockey: overtime and shootout give 2 and 1). Missing: regular time. */
   decidedBy?: 'regulation' | 'overtime' | 'shootout' | 'walkover' | 'retirement'
+  /** Cards shown in the match (team games): yellow, second yellow (= red), straight red. */
+  cards?: Card[]
   /** Table points given by hand by the organiser for this match (side A, side B), instead of the rules'. */
   manualPoints?: [number, number]
   /** Teams set by hand by the organiser: the bracket does not fill them in any more. */
@@ -390,6 +392,14 @@ export interface Match {
 }
 
 export type Role = 'admin' | 'court'
+
+/** A card: which side, which colour (Y yellow, YR second yellow, R straight red), the player and minute if given. */
+export interface Card {
+  side: 'a' | 'b'
+  kind: 'Y' | 'YR' | 'R'
+  player?: string
+  minute?: number
+}
 
 /** Who this device is logged in as: the chief referee, or the referee of one court. */
 export type Session = { role: 'admin' } | { role: 'court'; court: number }

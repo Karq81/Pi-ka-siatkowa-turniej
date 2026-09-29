@@ -1586,3 +1586,17 @@ a.btn-back { text-decoration: none; }
 .perf-edit { flex: 1 1 100%; order: 6; display: flex; flex-wrap: wrap; gap: 6px; padding: 6px 0 4px 2.2rem; }
 .perf-edit input { width: 6.5rem; padding: 6px 8px; font-size: 1rem; }
 .perf-edit select { padding: 6px; }
+
+/* Cards (team games): small yellow and red cards next to a team's name. */
+.cards-icons { display: inline-flex; gap: 3px; margin-left: 6px; vertical-align: middle; }
+.cards-icons span { display: inline-block; min-width: 10px; height: 14px; border-radius: 2px; font-size: 0.65rem; line-height: 14px; text-align: center; color: #111; padding: 0 2px; }
+.cards-icons .card-y { background: #f5c518; }
+.cards-icons .card-r { background: #d7263d; color: #fff; }
+.card-buttons { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; justify-content: center; margin-top: 8px; }
+.card-btn-y { background: #f5c518; color: #111; border-color: #d9ad00; }
+.card-btn-r { background: #d7263d; color: #fff; border-color: #b01d31; }
+.card-row { align-items: center; gap: 6px; }
+.card-row .card-min { width: 4rem; }
+.fair-play { margin-top: 12px; }
+.fair-play li { display: flex; gap: 10px; align-items: center; }
+.fair-play li .name { flex: 1; }

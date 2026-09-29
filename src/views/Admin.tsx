@@ -15,7 +15,9 @@ import { NumberField, BackBar, courtLabel, formatDay, formatTime, PinGate, useLo
 import { CourtCard, MatchList } from './Public'
 import { ResultForm, withDecided, type MatchExtra } from './ResultForm'
 import { ManualPoints, PointsAdjustPanel, PointsSettings } from './Points'
-import { ChangeLog, LaterRoundsWarning, PairEditor, WalkoverButtons, WithdrawPanel } from './Special'
+import { CardsEditor } from './Cards'
+import { ChangeLog, LaterRoundsWarning, PairEditor, PhaseLockNote, refreshAfterCorrection, WalkoverButtons, WithdrawPanel } from './Special'
+import { laterPhaseStarted } from '../logic/phases'
 
 const TABS = [
   { id: 'boiska', label: tk('Boiska') },
@@ -117,6 +119,7 @@ function MatchEditor({ state, match, onClose }: { state: State; match: Match; on
   const { side } = useLookups(state)
   const save = (status: MatchStatus, sets: SetScore[] = [], decidedBy?: MatchExtra) => {
     store.updateMatch(match.id, (m) => ({ ...withDecided(m, decidedBy), status, sets }))
+    refreshAfterCorrection(match.id)
     onClose()
   }
   return (
@@ -125,9 +128,13 @@ function MatchEditor({ state, match, onClose }: { state: State; match: Match; on
       <h2>{side(match, 'a')} – {side(match, 'b')}</h2>
       <p className="muted">{t('Boisko {n}', { n: courtLabel(match.court) })} · {formatDay(match.start)} {formatTime(match.start)}</p>
       <ResultForm state={state} match={match} submitLabel={t('Zapisz jako zakończony')} onSubmit={(sets, decidedBy) => save('finished', sets, decidedBy)}>
-        <button type="button" className="btn" onClick={() => save('live', match.status === 'live' ? match.sets : [])}>{t('Oznacz jako trwający')}</button>
-        <button type="button" className="btn btn-danger" onClick={() => save('scheduled')}>{t('Wyczyść wynik')}</button>
+        {!(match.status === 'finished' && laterPhaseStarted(state, match).length) && <>
+          <button type="button" className="btn" onClick={() => save('live', match.status === 'live' ? match.sets : [])}>{t('Oznacz jako trwający')}</button>
+          <button type="button" className="btn btn-danger" onClick={() => save('scheduled')}>{t('Wyczyść wynik')}</button>
+        </>}
       </ResultForm>
+      <CardsEditor state={state} match={match} />
+      <PhaseLockNote state={state} match={match} />
       <LaterRoundsWarning state={state} match={match} />
       {match.status !== 'finished' && <WalkoverButtons state={state} match={match} onDone={onClose} />}
       <ManualPoints state={state} match={match} />
@@ -167,6 +174,7 @@ function QuickResults({ state }: { state: State }) {
           submitLabel={t('Zapisz i następny mecz')}
           onSubmit={(sets, decidedBy) => {
             store.updateMatch(match.id, (m) => ({ ...withDecided(m, decidedBy), status: 'finished', sets }))
+            refreshAfterCorrection(match.id)
             const score = sets.map((x) => `${x.a}:${x.b}`).join(', ')
             setSaved(`${t('Zapisano:')} ${side(match, 'a')} – ${side(match, 'b')} (${score})`)
             const next = list.filter((m) => m.id !== match.id)[0]
