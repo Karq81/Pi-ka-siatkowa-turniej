@@ -364,6 +364,12 @@ label { display: flex; flex-direction: column; gap: 4px; font-size: 0.9rem; font
 .info-hero .eyebrow { color: var(--ball); }
 .info-hero h1 { font-size: clamp(2.6rem, 9vw, 4.2rem); line-height: 0.95; letter-spacing: 0.01em; text-transform: uppercase; }
 .info-when { margin-top: 6px; font-size: 1.05rem; opacity: 0.85; }
+.main-sponsor { margin-left: auto; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 16px 8px; background: #fff; color: #14235f; border-radius: 14px; border: 2px solid var(--ball); text-decoration: none; box-shadow: 0 4px 16px rgba(0,0,0,.25); transition: transform .15s; }
+.main-sponsor:hover, .main-sponsor:focus-visible { transform: translateY(-2px); }
+.main-sponsor img { width: 112px; height: auto; display: block; }
+.main-sponsor-label { font-size: .72rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: #6b5300; }
+.main-sponsor-link { font-size: .8rem; font-weight: 700; text-decoration: underline; }
+@media (max-width: 640px) { .main-sponsor { margin-left: 0; width: 100%; flex-direction: row; justify-content: space-between; gap: 12px; } .main-sponsor img { width: 72px; order: 2; } .main-sponsor-label { flex: 1; } .main-sponsor-link { display: none; } }
 .info-hero .tabs a { color: var(--board-ink); }
 .info-hero .tabs a.active { background: var(--ball); color: #1d1600; }
 .info-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }

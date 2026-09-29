@@ -631,6 +631,7 @@ const dict: Record<string, string> = {
   "Odpoczynek liczy się przy następnym losowaniu.": "Відпочинок враховується під час наступного жеребкування.",
   "Odrzuć": "Відхилити",
   "Odtwórz": "Відтворити",
+  "Odwiedź stronę sponsora": "Відвідати сайт спонсора",
   "Operator kamery": "Оператор камери",
   "Operator skanuje kod telefonem": "Оператор сканує код телефоном",
   "Opis jest za długi (do 20 000 znaków).": "Опис задовгий (до 20 000 символів).",
@@ -871,6 +872,7 @@ const dict: Record<string, string> = {
   "Slot meczu: {n} min, czyli ok. {m} meczów na godzinę na jednym boisku.": "Слот: {n} хв, близько {m} матчів на годину на одному майданчику.",
   "Sokoły": "Соколи",
   "Sonneborn-Berger (punkty pokonanych rywali + połowa zremisowanych)": "Зоннеборн-Бергер (очки переможених суперників + половина нічийних)",
+  "Sponsor główny turnieju": "Головний спонсор турніру",
   "SportLiveArena – wyniki turniejów na żywo": "SportLiveArena – результати турнірів наживо",
   "Sporty rakietowe": "Ракеткові види спорту",
   "Sporty walki": "Єдиноборства",
@@ -1160,6 +1162,7 @@ const dict: Record<string, string> = {
   "Wyniki": "Результати",
   "Wyniki na żywo": "Результати наживо",
   "Wyniki na żywo dla kibiców, w każdej dyscyplinie": "Результати наживо для вболівальників, у кожному виді спорту",
+  "Wyniki na żywo, tabele i terminarz turnieju {name}. Sprawdź wyniki meczów w telefonie.": "Результати наживо, таблиці та розклад турніру {name}. Стежте за матчами у телефоні.",
   "Wyniki odświeżają się same, nie trzeba przeładowywać strony.": "Результати оновлюються самі, перезавантажувати сторінку не треба.",
   "Wyniki setów": "Рахунок сетів",
   "Wyniki są zapisane w telefonie i wyślą się same, gdy wróci internet.": "Результати збережено в телефоні, вони надішлються самі, коли з'явиться інтернет.",
@@ -1477,6 +1480,7 @@ const dict: Record<string, string> = {
   "{label}: wpisz klucz boiska": "{label}: введіть ключ майданчика",
   "{match} · mecz {n}": "{match} · матч {n}",
   "{match} · rewanż": "{match} · матч-відповідь",
+  "{name} – wyniki na żywo": "{name} – результати наживо",
   "{n} boiska": "{n} майданчики",
   "{n} drużyna|{n} drużyny|{n} drużyn": "{n} команда|{n} команди|{n} команд",
   "{n} dyscyplin z gotowymi zasadami, a do tego dowolna inna": "{n} видів спорту з готовими правилами, а також будь-який інший",
@@ -1550,8 +1554,6 @@ const dict: Record<string, string> = {
   "· Stanowisko": "· Місце",
   "Stanowisko": "Місце",
   "Stanowiska": "Місця",
-  "{name} – wyniki na żywo": "{name} – результати наживо",
-  "Wyniki na żywo, tabele i terminarz turnieju {name}. Sprawdź wyniki meczów w telefonie.": "Результати наживо, таблиці та розклад турніру {name}. Стежте за матчами у телефоні.",
 }
 
 export default dict

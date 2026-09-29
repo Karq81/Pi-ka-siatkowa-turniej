@@ -5,6 +5,7 @@ import { t } from '../i18n'
 import QRCode from 'qrcode'
 import { useEffect, useState, type ReactNode } from 'react'
 import logo from '../assets/logo-opty-mielno.png'
+import sponsorLogo from '../assets/sponsor-albatros.png'
 import { info } from '../content/info'
 import { IS_ALBATROS, tournamentUrl } from '../config'
 import { useStore, useSync } from '../store/store'
@@ -37,6 +38,12 @@ export function InfoHero({ nav }: { nav: ReactNode }) {
           <h1>{info.name}</h1>
           <p className="info-when">{info.dates} · Mielno</p>
         </div>
+        {/* The main sponsor of Albatros CUP only; other tournaments have no such block. */}
+        <a className="main-sponsor" href="https://albatrosrelax.mielno.pl" target="_blank" rel="noopener sponsored" aria-label={t('Sponsor główny turnieju') + ': Albatros Medical SPA Mielno'}>
+          <span className="main-sponsor-label">{t('Sponsor główny turnieju')}</span>
+          <img src={sponsorLogo} alt="Albatros Medical SPA Mielno" width={112} height={110} />
+          <span className="main-sponsor-link">{t('Odwiedź stronę sponsora')} →</span>
+        </a>
       </div>
       {nav}
     </header>

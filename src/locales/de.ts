@@ -631,6 +631,7 @@ const dict: Record<string, string> = {
   "Odpoczynek liczy się przy następnym losowaniu.": "Die Pause gilt bei der nächsten Auslosung.",
   "Odrzuć": "Ablehnen",
   "Odtwórz": "Abspielen",
+  "Odwiedź stronę sponsora": "Website des Sponsors besuchen",
   "Operator kamery": "Kameramann",
   "Operator skanuje kod telefonem": "Der Kameramann scannt den Code mit dem Handy",
   "Opis jest za długi (do 20 000 znaków).": "Die Beschreibung ist zu lang (bis 20.000 Zeichen).",
@@ -871,6 +872,7 @@ const dict: Record<string, string> = {
   "Slot meczu: {n} min, czyli ok. {m} meczów na godzinę na jednym boisku.": "Takt: {n} Min., ca. {m} Spiele pro Stunde auf einem Feld.",
   "Sokoły": "Falken",
   "Sonneborn-Berger (punkty pokonanych rywali + połowa zremisowanych)": "Sonneborn-Berger (Punkte der besiegten Gegner + Hälfte der Remisgegner)",
+  "Sponsor główny turnieju": "Hauptsponsor des Turniers",
   "SportLiveArena – wyniki turniejów na żywo": "SportLiveArena – Turnierergebnisse live",
   "Sporty rakietowe": "Rückschlagspiele",
   "Sporty walki": "Kampfsport",
@@ -1160,6 +1162,7 @@ const dict: Record<string, string> = {
   "Wyniki": "Ergebnisse",
   "Wyniki na żywo": "Live-Ergebnisse",
   "Wyniki na żywo dla kibiców, w każdej dyscyplinie": "Live-Ergebnisse für Fans, in jeder Sportart",
+  "Wyniki na żywo, tabele i terminarz turnieju {name}. Sprawdź wyniki meczów w telefonie.": "Live-Ergebnisse, Tabellen und Spielplan von {name}. Verfolge die Spiele auf deinem Handy.",
   "Wyniki odświeżają się same, nie trzeba przeładowywać strony.": "Die Ergebnisse aktualisieren sich selbst, kein Neuladen nötig.",
   "Wyniki setów": "Satzergebnisse",
   "Wyniki są zapisane w telefonie i wyślą się same, gdy wróci internet.": "Die Ergebnisse sind im Handy gespeichert und werden automatisch gesendet, sobald das Internet zurück ist.",
@@ -1477,6 +1480,7 @@ const dict: Record<string, string> = {
   "{label}: wpisz klucz boiska": "{label}: Feldschlüssel eingeben",
   "{match} · mecz {n}": "{match} · Spiel {n}",
   "{match} · rewanż": "{match} · Rückspiel",
+  "{name} – wyniki na żywo": "{name} – Live-Ergebnisse",
   "{n} boiska": "{n} Felder",
   "{n} drużyna|{n} drużyny|{n} drużyn": "{n} Team|{n} Teams",
   "{n} dyscyplin z gotowymi zasadami, a do tego dowolna inna": "{n} Sportarten mit fertigen Regeln, dazu jede andere",
@@ -1550,8 +1554,6 @@ const dict: Record<string, string> = {
   "· Stanowisko": "· Station",
   "Stanowisko": "Station",
   "Stanowiska": "Stationen",
-  "{name} – wyniki na żywo": "{name} – Live-Ergebnisse",
-  "Wyniki na żywo, tabele i terminarz turnieju {name}. Sprawdź wyniki meczów w telefonie.": "Live-Ergebnisse, Tabellen und Spielplan von {name}. Verfolge die Spiele auf deinem Handy.",
 }
 
 export default dict

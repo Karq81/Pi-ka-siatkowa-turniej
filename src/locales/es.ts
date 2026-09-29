@@ -631,6 +631,7 @@ const dict: Record<string, string> = {
   "Odpoczynek liczy się przy następnym losowaniu.": "El descanso se aplica en el próximo sorteo.",
   "Odrzuć": "Rechazar",
   "Odtwórz": "Reproducir",
+  "Odwiedź stronę sponsora": "Visitar la web del patrocinador",
   "Operator kamery": "Operador de cámara",
   "Operator skanuje kod telefonem": "El operador escanea el código con el móvil",
   "Opis jest za długi (do 20 000 znaków).": "La descripción es demasiado larga (hasta 20 000 caracteres).",
@@ -871,6 +872,7 @@ const dict: Record<string, string> = {
   "Slot meczu: {n} min, czyli ok. {m} meczów na godzinę na jednym boisku.": "Franja: {n} min, unos {m} partidos por hora en una pista.",
   "Sokoły": "Halcones",
   "Sonneborn-Berger (punkty pokonanych rywali + połowa zremisowanych)": "Sonneborn-Berger (puntos de los rivales vencidos + mitad de los empatados)",
+  "Sponsor główny turnieju": "Patrocinador principal del torneo",
   "SportLiveArena – wyniki turniejów na żywo": "SportLiveArena – resultados de torneos en directo",
   "Sporty rakietowe": "Deportes de raqueta",
   "Sporty walki": "Deportes de combate",
@@ -1160,6 +1162,7 @@ const dict: Record<string, string> = {
   "Wyniki": "Resultados",
   "Wyniki na żywo": "Resultados en directo",
   "Wyniki na żywo dla kibiców, w każdej dyscyplinie": "Resultados en directo para los aficionados, en cualquier deporte",
+  "Wyniki na żywo, tabele i terminarz turnieju {name}. Sprawdź wyniki meczów w telefonie.": "Resultados en directo, clasificaciones y calendario de {name}. Sigue los partidos en tu móvil.",
   "Wyniki odświeżają się same, nie trzeba przeładowywać strony.": "Los resultados se actualizan solos, no hace falta recargar la página.",
   "Wyniki setów": "Resultados de los sets",
   "Wyniki są zapisane w telefonie i wyślą się same, gdy wróci internet.": "Los resultados están guardados en el móvil y se enviarán solos cuando vuelva internet.",
@@ -1477,6 +1480,7 @@ const dict: Record<string, string> = {
   "{label}: wpisz klucz boiska": "{label}: introduce la clave de la pista",
   "{match} · mecz {n}": "{match} · partido {n}",
   "{match} · rewanż": "{match} · vuelta",
+  "{name} – wyniki na żywo": "{name} – resultados en directo",
   "{n} boiska": "{n} pistas",
   "{n} drużyna|{n} drużyny|{n} drużyn": "{n} equipo|{n} equipos",
   "{n} dyscyplin z gotowymi zasadami, a do tego dowolna inna": "{n} deportes con reglas listas y cualquier otro",
@@ -1550,8 +1554,6 @@ const dict: Record<string, string> = {
   "· Stanowisko": "· Puesto",
   "Stanowisko": "Puesto",
   "Stanowiska": "Puestos",
-  "{name} – wyniki na żywo": "{name} – resultados en directo",
-  "Wyniki na żywo, tabele i terminarz turnieju {name}. Sprawdź wyniki meczów w telefonie.": "Resultados en directo, clasificaciones y calendario de {name}. Sigue los partidos en tu móvil.",
 }
 
 export default dict

@@ -631,6 +631,7 @@ const dict: Record<string, string> = {
   "Odpoczynek liczy się przy następnym losowaniu.": "Odpočinek platí při dalším losování.",
   "Odrzuć": "Odmítnout",
   "Odtwórz": "Přehrát",
+  "Odwiedź stronę sponsora": "Navštívit web sponzora",
   "Operator kamery": "Kameraman",
   "Operator skanuje kod telefonem": "Kameraman naskenuje kód telefonem",
   "Opis jest za długi (do 20 000 znaków).": "Popis je příliš dlouhý (do 20 000 znaků).",
@@ -871,6 +872,7 @@ const dict: Record<string, string> = {
   "Slot meczu: {n} min, czyli ok. {m} meczów na godzinę na jednym boisku.": "Slot: {n} min, asi {m} zápasů za hodinu na jednom hřišti.",
   "Sokoły": "Sokoli",
   "Sonneborn-Berger (punkty pokonanych rywali + połowa zremisowanych)": "Sonneborn-Berger (body poražených soupeřů + polovina remízových)",
+  "Sponsor główny turnieju": "Hlavní sponzor turnaje",
   "SportLiveArena – wyniki turniejów na żywo": "SportLiveArena – výsledky turnajů živě",
   "Sporty rakietowe": "Raketové sporty",
   "Sporty walki": "Bojové sporty",
@@ -1160,6 +1162,7 @@ const dict: Record<string, string> = {
   "Wyniki": "Výsledky",
   "Wyniki na żywo": "Výsledky živě",
   "Wyniki na żywo dla kibiców, w każdej dyscyplinie": "Výsledky živě pro fanoušky, v každém sportu",
+  "Wyniki na żywo, tabele i terminarz turnieju {name}. Sprawdź wyniki meczów w telefonie.": "Živé výsledky, tabulky a rozpis turnaje {name}. Sledujte zápasy v telefonu.",
   "Wyniki odświeżają się same, nie trzeba przeładowywać strony.": "Výsledky se obnovují samy, stránku není třeba načítat znovu.",
   "Wyniki setów": "Výsledky setů",
   "Wyniki są zapisane w telefonie i wyślą się same, gdy wróci internet.": "Výsledky jsou uložené v telefonu a odešlou se samy, až bude zase internet.",
@@ -1477,6 +1480,7 @@ const dict: Record<string, string> = {
   "{label}: wpisz klucz boiska": "{label}: zadejte klíč hřiště",
   "{match} · mecz {n}": "{match} · zápas {n}",
   "{match} · rewanż": "{match} · odveta",
+  "{name} – wyniki na żywo": "{name} – živé výsledky",
   "{n} boiska": "{n} hřiště",
   "{n} drużyna|{n} drużyny|{n} drużyn": "{n} tým|{n} týmy|{n} týmů",
   "{n} dyscyplin z gotowymi zasadami, a do tego dowolna inna": "{n} sportů s hotovými pravidly a k tomu jakýkoli další",
@@ -1550,8 +1554,6 @@ const dict: Record<string, string> = {
   "· Stanowisko": "· Stanoviště",
   "Stanowisko": "Stanoviště",
   "Stanowiska": "Stanoviště",
-  "{name} – wyniki na żywo": "{name} – živé výsledky",
-  "Wyniki na żywo, tabele i terminarz turnieju {name}. Sprawdź wyniki meczów w telefonie.": "Živé výsledky, tabulky a rozpis turnaje {name}. Sledujte zápasy v telefonu.",
 }
 
 export default dict
