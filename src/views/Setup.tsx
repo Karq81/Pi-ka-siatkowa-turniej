@@ -1,12 +1,13 @@
 import { IS_ALBATROS, TOURNAMENT_ID } from '../config'
 import { AttachButtons, PhotoTip } from './Attach'
-import { t, tk } from '../i18n'
+import { t, tk, tp } from '../i18n'
 import { useMemo, useState, useSyncExternalStore } from 'react'
 import { tournamentUrl } from '../config'
 import { clubOf, drawCategory, shuffle } from '../logic/draw'
 import { nextSlot } from '../logic/schedule'
 import { withLegs } from '../logic/legs'
 import { drawMeasured } from '../logic/measured'
+import { recreationalOf, startRecreational } from '../logic/recreational'
 import { arrangeSeeds, createElimination, hasElimination, isElimination, systemOf } from '../logic/elimination'
 import { consolationPlan, groupPlayoffPlan, hasCustom, knockoutPlan, stepladderPlan, withCustom } from '../logic/custom'
 import { defaultSwissRounds, hasSwiss, startSwiss } from '../logic/swiss'
@@ -105,6 +106,10 @@ function SystemSetting({ state }: { state: State }) {
     ['consolation', t('Drabinka pucharowa z turniejem pocieszenia')],
     ...(state.tournament.custom ? [['custom', t('Plan własny (z opisu turnieju)')] as const] : []),
     ...(system === 'measured' ? [['measured', t('Konkurencja mierzona (czas, odległość, punkty)')] as const] : []),
+    ['americano', t('Americano (co rundę inny partner)')],
+    ['mexicano', t('Mexicano (pary według tabeli)')],
+    ['king', t('Król kortu (zwycięzca zostaje)')],
+    ['ladder', t('Drabinka rankingowa (wyzwania)')],
   ] as const
   return (
     <section className="panel system-setting">
@@ -190,6 +195,11 @@ function SystemSetting({ state }: { state: State }) {
           : system === 'consolation' ? t('Przegrany odpada z głównej drabinki, ale przegrani z pierwszej rundy grają swoją drabinkę pocieszenia, więc każdy rozegra co najmniej dwa spotkania.')
           : system === 'swiss' ? t('Wszyscy grają w każdej rundzie, z rywalami o podobnej liczbie punktów, nigdy dwa razy z tym samym. Kolejną rundę losujesz po zakończeniu poprzedniej.')
           : system === 'custom' ? t('Spotkania ułożone według opisu turnieju. Kolejne spotkania wypełniają się same po wpisaniu wyników.')
+          : system === 'americano' ? t('Co rundę inny partner. Każdy zbiera punkty zdobyte przez swoją parę.')
+          : system === 'mexicano' ? t('Każdy zbiera punkty zdobyte przez swoją parę. Od 2. rundy pary według tabeli: 1. i 4. przeciw 2. i 3.')
+          : system === 'king' ? t('Zwycięzca zostaje na korcie, przegrany idzie na koniec kolejki. Liczą się wygrane, potem najdłuższa seria.')
+          : system === 'ladder' ? t('Wpisz zawodników w kolejności rankingu. Zawodnik wyzywa kogoś najwyżej 3 miejsca wyżej i zajmuje jego miejsce, gdy wygra.')
+          : system === 'measured' ? t('Bez meczów: każdy uczestnik ma swój wynik. Najpierw serie albo rundy, potem finał lub klasyfikacja.')
           : system === 'groups' ? t('Najpierw grupy, w których każdy gra z każdym; potem mecze o miejsca.')
           : system === 'knockout' ? t('Od razu drabinka: przegrany odpada. Przy nieparzystej liczbie część dostaje wolny los.')
             : t('Po pierwszej porażce spada się do drabinki przegranych, po drugiej odpada. Na koniec wielki finał (z rewanżem, gdy wygra ten z drabinki przegranych).')}
@@ -328,6 +338,20 @@ function CategorySetup({ state, category }: { state: State; category: Category }
       if (strange.length) { setOdd(strange); return }
     }
     if (played && !confirm(t('Są już wpisane wyniki. Nowe losowanie ułoży terminarz od nowa i usunie wszystkie wyniki. Losować?'))) return
+    if (recreationalOf(state.tournament)) {
+      // Americano, Mexicano, king of the court, ladder: everybody in one table, the first round or match.
+      const others = state.teams.filter((t) => t.categoryId !== category.id)
+      const ids = (systemOf(state.tournament) === 'ladder' ? list : shuffle(list, Math.random)).map((x) => x.id)
+      const next = startRecreational({ ...state, teams: [...others, ...list] }, category.id, ids)
+      setMsg(t('Zapisuję…'))
+      if (!(await store.replace(next))) {
+        setMsg(t('Nie udało się zapisać losowania. Sprawdź internet i kliknij jeszcze raz.'))
+        return
+      }
+      try { sessionStorage.removeItem(draftKey) } catch { /* no storage */ }
+      setMsg(t('Gotowe: {n}. Kolejne rundy i wyniki w zakładce „2. Grupy”.', { n: tp(list.length, '{n} zawodnik|{n} zawodników|{n} zawodników') }))
+      return
+    }
     if (systemOf(state.tournament) === 'measured') {
       // Measured events: heats (or rounds with everybody); results are entered in the tables.
       const others = state.teams.filter((t) => t.categoryId !== category.id)
@@ -478,7 +502,7 @@ function CategorySetup({ state, category }: { state: State; category: Category }
       {teams.length >= 2 && <DrawForecast state={state} categoryId={category.id} teams={teams} groups={groups} />}
       <div className="form-row">
         <span className="muted">{t('Na liście:')} {teams.length}</span>
-        {!bracket && systemOf(state.tournament) !== 'swiss' && (
+        {!bracket && systemOf(state.tournament) !== 'swiss' && !recreationalOf(state.tournament) && (
           <label>{systemOf(state.tournament) !== 'measured' ? t('Liczba grup') : state.tournament.measured?.mode === 'rounds' ? t('Liczba rund (wyścigów)') : t('Liczba serii')}
             <NumberField min={1} max={12} value={groups} onChange={setGroups} />
           </label>
@@ -487,6 +511,8 @@ function CategorySetup({ state, category }: { state: State; category: Category }
       <button className="btn btn-primary" disabled={teams.length < 2} onClick={() => void draw()}>
         {systemOf(state.tournament) === 'measured'
           ? t('Zapisz listę i ułóż serie')
+          : recreationalOf(state.tournament)
+          ? t('Zapisz listę i zacznij')
           : systemOf(state.tournament) === 'stepladder' || systemOf(state.tournament) === 'consolation'
           ? t('Zapisz listę i ułóż drabinkę')
           : systemOf(state.tournament) === 'swiss'

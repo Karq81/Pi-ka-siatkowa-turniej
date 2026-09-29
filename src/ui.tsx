@@ -62,7 +62,8 @@ export function useLookups(state: State) {
     const team = new Map(state.teams.map((t) => [t.id, t]))
     const group = new Map(state.groups.map((g) => [g.id, g]))
     const category = new Map(state.categories.map((c) => [c.id, c]))
-    const teamName = (id: string) => team.get(id)?.name ?? '—'
+    // A pair made for one match (Americano, Mexicano) is written "id1+id2".
+    const teamName = (id: string) => team.get(id)?.name ?? (id.includes('+') ? id.split('+').map((x) => team.get(x)?.name ?? '').join(' / ') : '—')
     return {
       teamName,
       groupName: (id: string) => group.get(id)?.name ?? '',

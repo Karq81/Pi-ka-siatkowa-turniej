@@ -129,7 +129,7 @@ export interface Tournament {
    * a losers' bracket, out after the second loss, a grand final) or 'custom' (only the
    * organiser's own plan, see `custom`).
    */
-  system?: 'groups' | 'knockout' | 'double' | 'custom' | 'swiss' | 'stepladder' | 'consolation' | 'measured'
+  system?: 'groups' | 'knockout' | 'double' | 'custom' | 'swiss' | 'stepladder' | 'consolation' | 'measured' | 'americano' | 'mexicano' | 'king' | 'ladder'
   /** Swiss system: number of rounds. */
   swissRounds?: number
   /** Knockout: a match for 3rd place between the semi-final losers. */

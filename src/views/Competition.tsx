@@ -13,6 +13,8 @@ import { hasSwiss } from '../logic/swiss'
 import { isMeasured } from '../logic/measured'
 import { statusLabel } from '../logic/special'
 import { MeasuredView } from './Measured'
+import { RecView } from './Recreational'
+import { recreationalOf } from '../logic/recreational'
 import { hasElimination } from '../logic/elimination'
 import { isUnderway } from '../logic/courtBoard'
 import { CorrectButton } from './Correction'
@@ -48,7 +50,7 @@ export function Competition({ state, route }: { state: State; route: string }) {
   const custom = hasCustom(state, cat)
   // Without groups the category's own plan is shown straight away, like a bracket.
   const elim = hasElimination(state, cat) || (custom && !state.groups.some((g) => g.categoryId === cat))
-  const measuredEvent = isMeasured(state.tournament)
+  const measuredEvent = isMeasured(state.tournament) || !!recreationalOf(state.tournament)
   if (!state.groups.length && !state.matches.some((m) => m.ko?.bracket)) {
     return <p className="notice-inline">{t('Grupy pojawią się tutaj wkrótce.')}</p>
   }
@@ -71,7 +73,7 @@ export function Competition({ state, route }: { state: State; route: string }) {
 
       <NextMatch state={state} categoryId={cat} />
 
-      {measuredEvent && <MeasuredView state={state} categoryId={cat} />}
+      {measuredEvent && (recreationalOf(state.tournament) ? <RecView state={state} categoryId={cat} /> : <MeasuredView state={state} categoryId={cat} />)}
 
       {elim && (custom ? <CustomView state={state} categoryId={cat} /> : <EliminationView state={state} categoryId={cat} />)}
 
@@ -248,7 +250,8 @@ export function MatchCard({ state, match: m, label }: { state: State; match: Mat
   const tl = tally(rules, m.sets)
   const cur = m.sets[m.sets.length - 1]
   const single = rules.sets === 1
-  const team = (id: string) => (id ? state.teams.find((x) => x.id === id) : undefined)
+  // A pair made for one match ("id1+id2"): the first player's badge.
+  const team = (id: string) => (id ? state.teams.find((x) => x.id === id.split('+')[0]) : undefined)
   const done = m.status === 'finished'
   const scoreA = single ? cur?.a : tl.setsA
   const scoreB = single ? cur?.b : tl.setsB

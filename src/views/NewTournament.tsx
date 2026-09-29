@@ -51,7 +51,7 @@ export function NewTournament() {
   // Runs, jumps, golf…: no matches, each participant has a result.
   const measuredEvent = rules.scoring === 'measured'
   const [categories, setCategories] = useState('')
-  const [system, setSystem] = useState<'groups' | 'knockout' | 'double' | 'custom' | 'swiss' | 'stepladder' | 'consolation'>('groups')
+  const [system, setSystem] = useState<'groups' | 'knockout' | 'double' | 'custom' | 'swiss' | 'stepladder' | 'consolation' | 'americano' | 'mexicano' | 'king' | 'ladder'>('groups')
   const [thirdPlace, setThirdPlace] = useState(true)
   const [twice, setTwice] = useState(false)
   const [swissRounds, setSwissRounds] = useState(5)
@@ -296,6 +296,10 @@ export function NewTournament() {
             ['stepladder', t('Drabinka schodkowa (od najsłabszego do najlepszego)'), t('Wpisz zawodników od najlepszego do najsłabszego. Dwóch najsłabszych gra pierwsze spotkanie, zwycięzca gra z kolejnym wyżej, aż do finału z numerem 1.')],
             ['consolation', t('Drabinka pucharowa z turniejem pocieszenia'), t('Przegrany odpada z głównej drabinki, ale przegrani z pierwszej rundy grają swoją drabinkę pocieszenia, więc każdy rozegra co najmniej dwa spotkania.')],
             ['swiss', t('System szwajcarski (szachy, darts)'), t('Wszyscy grają w każdej rundzie, z rywalami o podobnej liczbie punktów, nigdy dwa razy z tym samym. Kolejną rundę losujesz po zakończeniu poprzedniej.')],
+            ['americano', t('Americano (co rundę inny partner)'), t('Co rundę inny partner. Każdy zbiera punkty zdobyte przez swoją parę.')],
+            ['mexicano', t('Mexicano (pary według tabeli)'), t('Każdy zbiera punkty zdobyte przez swoją parę. Od 2. rundy pary według tabeli: 1. i 4. przeciw 2. i 3.')],
+            ['king', t('Król kortu (zwycięzca zostaje)'), t('Zwycięzca zostaje na korcie, przegrany idzie na koniec kolejki. Liczą się wygrane, potem najdłuższa seria.')],
+            ['ladder', t('Drabinka rankingowa (wyzwania)'), t('Wpisz zawodników w kolejności rankingu. Zawodnik wyzywa kogoś najwyżej 3 miejsca wyżej i zajmuje jego miejsce, gdy wygra.')],
           ] as const).map(([id, label, hint]) => (
             <label key={id} className={`system-opt ${system === id ? 'on' : ''}`}>
               <input type="radio" name="system" checked={system === id} onChange={() => setSystem(id)} />

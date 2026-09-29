@@ -19,7 +19,7 @@ const byTime = (a: Match, b: Match) => a.start.localeCompare(b.start) || a.court
 export function resultSheets(state: State): Sheet[] {
   const { rules } = state.tournament
   const team = new Map(state.teams.map((x) => [x.id, x]))
-  const teamName = (id: string) => team.get(id)?.name ?? ''
+  const teamName = (id: string) => team.get(id)?.name ?? (id.includes('+') ? id.split('+').map((x) => team.get(x)?.name ?? '').join(' / ') : '')
   // The draw fills in the club with the team's own name when none was given.
   const club = (id: string) => { const x = team.get(id); return x?.club && x.club !== x.name ? x.club : '' }
   const category = (id: string) => state.categories.find((c) => c.id === id)?.name ?? ''

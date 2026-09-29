@@ -17,7 +17,7 @@ import { nextSlot, toLocalIso } from './schedule'
  * never created; whoever had the bye simply appears in the next match.
  */
 
-export type System = 'groups' | 'knockout' | 'double' | 'custom' | 'swiss' | 'stepladder' | 'consolation' | 'measured'
+export type System = 'groups' | 'knockout' | 'double' | 'custom' | 'swiss' | 'stepladder' | 'consolation' | 'measured' | 'americano' | 'mexicano' | 'king' | 'ladder'
 
 export function systemOf(t: Pick<Tournament, 'system'>): System {
   return t.system ?? 'groups'

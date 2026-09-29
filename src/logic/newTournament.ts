@@ -37,7 +37,7 @@ export interface TournamentDraft {
   rest?: number
   breaks?: { from: string; to: string }[]
   /** How it is played: groups (default), a knockout bracket, or double elimination. */
-  system?: 'groups' | 'knockout' | 'double' | 'custom' | 'swiss' | 'stepladder' | 'consolation' | 'measured'
+  system?: 'groups' | 'knockout' | 'double' | 'custom' | 'swiss' | 'stepladder' | 'consolation' | 'measured' | 'americano' | 'mexicano' | 'king' | 'ladder'
   thirdPlace?: boolean
 }
 
