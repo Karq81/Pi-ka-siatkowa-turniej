@@ -14,6 +14,7 @@ import type { Match, MatchStatus, Pins, Rules, SetScore, State, Tiebreak } from 
 import { NumberField, BackBar, courtLabel, formatDay, formatTime, PinGate, useLookups } from '../ui'
 import { CourtCard, MatchList } from './Public'
 import { ResultForm, withDecided, type MatchExtra } from './ResultForm'
+import { ManualPoints, PointsAdjustPanel, PointsSettings } from './Points'
 import { ChangeLog, LaterRoundsWarning, PairEditor, WalkoverButtons, WithdrawPanel } from './Special'
 
 const TABS = [
@@ -129,6 +130,7 @@ function MatchEditor({ state, match, onClose }: { state: State; match: Match; on
       </ResultForm>
       <LaterRoundsWarning state={state} match={match} />
       {match.status !== 'finished' && <WalkoverButtons state={state} match={match} onDone={onClose} />}
+      <ManualPoints state={state} match={match} />
       <PairEditor state={state} match={match} />
       <p className="muted small">
         {t('„Oznacz jako trwający”: na stronie pojawi się „Mecz trwa, wynik po meczu”. Przydaje się na boiskach, gdzie nikt nie liczy punktów na telefonie.')}
@@ -203,6 +205,7 @@ function Data({ state }: { state: State }) {
 
   return (
     <div className="data">
+      <PointsAdjustPanel state={state} />
       <WithdrawPanel state={state} />
       <ChangeLog state={state} />
       <ResetPanel state={state} />
@@ -304,10 +307,8 @@ function Settings({ state }: { state: State }) {
           <label>{t('Decydujący set do (pkt)')}<NumberField lazy id="set-tiebreak" min={1} max={999} value={r.lastSetPoints} disabled={r.setsMode === 'fixed'} onChange={(v) => rules({ lastSetPoints: v })} /></label>
           <label>{t('Przewaga do wygrania seta')}<NumberField lazy id="set-winby" min={1} max={9} value={r.winBy} onChange={(v) => rules({ winBy: v })} /></label>
           </>)}
-          <label>{t('Pkt w tabeli za wygraną')}<NumberField lazy decimals id="set-pwin" min={0} max={99} value={r.pointsWin} onChange={(v) => rules({ pointsWin: v })} /></label>
-          <label>{t('Pkt za remis')}<NumberField lazy decimals id="set-pdraw" min={0} max={99} value={r.pointsDraw} onChange={(v) => rules({ pointsDraw: v })} /></label>
-          <label>{t('Pkt za przegraną')}<NumberField lazy decimals id="set-ploss" min={0} max={99} value={r.pointsLoss} onChange={(v) => rules({ pointsLoss: v })} /></label>
         </div>
+        <PointsSettings state={state} />
         <TiebreakEditor rules={r} onChange={(tiebreak) => rules({ tiebreak })} onReapply={(h2hReapply) => rules({ h2hReapply })} />
         <p className="muted small">{t('Zasady do potwierdzenia z organizatorem. Zmiana od razu przelicza wszystkie tabele.')}</p>
       </section>

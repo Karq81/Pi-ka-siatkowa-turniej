@@ -187,6 +187,13 @@ function desc(x: number, y: number): number {
 
 /** Table points the two sides get for a finished match (overtime, walkover and volleyball's 3:2 rule included). */
 export function matchTablePoints(rules: Rules, m: Match): [number, number] {
+  // The organiser's own points for this match win over the rules.
+  if (m.manualPoints) return m.manualPoints
+  return rulesTablePoints(rules, m)
+}
+
+/** Table points for a match by the rules alone (what the organiser's own points are compared with). */
+export function rulesTablePoints(rules: Rules, m: Match): [number, number] {
   const t = tally(rules, m.sets)
   if (t.setsA === t.setsB) return [rules.pointsDraw, rules.pointsDraw]
   // Volleyball: a 3:2 (or 2:1) win gives one point less to the winner and one to the loser.
@@ -360,6 +367,8 @@ export function standings(
       return rank(sub, i + 1, keepBase)
     })
   }
+  // The organiser's penalties and bonuses (e.g. −3 for a walkover given away).
+  for (const r of rows.values()) r.tablePoints += teams.find((x) => x.id === r.teamId)?.adjust?.points ?? 0
   const all = [...rows.values()]
   const pointsLevels = [...new Set(all.map((r) => r.tablePoints))].sort((x, y) => y - x)
   const ranked = pointsLevels.flatMap((p) => rank(all.filter((r) => r.tablePoints === p), 0))

@@ -272,7 +272,8 @@ export function NumberField({ value, onChange, min, max, step, decimals = false,
         const n = parse(s)
         if (!lazy && n !== null && n !== value) onChange(n)
       }}
-      onKeyDown={(e) => { if (lazy && e.key === 'Enter') (e.target as HTMLInputElement).blur() }}
+      // Enter saves; its default is stopped, so it does not also press a button of a question opened by the save.
+      onKeyDown={(e) => { if (lazy && e.key === 'Enter') { e.preventDefault(); (e.target as HTMLInputElement).blur() } }}
       onBlur={() => {
         setFocused(false)
         const n = parse(text)

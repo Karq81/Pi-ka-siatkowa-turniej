@@ -239,6 +239,8 @@ export interface Team {
   rating?: number
   /** Withdrawn or disqualified teams stay in the results, marked. Missing: active. */
   status?: 'active' | 'withdrawn' | 'disqualified'
+  /** Points added to (or taken from) the team's table total by the organiser: a penalty or a bonus, with the reason. */
+  adjust?: { points: number; reason: string }
   /** Withdrawn early (option A): its results are left out of the tables. */
   voided?: boolean
   /** Recreational formats (Americano, Mexicano): a pair made for one match, not listed as a team. */
@@ -370,6 +372,8 @@ export interface Match {
   calledAt?: number
   /** How the match was decided, for table points (hockey: overtime and shootout give 2 and 1). Missing: regular time. */
   decidedBy?: 'regulation' | 'overtime' | 'shootout' | 'walkover' | 'retirement'
+  /** Table points given by hand by the organiser for this match (side A, side B), instead of the rules'. */
+  manualPoints?: [number, number]
   /** Teams set by hand by the organiser: the bracket does not fill them in any more. */
   manual?: boolean
   /** Penalties (shootout) after a level knockout match or two-legged tie; not counted as goals. */

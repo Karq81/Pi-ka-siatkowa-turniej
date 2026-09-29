@@ -6,6 +6,7 @@ import { ResultForm, withDecided } from './ResultForm'
 import { setsText } from '../logic/scoring'
 import { logged } from '../logic/special'
 import { LaterRoundsWarning, WalkoverButtons } from './Special'
+import { ManualPoints } from './Points'
 
 /** Small button shown only to the chief referee: opens the result correction for a match. */
 export function CorrectButton({ match }: { match: Match }) {
@@ -73,6 +74,7 @@ export function Correction({ matchId }: { matchId: string }) {
               )}
             </ResultForm>
             <LaterRoundsWarning state={state} match={m} />
+            <ManualPoints state={state} match={m} />
             {m.status !== 'finished' && <WalkoverButtons state={state} match={m} onDone={done} />}
             <p className="muted small">{t('Tabele, drabinka i strony drużyn przeliczą się same od razu po zapisaniu.')}</p>
           </section>

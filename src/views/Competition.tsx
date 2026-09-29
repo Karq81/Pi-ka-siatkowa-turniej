@@ -216,7 +216,7 @@ function GroupView({ state, groupId }: { state: State; groupId: string }) {
               <li key={r.teamId} className={`${i < 2 ? 'top' : ''} ${mine.includes(r.teamId) ? 'mine' : ''}`}>
                 <span className="pos">{r.place}</span>
                 <TeamBadge team={tm} />
-                <a className="name plain-link" href={`#druzyna-${r.teamId}`}>{tm?.name}{statusLabel(tm) && <span className="team-status"> · {statusLabel(tm)}</span>}</a>
+                <a className="name plain-link" href={`#druzyna-${r.teamId}`}>{tm?.name}{statusLabel(tm) && <span className="team-status"> · {statusLabel(tm)}</span>}{tm?.adjust && <span className="team-status" title={tm.adjust.reason}> ({tm.adjust.points > 0 ? '+' : ''}{String(tm.adjust.points).replace('.', ',')} {t('pkt')}: {tm.adjust.reason})</span>}</a>
                 <span className="trend" aria-label={tr.length ? `${t('Ostatnie mecze:')} ${tr.map((x) => (x === 'w' ? t('wygrana') : x === 'd' ? t('remis') : t('przegrana'))).join(', ')}` : undefined}>
                   {tr.map((x, j) => <i key={j} className={x} />)}
                 </span>
