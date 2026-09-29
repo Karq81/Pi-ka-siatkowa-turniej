@@ -11,7 +11,10 @@
     "test": "vitest run src",
     "typecheck": "tsc -b",
     "test:rules": "firebase emulators:exec --only firestore,database --project demo-siatkalive \"vitest run tests --no-file-parallelism\"",
-    "dev:emulator": "firebase emulators:exec --only firestore,auth,database --project demo-siatkalive \"vite --mode emulator\""
+    "dev:emulator": "firebase emulators:exec --only firestore,auth,database --project demo-siatkalive \"vite --mode emulator\"",
+    "check": "tsc -b && vitest run src",
+    "e2e": "bash scripts/e2e.sh",
+    "i18n": "node scripts/i18n.mjs"
   },
   "dependencies": {
     "edmonds-blossom-fixed": "^1.0.1",
@@ -27,6 +30,7 @@
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.1",
     "firebase-tools": "^15.31.0",
+    "playwright": "^1.63.0",
     "typescript": "^7.0.2",
     "vite": "^8.3.1",
     "vite-plugin-singlefile": "^2.3.3",

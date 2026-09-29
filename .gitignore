@@ -7,3 +7,6 @@ dist-single
 *-debug.log
 functions/node_modules
 functions/.env
+
+# Browser test output (screenshots, logs)
+e2e/out
