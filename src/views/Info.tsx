@@ -40,9 +40,11 @@ export function InfoHero({ nav }: { nav: ReactNode }) {
         </div>
         {/* The main sponsor of Albatros CUP only; other tournaments have no such block. */}
         <a className="main-sponsor" href="https://albatrosrelax.mielno.pl" target="_blank" rel="noopener sponsored" aria-label={t('Sponsor główny turnieju') + ': Albatros Medical SPA Mielno'}>
-          <span className="main-sponsor-label">{t('Sponsor główny turnieju')}</span>
-          <img src={sponsorLogo} alt="Albatros Medical SPA Mielno" width={112} height={110} />
-          <span className="main-sponsor-link">{t('Odwiedź stronę sponsora')} →</span>
+          <span className="main-sponsor-text">
+            <span className="main-sponsor-label">{t('Sponsor główny turnieju')}</span>
+            <span className="main-sponsor-link">{t('Odwiedź stronę sponsora')} →</span>
+          </span>
+          <img src={sponsorLogo} alt="Albatros Medical SPA Mielno" width={76} height={75} />
         </a>
       </div>
       {nav}
