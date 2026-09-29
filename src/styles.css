@@ -371,15 +371,20 @@ label { display: flex; flex-direction: column; gap: 4px; font-size: 0.9rem; font
 .main-sponsor-label { font-size: .72rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: #6b5300; }
 .main-sponsor-link { font-size: .78rem; font-weight: 700; text-decoration: underline; }
 @media (max-width: 640px) {
-  /* Phone: the sponsor sits in the top row, opposite the club logo; the title takes the row below. */
-  .info-hero-inner:has(.main-sponsor) > div { order: 2; flex-basis: 100%; }
-  .main-sponsor { order: 1; margin-left: auto; gap: 8px; padding: 6px 8px; }
+  /* Phone: club logo, title and sponsor stay in one row; the sponsor is a small stacked block on the right. */
+  .info-hero-inner:has(.main-sponsor) { flex-wrap: nowrap; gap: 10px; align-items: center; }
+  .info-hero-inner:has(.main-sponsor) .info-logo { width: 58px; padding: 4px; }
+  .info-hero-inner:has(.main-sponsor) > div { flex: 1; min-width: 0; }
+  .info-hero-inner:has(.main-sponsor) h1 { font-size: clamp(1.5rem, 7.4vw, 2.3rem); }
+  .info-hero-inner:has(.main-sponsor) .eyebrow { font-size: .62rem; }
+  .info-hero-inner:has(.main-sponsor) .info-when { font-size: .85rem; }
+  .main-sponsor { flex: none; flex-direction: column-reverse; gap: 4px; margin-left: 0; width: 82px; padding: 5px 5px 4px; border-radius: 10px; }
   .main-sponsor img { width: 58px; }
-  .main-sponsor-text { text-align: right; }
-  .main-sponsor-label { font-size: .62rem; max-width: 9em; }
+  .main-sponsor-text { text-align: center; }
+  .main-sponsor-label { font-size: .5rem; letter-spacing: .04em; line-height: 1.15; }
   .main-sponsor-link { display: none; }
 }
-@media (max-width: 360px) { .main-sponsor img { width: 46px; } .main-sponsor-label { font-size: .56rem; max-width: 7em; } .main-sponsor { gap: 6px; padding: 5px 6px; } .info-logo { width: 80px; } }
+@media (max-width: 360px) { .info-hero-inner:has(.main-sponsor) h1 { font-size: 1.3rem; } .main-sponsor { width: 68px; } .main-sponsor img { width: 46px; } .info-hero-inner:has(.main-sponsor) .info-logo { width: 46px; } }
 .info-hero .tabs a { color: var(--board-ink); }
 .info-hero .tabs a.active { background: var(--ball); color: #1d1600; }
 .info-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
