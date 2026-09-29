@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /kamera
+
+Sitemap: https://sportlivearena.com/sitemap.xml
