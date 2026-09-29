@@ -71,7 +71,7 @@ describe('poster', () => {
     expect(f.contactName + f.phone + f.email + f.website).toBe('')
   })
   it('puts on the poster what was ticked, in one contact line', () => {
-    const o = { ...defaultOptions(facts), contact: true, phone: true, email: false, website: true, fee: '100 zł', prizes: 'puchary', extra: 'Start 9:00\nParking przy hali' }
+    const o = { ...defaultOptions(facts), contact: true, phone: true, email: false, website: true, fee: '100 zł', prizes: 'puchary', extra: 'Parking przy hali' }
     const p = defaultPoster(facts, 'pl', o)
     expect(p.lines).toContain('Kontakt: Jan Kowalski · 600 100 200')
     expect(p.lines).toContain('Wpisowe: 100 zł')
@@ -83,6 +83,12 @@ describe('poster', () => {
     expect(f.contactName).toBe('Jan Kowalski')
     expect(f.phone).toBe('600 100 200')
     expect(f.email).toBe('')
+  })
+  it('keeps the ticked contact line when there are too many points', () => {
+    const o = { ...defaultOptions(facts), contact: true, fee: 'a', prizes: 'b', extra: 'c\nd\ne\nf\ng' }
+    const p = defaultPoster(facts, 'pl', o)
+    expect(p.lines).toHaveLength(MAX_LINES)
+    expect(p.lines[MAX_LINES - 1]).toBe('Kontakt: Jan Kowalski')
   })
   it('untucked options are left out for the AI too', () => {
     const f = factsFor(facts, { ...defaultOptions(facts), categories: false, registration: false })
