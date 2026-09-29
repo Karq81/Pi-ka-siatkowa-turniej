@@ -1,5 +1,7 @@
 import { About } from './views/About'
-import { IS_LANDING } from './config'
+import { BRAND, IS_LANDING, canonicalTournamentUrl } from './config'
+import { t } from './i18n'
+import { usePageMeta } from './seo'
 import { NewTournament } from './views/NewTournament'
 import { AccountPage } from './views/Account'
 import { Admin, PrintCards } from './views/Admin'
@@ -73,6 +75,14 @@ export function App() {
   // The discipline's words (mata, kort, walka…) on this tournament's pages; the service's own
   // pages (front page, new tournament, account) keep the usual ones.
   useTermsOf(IS_LANDING || isPlatformRoute(route) ? undefined : state.tournament.rules.sport)
+  // A tournament's address shares and shows up as "<name> – live results"; the service's own
+  // pages keep the title and description of the HTML file.
+  const name = state.tournament.name.trim()
+  usePageMeta(IS_LANDING || isPlatformRoute(route) || !name ? null : {
+    title: `${t('{name} – wyniki na żywo', { name })} | ${BRAND}`,
+    description: t('Wyniki na żywo, tabele i terminarz turnieju {name}. Sprawdź wyniki meczów w telefonie.', { name }),
+    canonical: canonicalTournamentUrl(),
+  })
   return (
     <>
       {/* The service pages show no tournament, so no connection notices either. */}

@@ -25,3 +25,13 @@ npm run test:rules # testy reguł bezpieczeństwa na emulatorze Firebase
 npm run dev:emulator # aplikacja na lokalnym emulatorze Firebase
 npm run build      # wersja do wrzucenia na hosting (katalog dist/)
 ```
+
+## Wyszukiwarki (SEO)
+
+Aplikacja jest jedną stroną z ekranami za „#”, a wyszukiwarki pomijają wszystko po „#”. Dlatego:
+
+- `index.html` ma opis, dane do podglądu linków (Open Graph), adres kanoniczny, dane strukturalne i alternatywy językowe; `public/robots.txt` i `public/og-image.png` trafiają do `dist/`.
+- `npm run build` po zbudowaniu aplikacji uruchamia `scripts/generate-seo.mjs`. Zapisuje w `dist/` zwykłe strony HTML: listę dyscyplin i stronę każdej dyscypliny w 9 językach (`/turnieje/`, `/en/tournaments/`, `/de/turniere/`…, np. `/turnieje/siatkowka-plazowa/`) oraz `sitemap.xml` z alternatywami językowymi. Dyscypliny, zasady i tłumaczenia pochodzą z `src/logic/sports.ts`, więc nowa dyscyplina dostaje swoje strony sama.
+- Teksty tych stron (9 języków) są w `scripts/generate-seo.mjs` (obiekt `COPY`).
+- Strona turnieju (`/?t=adres`) ustawia własny tytuł, opis i adres kanoniczny (`src/seo.ts`, tylko dla wyszukiwarek, które uruchamiają skrypty); kanoniczna jest zawsze domena sportlivearena.com.
+- Po wdrożeniu dodaj `https://sportlivearena.com/sitemap.xml` w Google Search Console.
