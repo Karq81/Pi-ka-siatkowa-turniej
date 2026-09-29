@@ -1,6 +1,7 @@
 import QRCode from 'qrcode'
 import { t } from '../i18n'
-import { THEME_COLORS, wrapWords, type Poster } from '../logic/poster'
+import { BUILTIN_SPONSOR, THEME_COLORS, wrapWords, type Poster } from '../logic/poster'
+import albatrosSponsor from '../assets/sponsor-albatros.png'
 
 /** A4 at 150 dpi. */
 export const POSTER_W = 1240
@@ -8,8 +9,8 @@ export const POSTER_H = 1754
 const M = 80
 const DISPLAY = '"Barlow Condensed", "Arial Narrow", Impact, sans-serif'
 const BODY = '"Barlow", system-ui, "Segoe UI", Arial, sans-serif'
-/** The lower band with the QR code. */
-const BAND_TOP = 1330
+/** The lower band with the QR code (taller when a sponsor's logo has its row). */
+const bandTop = (p: Poster) => (p.sponsorLogo ? 1195 : 1330)
 
 type Ctx = CanvasRenderingContext2D
 
@@ -34,6 +35,7 @@ function roundRect(ctx: Ctx, x: number, y: number, w: number, h: number, r: numb
 }
 
 function background(ctx: Ctx, p: Poster) {
+  const BAND_TOP = bandTop(p)
   const c = THEME_COLORS[p.theme]
   const g = ctx.createLinearGradient(0, 0, POSTER_W * 0.4, POSTER_H)
   g.addColorStop(0, c.bg1)
@@ -134,12 +136,30 @@ function drawTop(ctx: Ctx, p: Poster, scale: number): number {
 }
 
 /** The QR band: the code, what it opens and the footer. */
-function drawBand(ctx: Ctx, p: Poster, qr: HTMLCanvasElement | null) {
+function drawBand(ctx: Ctx, p: Poster, qr: HTMLCanvasElement | null, logo: HTMLImageElement | null) {
   const c = THEME_COLORS[p.theme]
+  const BAND_TOP = bandTop(p)
   ctx.fillStyle = 'rgba(0,0,0,0.28)'
   ctx.fillRect(0, BAND_TOP, POSTER_W, POSTER_H - BAND_TOP)
-  const size = 240
-  const qy = BAND_TOP + 30
+  let qy = BAND_TOP + 30
+  if (logo) {
+    // The sponsor's row: the words on the left, the logo on a white plaque on the right.
+    const ph = 172
+    const pw = Math.min(460, Math.max(160, Math.round((logo.width / logo.height) * (ph - 28)) + 44))
+    const px = POSTER_W - M - pw
+    ctx.fillStyle = '#fff'
+    roundRect(ctx, px, qy, pw, ph, 20)
+    ctx.fill()
+    const scale = Math.min((pw - 44) / logo.width, (ph - 28) / logo.height)
+    ctx.drawImage(logo, px + (pw - logo.width * scale) / 2, qy + (ph - logo.height * scale) / 2, logo.width * scale, logo.height * scale)
+    ctx.fillStyle = c.accent
+    ctx.font = font(800, 46, DISPLAY)
+    const words = lines(ctx, (p.sponsorLabel || t('Sponsor główny turnieju')).toUpperCase(), px - M - 30, 2)
+    let ly = qy + ph / 2 - ((words.length - 1) * 48) / 2 + 16
+    for (const l of words) { ctx.fillText(l, M, ly); ly += 48 }
+    qy += ph + 30
+  }
+  const size = logo ? 206 : 240
   ctx.fillStyle = '#fff'
   roundRect(ctx, M, qy, size + 40, size + 40, 24)
   ctx.fill()
@@ -177,6 +197,36 @@ function drawBand(ctx: Ctx, p: Poster, qr: HTMLCanvasElement | null) {
   ctx.globalAlpha = 1
 }
 
+const loadImage = (src: string) => new Promise<HTMLImageElement>((resolve, reject) => {
+  const img = new Image()
+  img.onload = () => resolve(img)
+  img.onerror = () => reject(new Error('logo'))
+  img.src = src
+})
+
+/** The sponsor's logo (built-in or from the poster), or null when there is none or it cannot be read. */
+async function loadLogo(src: string | undefined): Promise<HTMLImageElement | null> {
+  if (!src) return null
+  try { return await loadImage(src === BUILTIN_SPONSOR ? albatrosSponsor : src) } catch { return null }
+}
+
+/** A logo picked by the organiser: scaled down and flattened on white (a small JPEG), as a data: URL. */
+export async function logoFromFile(file: File): Promise<string> {
+  const url = URL.createObjectURL(file)
+  try {
+    const img = await loadImage(url)
+    const scale = Math.min(1, 520 / Math.max(img.width, 1), 260 / Math.max(img.height, 1))
+    const canvas = document.createElement('canvas')
+    canvas.width = Math.max(1, Math.round(img.width * scale))
+    canvas.height = Math.max(1, Math.round(img.height * scale))
+    const ctx = canvas.getContext('2d')!
+    ctx.fillStyle = '#fff'
+    ctx.fillRect(0, 0, canvas.width, canvas.height)
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+    return canvas.toDataURL('image/jpeg', 0.9)
+  } finally { URL.revokeObjectURL(url) }
+}
+
 /** The poster as a canvas (A4 portrait). */
 export async function renderPoster(p: Poster): Promise<HTMLCanvasElement> {
   try {
@@ -190,19 +240,20 @@ export async function renderPoster(p: Poster): Promise<HTMLCanvasElement> {
   try {
     if (p.url) { await QRCode.toCanvas(qr, p.url, { margin: 0, width: 500, errorCorrectionLevel: 'M' }); qrOk = true }
   } catch { /* poster without a code */ }
+  const logo = await loadLogo(p.sponsorLogo)
   const canvas = document.createElement('canvas')
   canvas.width = POSTER_W
   canvas.height = POSTER_H
   const ctx = canvas.getContext('2d')!
   // Content that is too tall is drawn smaller until the card ends above the QR band.
-  const limit = BAND_TOP - 30
+  const limit = bandTop(p) - 30
   let scale = 1
   for (; scale > 0.55; scale -= 0.05) {
     ctx.clearRect(0, 0, POSTER_W, POSTER_H)
     background(ctx, p)
     if (drawTop(ctx, p, scale) <= limit) break
   }
-  drawBand(ctx, p, qrOk ? qr : null)
+  drawBand(ctx, p, qrOk ? qr : null, logo)
   return canvas
 }
 

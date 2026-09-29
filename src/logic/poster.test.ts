@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { defaultPoster, MAX_LINES, normalizePoster, posterDate, wrapWords, type PosterFacts } from './poster'
+import { BUILTIN_SPONSOR, defaultPoster, MAX_LINES, normalizePoster, withSponsorDefault, posterDate, wrapWords, type PosterFacts } from './poster'
 
 const facts: PosterFacts = {
   name: 'Halówka Mielno', subtitle: 'Hala sportowa', sport: 'Piłka nożna', start: '2026-10-23T09:00',
@@ -38,6 +38,20 @@ describe('poster', () => {
     expect(p.lines).toHaveLength(MAX_LINES)
     expect(p.lines[0]).toBe('linia 0')
     expect(p.footer).toBe('')
+  })
+  it('accepts only the built-in logo or a small data image', () => {
+    const ok = 'data:image/jpeg;base64,/9j/AAAA'
+    expect(normalizePoster({ title: 'x', sponsorLogo: ok }).sponsorLogo).toBe(ok)
+    expect(normalizePoster({ title: 'x', sponsorLogo: BUILTIN_SPONSOR }).sponsorLogo).toBe(BUILTIN_SPONSOR)
+    expect(normalizePoster({ title: 'x', sponsorLogo: 'https://evil.example/x.png' }).sponsorLogo).toBeUndefined()
+    expect(normalizePoster({ title: 'x', sponsorLogo: 'data:image/svg+xml;base64,AAAA' }).sponsorLogo).toBeUndefined()
+    expect(normalizePoster({ title: 'x', sponsorLogo: '' }).sponsorLogo).toBe('')
+  })
+  it('Albatros CUP gets its sponsor unless it was taken off', () => {
+    const base = normalizePoster({ title: 'x' })
+    expect(withSponsorDefault(base, 'main').sponsorLogo).toBe(BUILTIN_SPONSOR)
+    expect(withSponsorDefault({ ...base, sponsorLogo: '' }, 'main').sponsorLogo).toBe('')
+    expect(withSponsorDefault(base, 'inny').sponsorLogo).toBeUndefined()
   })
   it('wraps words by width and keeps a long word whole', () => {
     expect(wrapWords('aa bb cc dd', (l) => l.length <= 5)).toEqual(['aa bb', 'cc dd'])

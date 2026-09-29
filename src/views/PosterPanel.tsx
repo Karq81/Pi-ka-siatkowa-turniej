@@ -3,9 +3,10 @@ import { ConfirmDialog } from '../ui'
 import { locale, t } from '../i18n'
 import { askPoster } from '../store/assistant'
 import { loadPosterFacts, savePoster, type Account, type AccountTournament } from '../store/accounts'
-import { defaultPoster, FIELD_LIMITS, MAX_LINES, normalizePoster, POSTER_THEMES, THEME_COLORS, THEME_NAMES, type Poster, type PosterFacts } from '../logic/poster'
+import { BUILTIN_SPONSOR, defaultPoster, FIELD_LIMITS, MAX_LINES, MAX_LOGO_CHARS, normalizePoster, withSponsorDefault, POSTER_THEMES, THEME_COLORS, THEME_NAMES, type Poster, type PosterFacts } from '../logic/poster'
 import { sportLabelOf } from '../logic/sports'
-import { renderPoster } from './posterCanvas'
+import { logoFromFile, renderPoster } from './posterCanvas'
+import albatrosSponsor from '../assets/sponsor-albatros.png'
 
 /** Prints an image on one A4 page (from a hidden frame, so nothing else on the page is printed). */
 function printImage(src: string) {
@@ -30,7 +31,7 @@ const fileName = (id: string) => `plakat-${id.replace(/[^a-z0-9-]/gi, '')}.png`
  */
 export function PosterPanel({ account, tr, url }: { account: Account; tr: AccountTournament; url: string }) {
   const saved = account.posters?.[tr.id]
-  const [poster, setPoster] = useState<Poster | null>(saved ? normalizePoster(saved) : null)
+  const [poster, setPoster] = useState<Poster | null>(saved ? withSponsorDefault(normalizePoster(saved), tr.id) : null)
   const [image, setImage] = useState('')
   const [wish, setWish] = useState('')
   const [busy, setBusy] = useState<'' | 'make' | 'ai' | 'delete'>('')
@@ -59,7 +60,7 @@ export function PosterPanel({ account, tr, url }: { account: Account; tr: Accoun
     setError(''); setNote(''); setBusy(withAi ? 'ai' : 'make')
     try {
       const f = await readFacts()
-      const p = withAi ? await askPoster(f, null, wish) : defaultPoster(f, locale())
+      const p = withSponsorDefault(withAi ? await askPoster(f, null, wish) : defaultPoster(f, locale()), tr.id)
       setPoster(p)
       await persist(p)
       setWish('')
@@ -71,7 +72,7 @@ export function PosterPanel({ account, tr, url }: { account: Account; tr: Accoun
     if (!poster || !wish.trim()) return
     setError(''); setNote(''); setBusy('ai')
     try {
-      const p = await askPoster(await readFacts(), poster, wish)
+      const p = withSponsorDefault(await askPoster(await readFacts(), poster, wish), tr.id)
       setPoster(p)
       await persist(p)
       setWish('')
@@ -109,6 +110,18 @@ export function PosterPanel({ account, tr, url }: { account: Account; tr: Accoun
       if ((e as Error).name !== 'AbortError') setNote(t('Nie udało się wysłać. Pobierz plakat i wyślij go sam.'))
     }
   }
+  const pickLogo = async (file: File | undefined) => {
+    if (!file) return
+    setError(''); setNote('')
+    try {
+      const data = await logoFromFile(file)
+      if (data.length > MAX_LOGO_CHARS) throw new Error('big')
+      edit({ sponsorLogo: data })
+    } catch {
+      setError(t('Nie udało się wczytać logo. Wybierz zdjęcie albo plik graficzny (PNG, JPG).'))
+    }
+  }
+  const logo = poster?.sponsorLogo ?? ''
   const canShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function'
 
   const wishBox = (
@@ -146,6 +159,14 @@ export function PosterPanel({ account, tr, url }: { account: Account; tr: Accoun
             {canShare && <button type="button" className="btn" disabled={!image} onClick={() => void share()}>📤 {t('Wyślij')}</button>}
             <button type="button" className="btn btn-danger" disabled={!!busy} onClick={() => setAsking(true)}>🗑 {t('Usuń plakat')}</button>
           </div>
+          <div className="poster-sponsor">
+            <b>{t('Logo sponsora')}</b>
+            {logo && <img src={logo === BUILTIN_SPONSOR ? albatrosSponsor : logo} alt="" />}
+            <label className="btn poster-upload">{logo ? t('Zmień logo sponsora') : t('Dodaj logo sponsora')}
+              <input type="file" accept="image/*" hidden onChange={(e) => { void pickLogo(e.target.files?.[0]); e.target.value = '' }} />
+            </label>
+            {logo && <button type="button" className="btn btn-danger" onClick={() => edit({ sponsorLogo: '' })}>{t('Usuń logo sponsora')}</button>}
+          </div>
           {wishBox}
           <div className="actions">
             <button type="button" className="btn btn-primary" disabled={!!busy || !wish.trim()} onClick={() => void improve()}>
@@ -163,6 +184,7 @@ export function PosterPanel({ account, tr, url }: { account: Account; tr: Accoun
               <label>{t('Szczegóły (jedna linia = jeden punkt, do {n})', { n: MAX_LINES })}
                 <textarea rows={5} value={poster.lines.join('\n')} onChange={(e) => edit({ lines: e.target.value.split('\n').slice(0, MAX_LINES) })} />
               </label>
+              {logo && <label>{t('Podpis przy logo sponsora')}<input maxLength={FIELD_LIMITS.sponsorLabel} value={poster.sponsorLabel ?? ''} placeholder={t('Sponsor główny turnieju')} onChange={(e) => edit({ sponsorLabel: e.target.value })} /></label>}
               <label>{t('Linia na dole')}<input maxLength={FIELD_LIMITS.footer} value={poster.footer} onChange={(e) => edit({ footer: e.target.value })} /></label>
               <div className="poster-themes" role="group" aria-label={t('Kolory')}>
                 {POSTER_THEMES.map((th) => (

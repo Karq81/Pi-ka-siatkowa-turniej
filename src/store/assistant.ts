@@ -203,5 +203,5 @@ export async function askPoster(facts: PosterFacts, current: Poster | null, inst
     { text: `POLECENIE ORGANIZATORA:\n${instruction.trim() || 'Przygotuj plakat z faktów.'}` },
   ]
   const result = await ask<Partial<Poster>>(parts, posterInstructions(), POSTER_SCHEMA)
-  return normalizePoster({ ...result, url })
+  return normalizePoster({ ...result, url, sponsorLogo: current?.sponsorLogo, sponsorLabel: current?.sponsorLabel })
 }

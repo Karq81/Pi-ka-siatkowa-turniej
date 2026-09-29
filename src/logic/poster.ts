@@ -27,7 +27,15 @@ export interface Poster {
   footer: string
   /** The address the QR code opens (the fan page). */
   url: string
+  /** Sponsor's logo: an image as a data: URL, or BUILTIN_SPONSOR (Albatros CUP's own); '' = none. */
+  sponsorLogo?: string
+  /** Words next to the sponsor's logo (default: main sponsor of the tournament). */
+  sponsorLabel?: string
 }
+
+/** Albatros CUP's main sponsor, whose logo is part of the site. */
+export const BUILTIN_SPONSOR = 'builtin:albatros'
+export const MAX_LOGO_CHARS = 250_000
 
 /** What is known about the tournament and its organiser. */
 export interface PosterFacts {
@@ -49,7 +57,7 @@ export interface PosterFacts {
 }
 
 export const MAX_LINES = 6
-export const FIELD_LIMITS = { kicker: 60, title: 70, tagline: 120, when: 80, where: 80, line: 90, footer: 120 }
+export const FIELD_LIMITS = { kicker: 60, title: 70, tagline: 120, when: 80, where: 80, line: 90, footer: 120, sponsorLabel: 40 }
 
 /** "23 października 2026, godz. 09:00" from the first match's time; empty when unknown. */
 export function posterDate(start: string | undefined, loc: string): string {
@@ -97,7 +105,19 @@ export function normalizePoster(p: Partial<Poster> & { url?: string }): Poster {
     lines: (p.lines ?? []).map((l) => clip(l, FIELD_LIMITS.line)).filter(Boolean).slice(0, MAX_LINES),
     footer: clip(p.footer, FIELD_LIMITS.footer),
     url: String(p.url ?? '').slice(0, 300),
+    ...(validLogo(p.sponsorLogo) ? { sponsorLogo: p.sponsorLogo } : p.sponsorLogo === '' ? { sponsorLogo: '' } : {}),
+    ...(p.sponsorLabel ? { sponsorLabel: clip(p.sponsorLabel, FIELD_LIMITS.sponsorLabel) } : {}),
   }
+}
+
+/** A logo we accept: the built-in one, or a small raster image (never a script or an outside address). */
+function validLogo(v: unknown): v is string {
+  return typeof v === 'string' && (v === BUILTIN_SPONSOR || (/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(v) && v.length <= MAX_LOGO_CHARS))
+}
+
+/** Albatros CUP ("main") has its main sponsor's logo on the poster unless it was taken off. */
+export function withSponsorDefault(p: Poster, tournamentId: string): Poster {
+  return tournamentId === 'main' && p.sponsorLogo === undefined ? { ...p, sponsorLogo: BUILTIN_SPONSOR } : p
 }
 
 /** Words of a text split into lines no wider than `fits` allows (a single long word stays whole). */

@@ -224,6 +224,7 @@ export function MyTournament({ account, id }: { account: Account; id: string }) 
   const [asking, setAsking] = useState(false)
   const [busy, setBusy] = useState(false)
   const [failed, setFailed] = useState(false)
+  if (!tr && !account.loaded) return <p className="muted">{t('Wczytuję…')}</p>
   if (!tr) {
     return (
       <>
