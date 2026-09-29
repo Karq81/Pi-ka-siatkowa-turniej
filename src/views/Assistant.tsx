@@ -1,9 +1,10 @@
 import { AttachButtons, AttachedList, PhotoTip } from './Attach'
 import { t } from '../i18n'
 import { useState } from 'react'
+import type { AssistantSettings, AssistantSystem } from '../logic/assistantPrompt'
 
 /** What the assistant returns (schema in logic/assistantPrompt.ts). */
-export interface AssistantDraft {
+export interface AssistantDraft extends Omit<AssistantSettings, 'system'> {
   name: string
   sport: string
   /** A discipline outside the catalogue ("Inna dyscyplina"): its real name, e.g. "Zapasy". */
@@ -15,10 +16,8 @@ export interface AssistantDraft {
   courts: number
   slotMinutes: number
   categories: { name: string; teams: string[]; groups: string[][]; matches?: { name: string; a: string; b: string; place: number; loserPlace: number }[] }[]
-  twice?: boolean
-  /** How the tournament is played, read from the description. */
-  system?: 'groups' | 'knockout' | 'double' | 'custom' | 'swiss' | 'stepladder' | 'consolation'
-  thirdPlace?: boolean
+  /** How the tournament is played, read from the description (every system of the site). */
+  system?: AssistantSystem
   notes: string
 }
 

@@ -3,7 +3,9 @@ import { t, tp } from '../i18n'
 import { useState } from 'react'
 import { checkCustom } from '../logic/custom'
 import { ALBATROS_ALIAS, TOURNAMENT_SLUG } from '../config'
-import { MAX_COURTS, saveDraft, slugify, type TournamentDraft } from '../logic/newTournament'
+import { MAX_COURTS, saveDraft, slugify, type DraftSettings, type TournamentDraft } from '../logic/newTournament'
+import { draftSettings } from '../logic/assistantPrompt'
+import { TIEBREAK_NAMES } from '../logic/scoring'
 import { Assistant, type AssistantDraft } from './Assistant'
 import { clock } from '../logic/judo'
 import { describeSets, SPORTS, sportById, sportName, sportRules } from '../logic/sports'
@@ -52,6 +54,8 @@ export function NewTournament() {
   const measuredEvent = rules.scoring === 'measured'
   const [categories, setCategories] = useState('')
   const [system, setSystem] = useState<'groups' | 'knockout' | 'double' | 'custom' | 'swiss' | 'stepladder' | 'consolation' | 'americano' | 'mexicano' | 'king' | 'ladder'>('groups')
+  // Further settings read by the AI assistant (bracket options, play-off, two legs, tie-breakers…).
+  const [settings, setSettings] = useState<DraftSettings | undefined>()
   const [thirdPlace, setThirdPlace] = useState(true)
   const [twice, setTwice] = useState(false)
   const [swissRounds, setSwissRounds] = useState(5)
@@ -104,8 +108,13 @@ export function NewTournament() {
       })),
     })))
     setTwice(!!d.twice)
-    if (d.system && ['knockout', 'double', 'groups', 'custom', 'swiss', 'stepladder', 'consolation'].includes(d.system)) setSystem(d.system)
+    if (d.system && d.system !== 'measured') setSystem(d.system)
     if (typeof d.thirdPlace === 'boolean') setThirdPlace(d.thirdPlace)
+    if (d.swissRounds && d.swissRounds > 0) setSwissRounds(Math.min(15, d.swissRounds))
+    if (typeof d.restRounds === 'number') setRest(Math.max(0, Math.min(2, d.restRounds)))
+    if (d.breakFrom && d.breakTo && validTime(d.breakFrom) && validTime(d.breakTo)) { setBreakFrom(d.breakFrom); setBreakTo(d.breakTo) }
+    const extra = draftSettings({ ...d, system: s.formats[0].rules.scoring === 'measured' ? 'measured' : d.system })
+    setSettings(Object.keys(extra).length ? extra : undefined)
   }
 
   const submit = async (e: React.FormEvent) => {
@@ -137,6 +146,7 @@ export function NewTournament() {
       swissRounds: system === 'swiss' ? swissRounds : undefined,
       rest: rest || undefined,
       breaks: breaks.length ? breaks : undefined,
+      settings,
     })
     location.href = `${location.pathname}?t=${address}#panel`
   }
@@ -164,6 +174,12 @@ export function NewTournament() {
         <p className="notice-inline">
           {t('Z notatek:')} {preset.map((p) => `${p.category}: ${tp(p.teams.length, '{n} drużyna|{n} drużyny|{n} drużyn')}${p.groups.length ? `, ${tp(p.groups.length, '{n} grupa|{n} grupy|{n} grup')}` : ''}`).join(' · ')}.
           {' '}{t('Zapiszą się razem z turniejem.')} <button className="linklike" onClick={() => setPreset(undefined)}>{t('Nie używaj')}</button>
+        </p>
+      )}
+      {settings && (
+        <p className="notice-inline">
+          {t('Asystent ustawił też:')} {settingsSummary(settings).join(' · ')}.
+          {' '}{t('Wszystko zmienisz potem w panelu, w „1. Zespoły i losowanie”.')} <button className="linklike" onClick={() => setSettings(undefined)}>{t('Nie używaj')}</button>
         </p>
       )}
       <form className="panel new-t-form" onSubmit={submit}>
@@ -379,4 +395,22 @@ export function SlotCalc({ onSlot }: { onSlot: (minutes: number) => void }) {
       )}
     </details>
   )
+}
+
+/** The assistant's further settings in plain words, for the organiser to see before saving. */
+function settingsSummary(x: DraftSettings): string[] {
+  const out: string[] = []
+  if (x.advance) out.push(x.advance.best ? t('drabinka dla {n} najlepszych z każdej grupy i {b} z kolejnego miejsca', { n: x.advance.perGroup, b: x.advance.best }) : t('drabinka dla {n} najlepszych z każdej grupy', { n: x.advance.perGroup }))
+  if (x.bronzes) out.push(t('dwa brązowe medale'))
+  if (x.allPlaces) out.push(t('wszyscy grają o miejsca'))
+  if (x.seeding === 'list') out.push(t('rozstawienie z listy'))
+  if (x.separateClubs) out.push(t('kluby w różnych połówkach drabinki'))
+  if (x.ties?.kind === 'two') out.push(x.ties.awayGoals ? t('dwumecze (bramki na wyjeździe)') : t('dwumecze'))
+  if (x.ties?.kind === 'series') out.push(t('serie do {n} meczów', { n: x.ties.n ?? 3 }))
+  if (x.measured?.mode === 'heats') out.push(t('serie i finał (Q {Q}, q {q})', { Q: x.measured.Q ?? 0, q: x.measured.q ?? 0 }))
+  if (x.measured?.mode === 'rounds') out.push(t('rundy z punktami za miejsca'))
+  if (x.tiebreak?.length) out.push(`${t('przy równych punktach:')} ${x.tiebreak.map((k) => t(TIEBREAK_NAMES[k]).toLowerCase()).join(' → ')}`)
+  if (x.h2hReapply) out.push(t('mecze bezpośrednie liczone od nowa'))
+  if (x.withdrawal) out.push(x.withdrawal === 'A' ? t('wycofanie: opcja A') : t('wycofanie: zawsze walkowery'))
+  return out
 }

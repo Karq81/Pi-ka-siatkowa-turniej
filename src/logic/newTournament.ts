@@ -1,6 +1,6 @@
 import { locale, t } from '../i18n'
 import { withCustom } from './custom'
-import type { CustomMatch, Group, State, Team, Tournament } from '../types'
+import type { CustomMatch, Group, Rules, State, Team, Tournament } from '../types'
 import { GROUP_LETTERS } from './draw'
 import { sportById, sportRules } from './sports'
 import { DEFAULT_SCHEDULE } from './demo'
@@ -39,7 +39,15 @@ export interface TournamentDraft {
   /** How it is played: groups (default), a knockout bracket, or double elimination. */
   system?: 'groups' | 'knockout' | 'double' | 'custom' | 'swiss' | 'stepladder' | 'consolation' | 'measured' | 'americano' | 'mexicano' | 'king' | 'ladder'
   thirdPlace?: boolean
+  /**
+   * Further settings, usually read by the AI assistant from the description: bracket options,
+   * groups → play-off, two legs or series, measured events, tie-breakers, withdrawals.
+   */
+  settings?: DraftSettings
 }
+
+export type DraftSettings = Partial<Pick<Tournament, 'bronzes' | 'allPlaces' | 'seeding' | 'separateClubs' | 'advance' | 'ties' | 'measured' | 'withdrawal'>>
+  & { tiebreak?: Rules['tiebreak']; h2hReapply?: boolean }
 
 export const MAX_COURTS = 20
 
@@ -86,7 +94,12 @@ export function blankState(draft: TournamentDraft): State {
       name: draft.name,
       subtitle,
       courts: draft.courts,
-      rules: { ...sportRules(sportById(draft.sport), draft.format, draft.setPoints, draft.fightSeconds), ...(draft.sportName?.trim() ? { sport: draft.sportName.trim() } : {}) },
+      rules: {
+        ...sportRules(sportById(draft.sport), draft.format, draft.setPoints, draft.fightSeconds),
+        ...(draft.sportName?.trim() ? { sport: draft.sportName.trim() } : {}),
+        ...(draft.settings?.tiebreak?.length ? { tiebreak: draft.settings.tiebreak } : {}),
+        ...(draft.settings?.h2hReapply !== undefined ? { h2hReapply: draft.settings.h2hReapply } : {}),
+      },
       slotMinutes: draft.slotMinutes,
       start: draft.start,
       dayEnd: draft.dayEnd,
@@ -99,6 +112,7 @@ export function blankState(draft: TournamentDraft): State {
       ...(draft.swissRounds ? { swissRounds: draft.swissRounds } : {}),
       ...(draft.rest ? { rest: draft.rest } : {}),
       ...(draft.breaks?.length ? { breaks: draft.breaks } : {}),
+      ...tournamentSettings(draft.settings),
     },
     ...presetTeams(draft),
   }
@@ -112,6 +126,14 @@ export function blankState(draft: TournamentDraft): State {
   })
   if (!Object.keys(custom).length) return state
   return withCustom({ ...state, tournament: { ...state.tournament, custom } })
+}
+
+/** The draft's further settings as tournament fields (only those given). */
+function tournamentSettings(x: DraftSettings | undefined): Partial<Tournament> {
+  if (!x) return {}
+  const { tiebreak: _t, h2hReapply: _h, ...rest } = x
+  void _t; void _h
+  return Object.fromEntries(Object.entries(rest).filter(([, v]) => v !== undefined && v !== null)) as Partial<Tournament>
 }
 
 /** Categories with the draft's preset teams and groups, and the group timetable if groups are set. */
