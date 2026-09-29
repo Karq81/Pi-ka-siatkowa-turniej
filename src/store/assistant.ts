@@ -2,6 +2,7 @@ import { langNameEn, t } from '../i18n'
 import { getAI, getGenerativeModel, GoogleAIBackend } from 'firebase/ai'
 import { assistantInstructions, assistantSchema } from '../logic/assistantPrompt'
 import type { AssistantDraft } from '../views/Assistant'
+import { normalizePoster, POSTER_THEMES, type Poster, type PosterFacts } from '../logic/poster'
 import { currentAccount } from './accounts'
 import { firebaseHandles } from './firebase'
 
@@ -163,5 +164,44 @@ Sytuacje szczególne: walkower jednym przyciskiem na stronie meczu ("Walkower dl
 Wyniki do Excela: w panelu organizatora, pod nazwą turnieju, przycisk "Pobierz wyniki do Excela" – w każdej chwili pobiera plik .xlsx z arkuszami: mecze (godzina, boisko, drużyny, wynik, status), tabele grup, klasyfikacja końcowa (gdy są rozegrane mecze o miejsca), drużyny i informacje o turnieju.
 Usuwanie turnieju: "Moje turnieje" → lista turniejów → kliknij turniej → na dole "Usuń turniej" (albo w panelu turnieju: "Ustawienia i PIN" → "Usuń turniej" na dole). Strona pyta "Czy na pewno usunąć turniej…?" → "Tak, usuń turniej". Usuwa wszystkie mecze, wyniki, zgłoszenia i PIN-y; adres strony znów jest wolny. Tego nie da się cofnąć, więc wcześniej warto pobrać wyniki do Excela. Albatros CUP nie ma tego przycisku.
 Strona "Moje turnieje" (konto organizatora): na górze "Załóż nowy turniej", pod nim ciemny przycisk "Moje turnieje" z liczbą turniejów (0, gdy nie ma żadnego). Przycisk otwiera listę turniejów; kliknięcie turnieju otwiera jego osobną stronę: Panel organizatora, Strona dla kibiców, PIN, zużycie danych (wejścia, limit, kredyty, koszt) i "Usuń turniej".
+Plakat do wydarzenia: "Moje turnieje" → kliknij turniej → sekcja "Plakat do wydarzenia" (pod przyciskami Panel organizatora i Strona dla kibiców). "Utwórz plakat" robi plakat A4 z nazwą turnieju, terminem, miejscem, szczegółami i kodem QR do strony z wynikami; "Utwórz z pomocą AI" robi go według opisu organizatora (np. wpisowe, nagrody, kolory, hasło). Potem: "Drukuj / PDF", "Pobierz" (obraz PNG), "Wyślij" (jeśli telefon to umie), "Popraw z pomocą AI" (opisujesz zmiany), "Edytuj teksty ręcznie" (teksty i kolory) oraz "Usuń plakat" (żeby zrobić nowy). Miejscowość, telefon i e-mail plakat bierze z "Moje konto".
 Jeśli czegoś serwis nie potrafi albo nie wiesz, powiedz to wprost i zaproponuj najbliższe rozwiązanie. Nie wymyślaj funkcji.`
+}
+
+const POSTER_SCHEMA = {
+  type: 'object',
+  required: ['kicker', 'title', 'tagline', 'when', 'where', 'lines', 'footer', 'theme'],
+  properties: {
+    kicker: { type: 'string', description: 'Mała linia nad tytułem, np. rodzaj turnieju' },
+    title: { type: 'string', description: 'Tytuł plakatu (zwykle nazwa turnieju)' },
+    tagline: { type: 'string', description: 'Zachęta lub hasło pod tytułem, jedno krótkie zdanie' },
+    when: { type: 'string', description: 'Termin: data i godzina' },
+    where: { type: 'string', description: 'Miejsce: miejscowość, hala lub adres' },
+    lines: { type: 'array', items: { type: 'string' }, description: 'Do 6 krótkich linii szczegółów (kategorie, wpisowe, nagrody, program, kontakt)' },
+    footer: { type: 'string', description: 'Linia na dole: organizator i kontakt' },
+    theme: { type: 'string', enum: POSTER_THEMES, description: 'Kolorystyka plakatu' },
+  },
+}
+
+function posterInstructions(): string {
+  return `Jesteś grafikiem i redaktorem plakatów sportowych. Układasz TREŚĆ plakatu na turniej (obraz rysuje strona, ty podajesz teksty i kolorystykę).
+- Dostajesz FAKTY o turnieju i organizatorze, aktualną treść plakatu i POLECENIE organizatora. Wykonaj polecenie: dopisz, co prosi (np. nagrody, wpisowe, program, sponsorów, hasło), usuń to, czego nie chce, zmień ton lub kolory.
+- Używaj wyłącznie faktów z danych i polecenia. Niczego nie wymyślaj: żadnych dat, godzin, adresów, kwot, nagród ani numerów telefonu, których nie ma w danych. Brakującą informację pomiń albo zostaw pole puste.
+- Teksty krótkie, czytelne z daleka: tytuł do 70 znaków, hasło do 120, każda linia szczegółów do 90 znaków, najwyżej 6 linii. Bez emoji i bez hashtagów.
+- Bez polecenia wygeneruj estetyczny, zachęcający plakat z danych.
+- Pisz w języku polecenia organizatora; gdy polecenie nie wskazuje języka, w języku: ${langNameEn()}.
+- Kolorystyka (theme): blue, green, red, dark lub gold. Zmień ją tylko gdy organizator o to prosi albo gdy zmieniasz całość plakatu.
+- Adres strony turnieju (kod QR) dodaje strona sama, nie wpisuj go do linii.`
+}
+
+/** The poster's text from the tournament's facts, the current poster and the organiser's instruction. */
+export async function askPoster(facts: PosterFacts, current: Poster | null, instruction: string): Promise<Poster> {
+  const { url, ...known } = facts
+  const parts: Part[] = [
+    { text: `FAKTY:\n${JSON.stringify(known, null, 1)}` },
+    { text: `AKTUALNY PLAKAT:\n${current ? JSON.stringify(current, null, 1) : 'brak (pierwszy plakat)'}` },
+    { text: `POLECENIE ORGANIZATORA:\n${instruction.trim() || 'Przygotuj plakat z faktów.'}` },
+  ]
+  const result = await ask<Partial<Poster>>(parts, posterInstructions(), POSTER_SCHEMA)
+  return normalizePoster({ ...result, url })
 }

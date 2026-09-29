@@ -7,6 +7,7 @@ import {
   type AccountProfile, type TournamentUsage,
 } from '../store/accounts'
 import { PlatformNav, Wordmark } from './Platform'
+import { PosterPanel } from './PosterPanel'
 import {
   FREE_VIEWS_PER_DAY, PACKAGES, firebaseCostPln, formatPln, freeUsedPercent, isTestAccount, pricePln, READS_PER_VIEW,
 } from '../logic/usage'
@@ -266,6 +267,7 @@ export function MyTournament({ account, id }: { account: Account; id: string }) 
         </div>
         <p className="muted small">{t('PIN sędziego głównego:')} <b>{tr.pin}</b>. {t('Po wejściu z tego konta nie trzeba go wpisywać.')}</p>
       </section>
+      <PosterPanel account={account} tr={tr} url={`${location.origin}${tournamentLink(tr.id)}`} />
       <section className="acc-t-usage">
         <h2>📊 {t('Zużycie danych')}</h2>
         <div className="panel">{usage ? <TournamentChart usage={usage[tr.id]} test={isTestAccount(account)} /> : <p className="muted">{t('Wczytuję…')}</p>}</div>

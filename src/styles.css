@@ -1621,3 +1621,18 @@ a.btn-back { text-decoration: none; }
 .fair-play { margin-top: 12px; }
 .fair-play li { display: flex; gap: 10px; align-items: center; }
 .fair-play li .name { flex: 1; }
+
+/* Poster panel (account → tournament) */
+.poster-panel { display: grid; gap: 14px; margin-top: 16px; }
+.poster-panel h2 { margin: 0; font-family: var(--display); }
+.poster-wish textarea { font-family: inherit; font-size: 1rem; }
+.poster-view { display: flex; justify-content: center; background: var(--bg, #eef1f7); border-radius: 12px; padding: 12px; }
+.poster-view img { width: min(100%, 420px); height: auto; border-radius: 6px; box-shadow: 0 8px 28px rgba(0,0,0,.25); display: block; }
+.poster-actions { flex-wrap: wrap; }
+.poster-actions a.btn[aria-disabled="true"] { opacity: .5; pointer-events: none; }
+.poster-edit summary { cursor: pointer; font-weight: 700; padding: 6px 0; }
+.poster-fields { display: grid; gap: 10px; margin-top: 8px; }
+.poster-fields input, .poster-fields textarea, .poster-wish textarea { font: inherit; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); width: 100%; box-sizing: border-box; }
+.poster-themes { display: flex; flex-wrap: wrap; gap: 8px; }
+.poster-theme { border: 3px solid transparent; border-radius: 10px; padding: 8px 14px; font-weight: 700; cursor: pointer; }
+.poster-theme.on { border-color: var(--ball, #ffd21f); box-shadow: 0 0 0 2px #000 inset; }

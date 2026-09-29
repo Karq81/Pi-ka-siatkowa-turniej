@@ -3,7 +3,7 @@ import {
   signInWithEmailAndPassword, signOut, updatePassword, updateProfile,
 } from 'firebase/auth'
 import {
-  arrayUnion, collection, deleteDoc, doc, documentId, getDoc, getDocs, increment, limit, onSnapshot, orderBy, query, setDoc, updateDoc, where,
+  arrayUnion, collection, deleteDoc, deleteField, doc, FieldPath, documentId, getDoc, getDocs, increment, limit, onSnapshot, orderBy, query, setDoc, updateDoc, where,
   type Unsubscribe,
 } from 'firebase/firestore'
 import { t, tk } from '../i18n'
@@ -47,6 +47,8 @@ export interface Account extends AccountProfile {
   credits?: number
   login: string
   tournaments: AccountTournament[]
+  /** Posters made for the account's tournaments (tournament id → poster). */
+  posters?: Record<string, Poster>
 }
 
 export type AccountState =
@@ -59,6 +61,8 @@ export type AccountState =
 const LOGIN_DOMAIN = 'konta.sportlivearena.com'
 
 import { normalizeLogin } from '../logic/login'
+import type { Poster, PosterFacts } from '../logic/poster'
+import type { State, Tournament } from '../types'
 export { LOGIN_PATTERN, loginProblem, normalizeLogin } from '../logic/login'
 
 export function loginToEmail(login: string): string {
@@ -295,4 +299,37 @@ export async function countSiteVisit(): Promise<number | null> {
 export async function accountIdToken(): Promise<string | null> {
   const user = firebaseHandles?.auth.currentUser
   return user && !user.isAnonymous ? user.getIdToken() : null
+}
+
+/** Saves (or, with null, deletes) the poster of one of the account's tournaments. */
+export async function savePoster(id: string, poster: Poster | null) {
+  const account = currentAccount()
+  if (!account || !firebaseHandles) throw new Error('signed out')
+  await updateDoc(doc(firebaseHandles.db, 'accounts', account.uid), new FieldPath('posters', id), poster ?? deleteField())
+}
+
+/** Facts for a tournament's poster: the tournament's own data plus the account's details. */
+export async function loadPosterFacts(id: string, account: Account, url: string, sportLabel: (rules: Tournament['rules']) => string): Promise<PosterFacts> {
+  const own = account.tournaments.find((x) => x.id === id)
+  let data: Partial<State> | undefined
+  if (firebaseHandles) {
+    try { data = (await getDoc(doc(firebaseHandles.db, 'tournaments', id))).data() as Partial<State> | undefined } catch { /* facts from the account only */ }
+  }
+  const tour = data?.tournament
+  return {
+    name: tour?.name ?? own?.name ?? '',
+    subtitle: tour?.subtitle ?? '',
+    sport: tour?.rules ? sportLabel(tour.rules) : '',
+    start: tour?.start,
+    categories: (data?.categories ?? []).map((c) => c.name).filter(Boolean),
+    teams: (data?.teams ?? []).length,
+    courts: tour?.courts ?? 1,
+    registration: !!tour?.registration,
+    url,
+    organizer: account.name ?? '',
+    city: account.city ?? '',
+    phone: account.phone ?? '',
+    email: account.email ?? '',
+    website: account.website ?? '',
+  }
 }

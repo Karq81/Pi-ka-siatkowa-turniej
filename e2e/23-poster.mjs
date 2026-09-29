@@ -1,0 +1,75 @@
+import { chromium } from 'playwright'
+import fs from 'node:fs'
+// The poster of a tournament (account → tournament): made from the data, edited, AI, saved, deleted.
+const OUT = process.env.E2E_OUT || 'e2e/out'
+const U = process.env.E2E_URL || 'http://localhost:5191/'
+const res = []; const check = (n, ok, info = '') => { res.push(ok); console.log(ok ? 'OK  ' : 'BŁĄD', n, info) }
+const b = await chromium.launch({ executablePath: process.env.CHROMIUM || undefined })
+const ctx = await b.newContext({ viewport: { width: 1000, height: 1000 }, locale: 'pl-PL', acceptDownloads: true })
+const p = await ctx.newPage(); const errs = []; p.on('pageerror', (e) => errs.push(e.message))
+const rnd = Math.random().toString(36).slice(2, 6)
+const slug = `plakat-${rnd}`
+let prompt = ''
+await p.route(/generateContent/, async (route) => {
+  prompt = route.request().postData() ?? ''
+  const poster = { kicker: 'Turniej piłki siatkowej', title: 'Plakat Cup', tagline: 'Gramy fair play', when: '8 maja 2027, godz. 09:00', where: 'Hala sportowa, Mielno', lines: ['Wpisowe: 100 zł', 'Nagrody dla trzech pierwszych miejsc'], footer: 'UKS Plakat', theme: 'green' }
+  await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ candidates: [{ content: { role: 'model', parts: [{ text: JSON.stringify(poster) }] }, finishReason: 'STOP', index: 0 }] }) })
+})
+await p.goto(U + '#rejestracja'); await p.waitForTimeout(2500)
+await p.getByLabel(/^Login/).fill('plak' + Date.now() % 100000); await p.getByLabel(/Nazwa klubu/).fill('UKS Plakat')
+await p.locator('input[type=password]').nth(0).fill('haslo123'); await p.locator('input[type=password]').nth(1).fill('haslo123')
+await p.getByRole('button', { name: 'Załóż konto' }).last().click(); await p.waitForTimeout(3000)
+await p.goto(U + '#konto'); await p.waitForTimeout(1500)
+await p.getByLabel('Miejscowość').fill('Mielno'); await p.getByLabel('Telefon').fill('600 100 200')
+await p.getByRole('button', { name: 'Zapisz dane' }).click(); await p.waitForTimeout(1500)
+// A tournament on the account.
+await p.goto(U + '#nowy-turniej'); await p.waitForTimeout(1500)
+await p.locator('.new-t-form select').first().selectOption('siatkowka')
+await p.getByLabel(/Nazwa turnieju/).fill('Plakat Cup')
+await p.getByRole('button', { name: 'zmień' }).click()
+await p.locator('.new-t-address input').fill(slug)
+await p.getByLabel(/Dzień pierwszego meczu/).fill('2027-05-08')
+await p.getByRole('button', { name: /Dalej/ }).click()
+await p.waitForURL(new RegExp(`t=${slug}`), { timeout: 15000 }); await p.waitForTimeout(1500)
+await p.locator('#pin-admin').fill('4321'); await p.getByRole('button', { name: 'Utwórz turniej' }).click()
+await p.locator('.setup-cat textarea').first().waitFor({ timeout: 20000 })
+await p.goto(U + `#moj-turniej-${slug}`); await p.waitForTimeout(2500)
+const order = await p.evaluate(() => [...document.querySelectorAll('main section, main header')].map((e) => e.classList.contains('poster-panel') ? 'poster' : e.classList.contains('acc-t-usage') ? 'usage' : e.classList.contains('account-t') ? 'buttons' : ''))
+check('1. Panel plakatu jest pod przyciskami, a nad zużyciem danych', order.indexOf('poster') > order.indexOf('buttons') && order.indexOf('poster') < order.indexOf('usage') && order.indexOf('buttons') >= 0, order.join(','))
+check('2. Przed utworzeniem jest przycisk „Utwórz plakat” i pole dla AI', await p.getByRole('button', { name: 'Utwórz plakat' }).count() === 1 && await p.locator('.poster-wish textarea').count() === 1)
+await p.getByRole('button', { name: 'Utwórz plakat' }).click(); await p.locator('.poster-view img').waitFor({ timeout: 15000 })
+const img = p.locator('.poster-view img')
+const src = await img.getAttribute('src'); const nat = await img.evaluate((i) => [i.naturalWidth, i.naturalHeight])
+check('3. Powstał plakat A4 (obraz PNG 1240×1754)', src.startsWith('data:image/png') && nat[0] === 1240 && nat[1] === 1754, nat.join('×'))
+fs.writeFileSync(`${OUT}/poster-1.png`, Buffer.from(src.split(',')[1], 'base64'))
+const inputs = await p.locator('.poster-fields input').evaluateAll((els) => els.map((e) => e.value))
+check('4. Plakat ma nazwę, termin, miejsce z danych turnieju i konta', inputs.includes('Plakat Cup') && inputs.some((v) => /2027/.test(v)) && inputs.includes('Mielno'), inputs.join(' | '))
+const [dl] = await Promise.all([p.waitForEvent('download'), p.getByRole('link', { name: /Pobierz/ }).click()])
+check('5. Pobieranie daje plik PNG', /\.png$/.test(dl.suggestedFilename()), dl.suggestedFilename())
+check('6. Są przyciski: drukuj, pobierz, usuń', await p.getByRole('button', { name: /Drukuj/ }).count() === 1 && await p.getByRole('button', { name: /Usuń plakat/ }).count() === 1)
+// Hand edit is saved on the account.
+await p.locator('.poster-edit summary').click()
+await p.getByLabel('Hasło pod tytułem').fill('Wielkie święto siatkówki'); await p.waitForTimeout(1600)
+await p.reload(); await p.waitForTimeout(3000)
+check('7. Po odświeżeniu plakat i ręczna zmiana zostają', await p.locator('.poster-view img').count() === 1 && await p.locator('.poster-fields').getByLabel('Hasło pod tytułem').inputValue().catch(() => '') === 'Wielkie święto siatkówki')
+// AI.
+await p.locator('.poster-wish textarea').fill('Dodaj wpisowe 100 zł i zielone kolory')
+await p.getByRole('button', { name: /Popraw z pomocą AI/ }).click(); await p.waitForTimeout(3000)
+check('8. Asystent dostaje polecenie, fakty i aktualny plakat', /wpisowe 100/.test(prompt) && /FAKTY/.test(prompt) && /AKTUALNY PLAKAT/.test(prompt) && /Plakat Cup/.test(prompt))
+if (!(await p.locator('.poster-fields').getByLabel('Hasło pod tytułem').isVisible())) await p.locator('.poster-edit summary').click()
+check('9. Poprawiony plakat ma nowe teksty od asystenta', await p.getByLabel('Hasło pod tytułem').inputValue() === 'Gramy fair play' && (await p.locator('.poster-fields textarea').inputValue()).includes('Wpisowe: 100 zł'))
+await p.waitForTimeout(800)
+fs.writeFileSync(`${OUT}/poster-2.png`, Buffer.from((await p.locator('.poster-view img').getAttribute('src')).split(',')[1], 'base64'))
+await p.screenshot({ path: `${OUT}/poster-page.png`, fullPage: true })
+// Delete.
+await p.getByRole('button', { name: /Usuń plakat/ }).click(); await p.getByRole('button', { name: 'Tak, usuń plakat' }).click(); await p.waitForTimeout(1500)
+check('10. Po usunięciu znów jest „Utwórz plakat”', await p.getByRole('button', { name: 'Utwórz plakat' }).count() === 1 && await p.locator('.poster-view').count() === 0)
+await p.reload(); await p.waitForTimeout(2500)
+check('11. Usunięty plakat nie wraca po odświeżeniu', await p.locator('.poster-view').count() === 0)
+// Phone.
+await p.setViewportSize({ width: 390, height: 844 }); await p.getByRole('button', { name: 'Utwórz plakat' }).click(); await p.locator('.poster-view img').waitFor({ timeout: 15000 }); await p.waitForTimeout(500)
+const overflow = await p.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1)
+check('12. Na telefonie nic nie wychodzi poza ekran', !overflow)
+console.log('Błędy strony:', errs.length ? errs : 'brak')
+console.log(`WYNIK: ${res.filter(Boolean).length}/${res.length}`)
+await b.close()

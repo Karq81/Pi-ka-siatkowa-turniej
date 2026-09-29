@@ -1,0 +1,210 @@
+import QRCode from 'qrcode'
+import { t } from '../i18n'
+import { THEME_COLORS, wrapWords, type Poster } from '../logic/poster'
+
+/** A4 at 150 dpi. */
+export const POSTER_W = 1240
+export const POSTER_H = 1754
+const M = 80
+const DISPLAY = '"Barlow Condensed", "Arial Narrow", Impact, sans-serif'
+const BODY = '"Barlow", system-ui, "Segoe UI", Arial, sans-serif'
+/** The lower band with the QR code. */
+const BAND_TOP = 1330
+
+type Ctx = CanvasRenderingContext2D
+
+const font = (weight: number, px: number, family: string) => `${weight} ${Math.round(px)}px ${family}`
+
+function lines(ctx: Ctx, text: string, width: number, maxLines: number): string[] {
+  const out = wrapWords(text, (l) => ctx.measureText(l).width <= width)
+  if (out.length <= maxLines) return out
+  const kept = out.slice(0, maxLines)
+  kept[maxLines - 1] = kept[maxLines - 1].replace(/\s*\S*$/, '') + '…'
+  return kept
+}
+
+function roundRect(ctx: Ctx, x: number, y: number, w: number, h: number, r: number) {
+  ctx.beginPath()
+  ctx.moveTo(x + r, y)
+  ctx.arcTo(x + w, y, x + w, y + h, r)
+  ctx.arcTo(x + w, y + h, x, y + h, r)
+  ctx.arcTo(x, y + h, x, y, r)
+  ctx.arcTo(x, y, x + w, y, r)
+  ctx.closePath()
+}
+
+function background(ctx: Ctx, p: Poster) {
+  const c = THEME_COLORS[p.theme]
+  const g = ctx.createLinearGradient(0, 0, POSTER_W * 0.4, POSTER_H)
+  g.addColorStop(0, c.bg1)
+  g.addColorStop(1, c.bg2)
+  ctx.fillStyle = g
+  ctx.fillRect(0, 0, POSTER_W, POSTER_H)
+  // Soft shapes: a ball-like circle and two rings.
+  ctx.globalAlpha = 0.09
+  ctx.fillStyle = '#fff'
+  ctx.beginPath(); ctx.arc(POSTER_W - 60, 190, 360, 0, Math.PI * 2); ctx.fill()
+  ctx.globalAlpha = 0.12
+  ctx.strokeStyle = '#fff'
+  ctx.lineWidth = 6
+  ctx.beginPath(); ctx.arc(POSTER_W - 60, 190, 250, 0, Math.PI * 2); ctx.stroke()
+  ctx.beginPath(); ctx.arc(120, BAND_TOP - 40, 300, 0, Math.PI * 2); ctx.stroke()
+  ctx.globalAlpha = 1
+  ctx.fillStyle = c.accent
+  ctx.fillRect(0, 0, POSTER_W, 22)
+}
+
+/** Draws everything above the QR band; returns the bottom of the card. */
+function drawTop(ctx: Ctx, p: Poster, scale: number): number {
+  const c = THEME_COLORS[p.theme]
+  const width = POSTER_W - 2 * M
+  ctx.textBaseline = 'alphabetic'
+  ctx.textAlign = 'left'
+  let y = 96
+
+  if (p.kicker) {
+    ctx.fillStyle = c.accent
+    ctx.font = font(700, 46 * scale, DISPLAY)
+    for (const l of lines(ctx, p.kicker.toUpperCase(), width, 2)) { y += 50 * scale; ctx.fillText(l, M, y) }
+    y += 26 * scale
+  }
+
+  // The title is as big as fits in three lines.
+  ctx.fillStyle = c.ink
+  const title = p.title.toUpperCase()
+  let px = 210 * scale
+  let tl: string[] = []
+  for (; px > 70; px -= 6) {
+    ctx.font = font(800, px, DISPLAY)
+    tl = wrapWords(title, (l) => ctx.measureText(l).width <= width)
+    if (tl.length <= 3 && tl.every((l) => ctx.measureText(l).width <= width)) break
+  }
+  for (const l of tl) { y += px * 0.96; ctx.fillText(l, M, y) }
+  y += 30 * scale
+
+  if (p.tagline) {
+    ctx.fillStyle = c.ink
+    ctx.globalAlpha = 0.9
+    ctx.font = font(500, 52 * scale, BODY)
+    for (const l of lines(ctx, p.tagline, width, 2)) { y += 62 * scale; ctx.fillText(l, M, y) }
+    ctx.globalAlpha = 1
+    y += 24 * scale
+  }
+
+  // The card: when, where and the extra lines.
+  y += 20 * scale
+  const top = y
+  const pad = 44 * scale
+  const inner = width - 2 * pad
+  type Row = { label?: string; text: string[]; size: number; weight: number; family: string }
+  const rows: Row[] = []
+  ctx.font = font(800, 78 * scale, DISPLAY)
+  if (p.when) rows.push({ label: t('Kiedy'), text: lines(ctx, p.when, inner, 2), size: 78 * scale, weight: 800, family: DISPLAY })
+  ctx.font = font(800, 68 * scale, DISPLAY)
+  if (p.where) rows.push({ label: t('Gdzie'), text: lines(ctx, p.where, inner, 2), size: 68 * scale, weight: 800, family: DISPLAY })
+  ctx.font = font(500, 40 * scale, BODY)
+  for (const l of p.lines) rows.push({ text: lines(ctx, l, inner - 40 * scale, 2), size: 40 * scale, weight: 500, family: BODY })
+  let h = pad * 2
+  for (const r of rows) h += (r.label ? 34 * scale : 0) + r.text.length * r.size * (r.family === DISPLAY ? 1.02 : 1.28) + 22 * scale
+  ctx.fillStyle = c.card
+  roundRect(ctx, M, top, width, h, 34)
+  ctx.fill()
+  ctx.fillStyle = c.accent
+  roundRect(ctx, M, top, 16, h, 8)
+  ctx.fill()
+  let cy = top + pad
+  for (const r of rows) {
+    if (r.label) {
+      cy += 30 * scale
+      ctx.fillStyle = c.cardInk
+      ctx.globalAlpha = 0.55
+      ctx.font = font(700, 28 * scale, DISPLAY)
+      ctx.fillText(r.label.toUpperCase(), M + pad, cy)
+      ctx.globalAlpha = 1
+    }
+    ctx.fillStyle = c.cardInk
+    ctx.font = font(r.weight, r.size, r.family)
+    for (const l of r.text) {
+      cy += r.size * (r.family === DISPLAY ? 1.02 : 1.28)
+      ctx.fillText(r.family === BODY ? `•  ${l}` : l, M + pad, cy)
+    }
+    cy += 22 * scale
+  }
+  return top + h
+}
+
+/** The QR band: the code, what it opens and the footer. */
+function drawBand(ctx: Ctx, p: Poster, qr: HTMLCanvasElement | null) {
+  const c = THEME_COLORS[p.theme]
+  ctx.fillStyle = 'rgba(0,0,0,0.28)'
+  ctx.fillRect(0, BAND_TOP, POSTER_W, POSTER_H - BAND_TOP)
+  const size = 240
+  const qy = BAND_TOP + 30
+  ctx.fillStyle = '#fff'
+  roundRect(ctx, M, qy, size + 40, size + 40, 24)
+  ctx.fill()
+  if (qr) ctx.drawImage(qr, M + 20, qy + 20, size, size)
+  const tx = M + size + 40 + 44
+  const tw = POSTER_W - M - tx
+  ctx.fillStyle = c.accent
+  ctx.font = font(800, 50, DISPLAY)
+  let y = qy + 50
+  for (const l of lines(ctx, t('Wyniki na żywo w telefonie').toUpperCase(), tw, 2)) { ctx.fillText(l, tx, y); y += 52 }
+  ctx.fillStyle = '#fff'
+  ctx.font = font(500, 30, BODY)
+  y += 2
+  for (const l of lines(ctx, t('Zeskanuj kod aparatem telefonu: tabele, terminarz i wyniki bez instalowania aplikacji.'), tw, 3)) { ctx.fillText(l, tx, y); y += 38 }
+  const shown = p.url.replace(/^https?:\/\//, '')
+  let fpx = 32
+  ctx.font = font(700, fpx, BODY)
+  while (ctx.measureText(shown).width > tw && fpx > 16) { fpx -= 2; ctx.font = font(700, fpx, BODY) }
+  ctx.fillStyle = c.accent
+  ctx.fillText(shown, tx, Math.max(y + 12, qy + size + 20))
+  if (p.footer) {
+    ctx.fillStyle = '#fff'
+    ctx.globalAlpha = 0.92
+    ctx.font = font(500, 30, BODY)
+    const fl = lines(ctx, p.footer, POSTER_W - 2 * M - 220, 1)
+    ctx.fillText(fl[0], M, POSTER_H - 34)
+    ctx.globalAlpha = 1
+  }
+  ctx.fillStyle = '#fff'
+  ctx.globalAlpha = 0.55
+  ctx.font = font(500, 22, BODY)
+  ctx.textAlign = 'right'
+  ctx.fillText('SportLiveArena', POSTER_W - M, POSTER_H - 34)
+  ctx.textAlign = 'left'
+  ctx.globalAlpha = 1
+}
+
+/** The poster as a canvas (A4 portrait). */
+export async function renderPoster(p: Poster): Promise<HTMLCanvasElement> {
+  try {
+    await Promise.all([
+      document.fonts.load(`800 100px ${DISPLAY}`), document.fonts.load(`700 100px ${DISPLAY}`),
+      document.fonts.load(`500 40px ${BODY}`), document.fonts.load(`700 40px ${BODY}`),
+    ])
+  } catch { /* fallback fonts are fine */ }
+  const qr = document.createElement('canvas')
+  let qrOk = false
+  try {
+    if (p.url) { await QRCode.toCanvas(qr, p.url, { margin: 0, width: 500, errorCorrectionLevel: 'M' }); qrOk = true }
+  } catch { /* poster without a code */ }
+  const canvas = document.createElement('canvas')
+  canvas.width = POSTER_W
+  canvas.height = POSTER_H
+  const ctx = canvas.getContext('2d')!
+  // Content that is too tall is drawn smaller until the card ends above the QR band.
+  const limit = BAND_TOP - 30
+  let scale = 1
+  for (; scale > 0.55; scale -= 0.05) {
+    ctx.clearRect(0, 0, POSTER_W, POSTER_H)
+    background(ctx, p)
+    if (drawTop(ctx, p, scale) <= limit) break
+  }
+  drawBand(ctx, p, qrOk ? qr : null)
+  return canvas
+}
+
+export const canvasToBlob = (canvas: HTMLCanvasElement) =>
+  new Promise<Blob>((resolve, reject) => canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('png'))), 'image/png'))
