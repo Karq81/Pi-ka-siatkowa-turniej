@@ -1550,6 +1550,8 @@ const dict: Record<string, string> = {
   "· Stanowisko": "· Posto",
   "Stanowisko": "Posto",
   "Stanowiska": "Postos",
+  "{name} – wyniki na żywo": "{name} – resultados ao vivo",
+  "Wyniki na żywo, tabele i terminarz turnieju {name}. Sprawdź wyniki meczów w telefonie.": "Resultados ao vivo, classificações e calendário de {name}. Acompanhe os jogos no seu telemóvel.",
 }
 
 export default dict

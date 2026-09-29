@@ -73,3 +73,11 @@ export function tournamentUrl(): string {
   const t = urlTournament ?? (IS_PLATFORM_HOST ? ALBATROS_ALIAS : null)
   return `${location.origin}${location.pathname}${t ? `?t=${t}` : ''}`
 }
+
+/**
+ * The address search engines should list for this tournament: always on the main domain,
+ * so the copies on the other domains (.pl, .online, the old address) do not compete with it.
+ */
+export function canonicalTournamentUrl(): string {
+  return `https://sportlivearena.com/?t=${urlTournament ?? ALBATROS_ALIAS}`
+}
