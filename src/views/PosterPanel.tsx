@@ -3,7 +3,7 @@ import { ConfirmDialog } from '../ui'
 import { locale, t } from '../i18n'
 import { askPoster } from '../store/assistant'
 import { loadPosterFacts, savePoster, type Account, type AccountTournament } from '../store/accounts'
-import { BUILTIN_SPONSOR, defaultPoster, FIELD_LIMITS, MAX_LINES, MAX_LOGO_CHARS, normalizePoster, scrubNames, withSponsorDefault, POSTER_THEMES, THEME_COLORS, THEME_NAMES, type Poster, type PosterFacts } from '../logic/poster'
+import { BUILTIN_SPONSOR, contactLine, defaultOptions, defaultPoster, factsFor, hasContactLine, optionsText, withContactLine, type PosterOptions, FIELD_LIMITS, MAX_LINES, MAX_LOGO_CHARS, normalizePoster, scrubNames, withSponsorDefault, POSTER_THEMES, THEME_COLORS, THEME_NAMES, type Poster, type PosterFacts } from '../logic/poster'
 import { sportLabelOf } from '../logic/sports'
 import { logoFromFile, renderPoster } from './posterCanvas'
 import albatrosSponsor from '../assets/sponsor-albatros.png'
@@ -31,9 +31,14 @@ const fileName = (id: string) => `plakat-${id.replace(/[^a-z0-9-]/gi, '')}.png`
  */
 export function PosterPanel({ account, tr, url }: { account: Account; tr: AccountTournament; url: string }) {
   const saved = account.posters?.[tr.id]
-  // A poster names the club, never the contact person (their name is taken out of every text).
-  const tidy = (p: Poster) => withSponsorDefault(scrubNames(p, [account.contactName]), tr.id)
-  const [poster, setPoster] = useState<Poster | null>(saved ? tidy(normalizePoster(saved)) : null)
+  // A poster names the club; the contact person is on it only when the organiser chose that,
+  // otherwise the name is taken out of every text (also what the AI wrote).
+  const tidy = (p: Poster, keepContact: boolean) => withSponsorDefault(keepContact ? p : scrubNames(p, [account.contactName]), tr.id)
+  const mentions = (text: string) => !!account.contactName && text.toLowerCase().includes(account.contactName.trim().toLowerCase())
+  const [poster, setPoster] = useState<Poster | null>(saved ? tidy(normalizePoster(saved), hasContactLine(normalizePoster(saved))) : null)
+  const [pf, setPf] = useState<PosterFacts | null>(null)
+  const [opts, setOpts] = useState<PosterOptions | null>(null)
+  const setOpt = (patch: Partial<PosterOptions>) => setOpts((o) => o && { ...o, ...patch })
   const [image, setImage] = useState('')
   const [wish, setWish] = useState('')
   const [busy, setBusy] = useState<'' | 'make' | 'ai' | 'delete'>('')
@@ -50,6 +55,12 @@ export function PosterPanel({ account, tr, url }: { account: Account; tr: Accoun
     return () => { live = false }
   }, [poster])
   useEffect(() => () => window.clearTimeout(saveTimer.current), [])
+  useEffect(() => {
+    let live = true
+    void loadPosterFacts(tr.id, account, url, sportLabelOf).then((f) => { if (live) { facts.current = f; setPf(f); setOpts((o) => o ?? defaultOptions(f)) } }).catch(() => {})
+    return () => { live = false }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tr.id])
 
   const readFacts = async () => {
     facts.current ??= await loadPosterFacts(tr.id, account, url, sportLabelOf)
@@ -62,7 +73,9 @@ export function PosterPanel({ account, tr, url }: { account: Account; tr: Accoun
     setError(''); setNote(''); setBusy(withAi ? 'ai' : 'make')
     try {
       const f = await readFacts()
-      const p = tidy(withAi ? await askPoster(f, null, wish) : defaultPoster(f, locale()))
+      const o = opts ?? defaultOptions(f)
+      const instruction = [optionsText(o), wish.trim()].filter(Boolean).join('\n')
+      const p = tidy(withAi ? await askPoster(factsFor(f, o), null, instruction) : defaultPoster(f, locale(), o), o.contact || o.phone || o.email || mentions(instruction))
       setPoster(p)
       await persist(p)
       setWish('')
@@ -74,7 +87,9 @@ export function PosterPanel({ account, tr, url }: { account: Account; tr: Accoun
     if (!poster || !wish.trim()) return
     setError(''); setNote(''); setBusy('ai')
     try {
-      const p = tidy(await askPoster(await readFacts(), poster, wish))
+      // The AI sees the tournament's facts, but no private details: contact goes on through the "Kontakt na plakacie" block.
+      const f = await readFacts()
+      const p = tidy(await askPoster({ ...f, contactName: '', phone: '', email: '', website: '' }, poster, wish), hasContactLine(poster) || mentions(wish))
       setPoster(p)
       await persist(p)
       setWish('')
@@ -127,10 +142,55 @@ export function PosterPanel({ account, tr, url }: { account: Account; tr: Accoun
   const canShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function'
 
   const wishBox = (
-    <label className="poster-wish">{poster ? t('Powiedz asystentowi AI, co zmienić na plakacie') : t('Co ma być na plakacie? (nieobowiązkowe)')}
+    <label className="poster-wish">{poster ? t('Powiedz asystentowi AI, co zmienić na plakacie') : t('Coś jeszcze? Opisz własnymi słowami (wykona to asystent AI)')}
       <textarea rows={3} maxLength={2000} value={wish} onChange={(e) => setWish(e.target.value)}
         placeholder={t('np. dodaj wpisowe 100 zł, nagrody dla trzech pierwszych miejsc, start o 9:00 w hali sportowej, kolory zielone, hasło „Gramy fair play”')} />
     </label>
+  )
+
+  const tick = (key: 'categories' | 'teams' | 'registration' | 'phone' | 'email' | 'website', label: string, missing = false) => (
+    <label className={`poster-tick${missing ? ' off' : ''}`}>
+      <input type="checkbox" disabled={missing} checked={!missing && !!opts?.[key]} onChange={(e) => setOpt({ [key]: e.target.checked })} />
+      <span>{label}{missing && <em> ({t('brak w „Moje konto”')})</em>}</span>
+    </label>
+  )
+  const contactRows = pf && opts && (
+    <>
+      <label className="poster-tick">
+        <input type="checkbox" checked={opts.contact} onChange={(e) => setOpt({ contact: e.target.checked })} />
+        <span>{t('Osoba kontaktowa')}</span>
+      </label>
+      {opts.contact && <input className="poster-contact-name" value={opts.contactName} maxLength={60} placeholder={t('np. Jan Kowalski')} onChange={(e) => setOpt({ contactName: e.target.value })} />}
+      {tick('phone', `${t('Telefon')}${pf.phone ? `: ${pf.phone}` : ''}`, !pf.phone)}
+      {tick('email', `${t('E-mail kontaktowy')}${pf.email ? `: ${pf.email}` : ''}`, !pf.email)}
+    </>
+  )
+  const optionsBox = pf && opts && (
+    <fieldset className="poster-opts">
+      <legend>{t('Co ma być na plakacie?')}</legend>
+      <p className="muted small">{t('Zaznacz, co ma się znaleźć na plakacie. Czego nie zaznaczysz, tego na nim nie będzie. Imię osoby kontaktowej, telefon i e-mail pojawią się tylko wtedy, gdy je zaznaczysz.')}</p>
+      {pf.categories.length > 1 && tick('categories', `${t('Kategorie')}: ${pf.categories.join(', ')}`)}
+      {pf.teams > 0 && tick('teams', `${t('Zgłoszone drużyny: {n}', { n: pf.teams })}`)}
+      {pf.registration && tick('registration', t('Zgłoszenia drużyn przez stronę turnieju (kod QR)'))}
+      {contactRows}
+      {tick('website', `${t('Strona internetowa')}${pf.website ? `: ${pf.website}` : ''}`, !pf.website)}
+      <label>{t('Wpisowe')}<input value={opts.fee} maxLength={60} placeholder={t('np. 100 zł od drużyny')} onChange={(e) => setOpt({ fee: e.target.value })} /></label>
+      <label>{t('Nagrody')}<input value={opts.prizes} maxLength={80} placeholder={t('np. puchary i medale dla trzech pierwszych miejsc')} onChange={(e) => setOpt({ prizes: e.target.value })} /></label>
+      <label>{t('Dodatkowe informacje (jedna linia = jeden punkt)')}
+        <textarea rows={3} maxLength={400} value={opts.extra} onChange={(e) => setOpt({ extra: e.target.value })} />
+      </label>
+    </fieldset>
+  )
+  const contactBox = pf && opts && poster && (
+    <div className="poster-contact">
+      <b>{t('Kontakt na plakacie')}</b>
+      <p className="muted small">{t('Dane kontaktowe trafiają na plakat tylko wtedy, gdy je tu zaznaczysz i klikniesz „Dodaj kontakt do plakatu”.')}</p>
+      {contactRows}
+      <div className="actions">
+        <button type="button" className="btn" disabled={!contactLine(opts, pf)} onClick={() => edit({ lines: withContactLine(poster, contactLine(opts, pf)).lines })}>{t('Dodaj kontakt do plakatu')}</button>
+        {hasContactLine(poster) && <button type="button" className="btn btn-danger" onClick={() => edit({ lines: withContactLine(poster, '').lines })}>{t('Usuń kontakt z plakatu')}</button>}
+      </div>
+    </div>
   )
 
   return (
@@ -139,6 +199,7 @@ export function PosterPanel({ account, tr, url }: { account: Account; tr: Accoun
       {!poster && (
         <>
           <p className="muted">{t('Plakat z nazwą turnieju, terminem, miejscem, szczegółami i kodem QR do strony z wynikami. Możesz go wydrukować, pobrać albo wysłać.')}</p>
+          {optionsBox}
           {wishBox}
           <div className="actions">
             <button type="button" className="btn btn-primary btn-lg" disabled={!!busy} onClick={() => void create(false)}>
@@ -169,6 +230,7 @@ export function PosterPanel({ account, tr, url }: { account: Account; tr: Accoun
             </label>
             {logo && <button type="button" className="btn btn-danger" onClick={() => edit({ sponsorLogo: '' })}>{t('Usuń logo sponsora')}</button>}
           </div>
+          {contactBox}
           {wishBox}
           <div className="actions">
             <button type="button" className="btn btn-primary" disabled={!!busy || !wish.trim()} onClick={() => void improve()}>

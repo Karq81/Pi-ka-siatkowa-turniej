@@ -1639,3 +1639,13 @@ a.btn-back { text-decoration: none; }
 .poster-sponsor { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 10px 12px; border: 1px dashed var(--line); border-radius: 12px; }
 .poster-sponsor img { height: 44px; width: auto; max-width: 120px; object-fit: contain; background: #fff; border-radius: 6px; padding: 2px; border: 1px solid var(--line); }
 .poster-upload { cursor: pointer; }
+
+.poster-opts { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; display: grid; gap: 10px; margin: 0; }
+.poster-opts legend { font-weight: 800; padding: 0 6px; }
+.poster-opts label:not(.poster-tick) { display: grid; gap: 4px; font-weight: 600; }
+.poster-opts input:not([type=checkbox]), .poster-opts textarea, .poster-contact input:not([type=checkbox]) { font: inherit; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); width: 100%; box-sizing: border-box; }
+.poster-tick { display: flex; flex-direction: row; align-items: center; text-align: left; gap: 10px; font-weight: 600; cursor: pointer; }
+.poster-tick input { width: 22px; height: 22px; flex: none; }
+.poster-tick.off { opacity: .55; cursor: default; }
+.poster-tick em { font-weight: 500; }
+.poster-contact { display: grid; gap: 10px; padding: 10px 12px; border: 1px dashed var(--line); border-radius: 12px; }

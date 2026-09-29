@@ -188,11 +188,12 @@ function posterInstructions(): string {
 - Dostajesz FAKTY o turnieju i organizatorze, aktualną treść plakatu i POLECENIE organizatora. Wykonaj polecenie: dopisz, co prosi (np. nagrody, wpisowe, program, sponsorów, hasło), usuń to, czego nie chce, zmień ton lub kolory.
 - Używaj wyłącznie faktów z danych i polecenia. Niczego nie wymyślaj: żadnych dat, godzin, adresów, kwot, nagród ani numerów telefonu, których nie ma w danych. Brakującą informację pomiń albo zostaw pole puste.
 - Teksty krótkie, czytelne z daleka: tytuł do 70 znaków, hasło do 120, każda linia szczegółów do 90 znaków, najwyżej 6 linii. Bez emoji i bez hashtagów.
+- W FAKTACH puste pola, 0 i false oznaczają, że organizator nie chce tego na plakacie: nie dopisuj tego.
 - Bez polecenia wygeneruj estetyczny, zachęcający plakat z danych.
 - Pisz w języku polecenia organizatora; gdy polecenie nie wskazuje języka, w języku: ${langNameEn()}.
 - Kolorystyka (theme): blue, green, red, dark lub gold. Zmień ją tylko gdy organizator o to prosi albo gdy zmieniasz całość plakatu.
 - Adres strony turnieju (kod QR) dodaje strona sama: nie wpisuj żadnego adresu strony turnieju ani linku do niego.
-- Organizatora podawaj wyłącznie jako nazwę klubu lub organizatora z faktów (np. "Organizator: UKS Opty Mielno"). Nie wpisuj imion i nazwisk osób ani prywatnych numerów telefonu i adresów e-mail, chyba że organizator wyraźnie poda je w poleceniu.`
+- Organizatora podawaj wyłącznie jako nazwę klubu lub organizatora z faktów (np. "Organizator: UKS Opty Mielno"). Osobę kontaktową, telefon, e-mail i stronę internetową wpisuj tylko wtedy, gdy są w FAKTACH (organizator je zaznaczył) albo w poleceniu; wtedy zapisz je w jednej linii szczegółów zaczynającej się od "Kontakt:". Gdy ich nie ma, nie wpisuj żadnych imion, nazwisk, telefonów ani adresów e-mail.`
 }
 
 /** The poster's text from the tournament's facts, the current poster and the organiser's instruction. */

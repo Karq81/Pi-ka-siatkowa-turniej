@@ -51,6 +51,10 @@ export interface PosterFacts {
   url: string
   organizer: string
   city: string
+  /** Private details of the account: on a poster only when the organiser ticks them. */
+  contactName: string
+  phone: string
+  email: string
   website: string
 }
 
@@ -69,12 +73,66 @@ export function posterDate(start: string | undefined, loc: string): string {
 
 const clip = (s: unknown, n: number) => String(s ?? '').replace(/\s+/g, ' ').trim().slice(0, n)
 
-/** A poster from the facts alone: everything the tournament and the account know, nothing invented. */
-export function defaultPoster(f: PosterFacts, loc: string): Poster {
+/** What the organiser ticked to have on the poster (nothing personal is on it unless ticked). */
+export interface PosterOptions {
+  categories: boolean
+  teams: boolean
+  registration: boolean
+  contact: boolean
+  /** The contact person, as it should be written. */
+  contactName: string
+  phone: boolean
+  email: boolean
+  website: boolean
+  fee: string
+  prizes: string
+  /** More points, one per line. */
+  extra: string
+}
+
+/** The starting ticks: the tournament's own facts yes, anything about a person no. */
+export function defaultOptions(f: PosterFacts): PosterOptions {
+  return {
+    categories: f.categories.length > 1, teams: false, registration: f.registration,
+    contact: false, contactName: f.contactName, phone: false, email: false, website: false,
+    fee: '', prizes: '', extra: '',
+  }
+}
+
+/** The "Kontakt: …" line for what is ticked; empty when nothing is. */
+export function contactLine(o: Pick<PosterOptions, 'contact' | 'contactName' | 'phone' | 'email'>, f: Pick<PosterFacts, 'phone' | 'email'>): string {
+  const parts = [o.contact && o.contactName.trim(), o.phone && f.phone, o.email && f.email].filter(Boolean)
+  return parts.length ? `${t('Kontakt')}: ${parts.join(' · ')}` : ''
+}
+
+/** Facts for the AI: private details only when ticked. */
+export function factsFor(f: PosterFacts, o: PosterOptions): PosterFacts {
+  return {
+    ...f,
+    categories: o.categories ? f.categories : [],
+    teams: o.teams ? f.teams : 0,
+    registration: o.registration && f.registration,
+    contactName: o.contact ? o.contactName.trim() : '',
+    phone: o.phone ? f.phone : '',
+    email: o.email ? f.email : '',
+    website: o.website ? f.website : '',
+  }
+}
+
+/** What the organiser typed into the fee, prizes and more fields, as one instruction for the AI. */
+export function optionsText(o: PosterOptions): string {
+  return [o.fee.trim() && `${t('Wpisowe')}: ${o.fee.trim()}`, o.prizes.trim() && `${t('Nagrody')}: ${o.prizes.trim()}`, ...o.extra.split('\n').map((l) => l.trim())].filter(Boolean).join('\n')
+}
+
+/** A poster from the facts and what was ticked: everything the tournament and the account know, nothing invented. */
+export function defaultPoster(f: PosterFacts, loc: string, o: PosterOptions = defaultOptions(f)): Poster {
   const lines: string[] = []
-  if (f.categories.length > 1) lines.push(`${t('Kategorie')}: ${f.categories.join(', ')}`)
-  if (f.teams > 0) lines.push(t('Zgłoszone drużyny: {n}', { n: f.teams }))
-  if (f.registration) lines.push(t('Zgłoszenia drużyn przez stronę turnieju (kod QR)'))
+  if (o.categories && f.categories.length) lines.push(`${t('Kategorie')}: ${f.categories.join(', ')}`)
+  if (o.teams && f.teams > 0) lines.push(t('Zgłoszone drużyny: {n}', { n: f.teams }))
+  if (o.registration) lines.push(t('Zgłoszenia drużyn przez stronę turnieju (kod QR)'))
+  lines.push(...optionsText(o).split('\n').filter(Boolean))
+  const contact = contactLine(o, f)
+  if (contact) lines.push(contact)
   return normalizePoster({
     theme: 'blue',
     kicker: f.sport ? t('Turniej: {sport}', { sport: f.sport }) : t('Turniej'),
@@ -83,9 +141,18 @@ export function defaultPoster(f: PosterFacts, loc: string): Poster {
     when: posterDate(f.start, loc),
     where: f.city || f.subtitle,
     lines,
-    footer: [f.organizer && t('Organizator: {name}', { name: f.organizer }), f.website].filter(Boolean).join(' · '),
+    footer: [f.organizer && t('Organizator: {name}', { name: f.organizer }), o.website && f.website].filter(Boolean).join(' · '),
     url: f.url,
   })
+}
+
+/** The poster has a "Kontakt: …" line, so its contact details were put there on purpose. */
+export const hasContactLine = (p: Poster) => p.lines.some((l) => l.startsWith(`${t('Kontakt')}:`))
+
+/** The poster's lines with the "Kontakt: …" line replaced by `line` (or removed when empty). */
+export function withContactLine(p: Poster, line: string): Poster {
+  const rest = p.lines.filter((l) => !l.startsWith(`${t('Kontakt')}:`))
+  return { ...p, lines: (line ? [...rest.slice(0, MAX_LINES - 1), line] : rest).slice(0, MAX_LINES) }
 }
 
 /** Keeps a poster within sane limits (also for what the AI or the organiser typed). */

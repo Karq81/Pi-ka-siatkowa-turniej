@@ -330,6 +330,9 @@ export async function loadPosterFacts(id: string, account: Account, url: string,
     // Albatros CUP is organised by the club, always under this name.
     organizer: id === 'main' ? info.organizer : account.name ?? '',
     city: account.city ?? '',
+    contactName: account.contactName ?? '',
+    phone: account.phone ?? '',
+    email: account.email ?? '',
     website: account.website ?? '',
   }
 }
