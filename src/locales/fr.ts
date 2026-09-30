@@ -911,6 +911,8 @@ const dict: Record<string, string> = {
   "Sokoły": "Faucons",
   "Sonneborn-Berger (punkty pokonanych rywali + połowa zremisowanych)": "Sonneborn-Berger (points des adversaires battus + moitié des nuls)",
   "Sponsor główny turnieju": "Sponsor principal du tournoi",
+  "Sponsorzy i partnerzy": "Sponsors et partenaires",
+  "Sponsorzy i partnerzy (jedna nazwa w linii)": "Sponsors et partenaires (un nom par ligne)",
   "SportLiveArena – wyniki turniejów na żywo": "SportLiveArena – résultats de tournois en direct",
   "Sporty rakietowe": "Sports de raquette",
   "Sporty walki": "Sports de combat",

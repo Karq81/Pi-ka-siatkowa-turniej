@@ -3,7 +3,7 @@ import { ConfirmDialog } from '../ui'
 import { locale, t } from '../i18n'
 import { askPoster } from '../store/assistant'
 import { loadPosterFacts, savePoster, type Account, type AccountTournament } from '../store/accounts'
-import { BUILTIN_SPONSOR, contactLine, defaultOptions, defaultPoster, factsFor, hasContactLine, optionsText, withContactLine, type PosterOptions, FIELD_LIMITS, MAX_LINES, MAX_LOGO_CHARS, normalizePoster, scrubNames, withSponsorDefault, POSTER_THEMES, THEME_COLORS, THEME_NAMES, type Poster, type PosterFacts } from '../logic/poster'
+import { BUILTIN_SPONSOR, contactLine, defaultOptions, defaultPoster, factsFor, hasContactLine, optionsText, withContactLine, type PosterOptions, FIELD_LIMITS, MAX_LINES, MAX_PARTNERS, MAX_LOGO_CHARS, normalizePoster, scrubNames, withSponsorDefault, POSTER_THEMES, THEME_COLORS, THEME_NAMES, type Poster, type PosterFacts } from '../logic/poster'
 import { sportLabelOf } from '../logic/sports'
 import { logoFromFile, renderPoster } from './posterCanvas'
 import albatrosSponsor from '../assets/sponsor-albatros.png'
@@ -247,6 +247,9 @@ export function PosterPanel({ account, tr, url }: { account: Account; tr: Accoun
               <label>{t('Gdzie')}<input maxLength={FIELD_LIMITS.where} value={poster.where} onChange={(e) => edit({ where: e.target.value })} /></label>
               <label>{t('Szczegóły (jedna linia = jeden punkt, do {n})', { n: MAX_LINES })}
                 <textarea rows={5} value={poster.lines.join('\n')} onChange={(e) => edit({ lines: e.target.value.split('\n').slice(0, MAX_LINES) })} />
+              </label>
+              <label>{t('Sponsorzy i partnerzy (jedna nazwa w linii)')}
+                <textarea rows={5} value={(poster.partners ?? []).join('\n')} onChange={(e) => edit({ partners: e.target.value.split('\n').slice(0, MAX_PARTNERS) })} />
               </label>
               {logo && <label>{t('Podpis przy logo sponsora')}<input maxLength={FIELD_LIMITS.sponsorLabel} value={poster.sponsorLabel ?? ''} placeholder={t('Sponsor główny turnieju')} onChange={(e) => edit({ sponsorLabel: e.target.value })} /></label>}
               <label>{t('Linia na dole')}<input maxLength={FIELD_LIMITS.footer} value={poster.footer} onChange={(e) => edit({ footer: e.target.value })} /></label>

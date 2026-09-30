@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { info } from '../content/info'
 import { BUILTIN_SPONSOR, contactLine, defaultOptions, defaultPoster, factsFor, hasContactLine, withContactLine, MAX_LINES, normalizePoster, scrubNames, withSponsorDefault, posterDate, wrapWords, type PosterFacts } from './poster'
 
 const facts: PosterFacts = {
@@ -104,6 +105,20 @@ describe('poster', () => {
     expect(hasContactLine(withLine)).toBe(true)
     expect(withContactLine(withContactLine(withLine, 'Kontakt: X'), '').lines.some((l) => l.startsWith('Kontakt'))).toBe(false)
     expect(contactLine({ contact: false, contactName: 'A', phone: false, email: false }, facts)).toBe('')
+  })
+  it('Albatros CUP gets its sponsors and partners unless the list was emptied', () => {
+    const base = normalizePoster({ title: 'x' })
+    expect(withSponsorDefault(base, 'main').partners).toEqual(info.partners)
+    expect(withSponsorDefault({ ...base, partners: [] }, 'main').partners).toEqual([])
+    expect(withSponsorDefault(base, 'inny').partners).toBeUndefined()
+    expect(info.partners).toHaveLength(13)
+    expect(info.partners.join('|')).not.toMatch(/Podatawowa|Albatros/)
+  })
+  it('keeps partner names short and few', () => {
+    const p = normalizePoster({ title: 'x', partners: [' A ', '', 'B'.repeat(100), ...Array.from({ length: 40 }, (_, i) => `N${i}`)] })
+    expect(p.partners![0]).toBe('A')
+    expect(p.partners![1]).toHaveLength(40)
+    expect(p.partners).toHaveLength(20)
   })
   it('wraps words by width and keeps a long word whole', () => {
     expect(wrapWords('aa bb cc dd', (l) => l.length <= 5)).toEqual(['aa bb', 'cc dd'])

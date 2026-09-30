@@ -210,6 +210,18 @@ function AlbatrosInfo() {
         </div>
       </section>
 
+      <section className="sponsors">
+        <h2>Sponsorzy i partnerzy</h2>
+        <a className="sponsor-main" href={info.mainSponsor.url} target="_blank" rel="noopener sponsored">
+          <img src={sponsorLogo} alt={info.mainSponsor.name} width={84} height={83} />
+          <span><small>Sponsor główny turnieju</small><b>{info.mainSponsor.name}</b></span>
+        </a>
+        <ul className="sponsor-grid">
+          {info.partners.map((n) => <li key={n}>{n}</li>)}
+        </ul>
+        <p className="muted small">Dziękujemy za wsparcie! 🤝</p>
+      </section>
+
       <section className="reminders">
         <h2>Pamiętajcie</h2>
         <ul className="plain">

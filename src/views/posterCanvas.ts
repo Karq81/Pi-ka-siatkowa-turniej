@@ -76,6 +76,40 @@ function drawSponsor(ctx: Ctx, p: Poster, logo: HTMLImageElement) {
   ctx.textAlign = 'left'
 }
 
+/** The partners' names in up to three lines, or none. */
+function partnerLines(ctx: Ctx, p: Poster): string[] {
+  if (!p.partners?.length) return []
+  ctx.font = font(500, 30, BODY)
+  // Whole names per line: a name is never split between two lines.
+  const sep = '  ·  '
+  const rows: string[] = []
+  let row = ''
+  for (const name of p.partners) {
+    const next = row ? row + sep + name : name
+    if (!row || ctx.measureText(next).width <= POSTER_W - 2 * M) row = next
+    else { rows.push(row); row = name }
+  }
+  if (row) rows.push(row)
+  if (rows.length > 3) { rows.length = 3; rows[2] += ' …' }
+  return rows
+}
+const partnersHeight = (n: number) => (n ? 54 + n * 40 + 14 : 0)
+
+/** Sponsors and partners: a small heading and their names, just above the QR band. */
+function drawPartners(ctx: Ctx, p: Poster, rows: string[]) {
+  if (!rows.length) return
+  const c = THEME_COLORS[p.theme]
+  const top = BAND_TOP - partnersHeight(rows.length)
+  ctx.fillStyle = c.accent
+  ctx.font = font(800, 30, DISPLAY)
+  ctx.fillText(t('Sponsorzy i partnerzy').toUpperCase(), M, top + 34)
+  ctx.fillStyle = '#fff'
+  ctx.globalAlpha = 0.92
+  ctx.font = font(500, 30, BODY)
+  rows.forEach((l, i) => ctx.fillText(l, M, top + 34 + 42 + i * 40))
+  ctx.globalAlpha = 1
+}
+
 /** Draws everything above the QR band; returns the bottom of the card. */
 function drawTop(ctx: Ctx, p: Poster, scale: number, logo: HTMLImageElement | null): number {
   const c = THEME_COLORS[p.theme]
@@ -246,13 +280,15 @@ export async function renderPoster(p: Poster): Promise<HTMLCanvasElement> {
   canvas.height = POSTER_H
   const ctx = canvas.getContext('2d')!
   // Content that is too tall is drawn smaller until the card ends above the QR band.
-  const limit = BAND_TOP - 30
+  const rows = partnerLines(ctx, p)
+  const limit = BAND_TOP - 30 - partnersHeight(rows.length)
   let scale = 1
   for (; scale > 0.55; scale -= 0.05) {
     ctx.clearRect(0, 0, POSTER_W, POSTER_H)
     background(ctx, p)
     if (drawTop(ctx, p, scale, logo) <= limit) break
   }
+  drawPartners(ctx, p, rows)
   drawBand(ctx, p, qrOk ? qr : null)
   return canvas
 }

@@ -1,4 +1,5 @@
 import { t, tk } from '../i18n'
+import { info } from '../content/info'
 
 /**
  * The poster of a tournament: what it says (`Poster`, kept on the organiser's account and
@@ -31,6 +32,8 @@ export interface Poster {
   sponsorLogo?: string
   /** Words next to the sponsor's logo (default: main sponsor of the tournament). */
   sponsorLabel?: string
+  /** Other sponsors and partners: names, shown in a strip above the QR band. */
+  partners?: string[]
 }
 
 /** Albatros CUP's main sponsor, whose logo is part of the site. */
@@ -59,7 +62,8 @@ export interface PosterFacts {
 }
 
 export const MAX_LINES = 6
-export const FIELD_LIMITS = { kicker: 60, title: 70, tagline: 120, when: 80, where: 80, line: 90, footer: 120, sponsorLabel: 40 }
+export const FIELD_LIMITS = { kicker: 60, title: 70, tagline: 120, when: 80, where: 80, line: 90, footer: 120, sponsorLabel: 40, partner: 40 }
+export const MAX_PARTNERS = 20
 
 /** "23 października 2026, godz. 09:00" from the first match's time; empty when unknown. */
 export function posterDate(start: string | undefined, loc: string): string {
@@ -171,6 +175,7 @@ export function normalizePoster(p: Partial<Poster> & { url?: string }): Poster {
     url: String(p.url ?? '').slice(0, 300),
     ...(validLogo(p.sponsorLogo) ? { sponsorLogo: p.sponsorLogo } : p.sponsorLogo === '' ? { sponsorLogo: '' } : {}),
     ...(p.sponsorLabel ? { sponsorLabel: clip(p.sponsorLabel, FIELD_LIMITS.sponsorLabel) } : {}),
+    ...(Array.isArray(p.partners) ? { partners: p.partners.map((x) => clip(x, FIELD_LIMITS.partner)).filter(Boolean).slice(0, MAX_PARTNERS) } : {}),
   }
 }
 
@@ -179,9 +184,17 @@ function validLogo(v: unknown): v is string {
   return typeof v === 'string' && (v === BUILTIN_SPONSOR || (/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(v) && v.length <= MAX_LOGO_CHARS))
 }
 
-/** Albatros CUP ("main") has its main sponsor's logo on the poster unless it was taken off. */
+/**
+ * Albatros CUP ("main") has its main sponsor's logo and its sponsors and partners on the
+ * poster unless they were taken off (an empty list / '' means taken off).
+ */
 export function withSponsorDefault(p: Poster, tournamentId: string): Poster {
-  return tournamentId === 'main' && p.sponsorLogo === undefined ? { ...p, sponsorLogo: BUILTIN_SPONSOR } : p
+  if (tournamentId !== 'main') return p
+  return {
+    ...p,
+    ...(p.sponsorLogo === undefined ? { sponsorLogo: BUILTIN_SPONSOR } : {}),
+    ...(p.partners === undefined ? { partners: [...info.partners] } : {}),
+  }
 }
 
 /** Words of a text split into lines no wider than `fits` allows (a single long word stays whole). */

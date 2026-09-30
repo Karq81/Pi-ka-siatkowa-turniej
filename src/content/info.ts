@@ -76,4 +76,22 @@ export const info = {
     'Zawodniczki zabierają ze sobą bidony do wody.',
     'Pamiętajcie o strojach kąpielowych.',
   ],
+  /** The main sponsor (its logo is in the page header and on the poster). */
+  mainSponsor: { name: 'Albatros Medical SPA', url: 'https://albatrosrelax.mielno.pl' },
+  /** Other sponsors and partners, as sent by the organiser. */
+  partners: [
+    'Constans Grupa',
+    'KMC Krzysztof Machaj Company',
+    'Pod Wydmą',
+    'Lodziarnie Żmuda-Trzebiatowskich',
+    'Ekoprzedsiębiorstwo Mielno',
+    'Saveinvest',
+    'Body Chief',
+    'Mors Mielno',
+    'Bistro Qura',
+    'Resort Mielenko',
+    'Transport Stępień',
+    'Do Syta',
+    'Szkoła Podstawowa w Mielnie',
+  ],
 }
