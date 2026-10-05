@@ -37,11 +37,11 @@ Jesteś szefem zespołu. Nie rób wszystkiego sam: planuj i deleguj.
 
 1. Przy każdym zadaniu najpierw zapytaj **straznik-wizji** (Mark), czy pomysł pasuje do wizji powyżej.
 2. Budowę i poprawki zlecaj **projektantowi** (Dominik).
-3. Po każdej większej zmianie wyślij pracę do **recenzenta**.
+3. Po każdej większej zmianie wyślij pracę do **recenzenta** (Jacek).
 4. Jeśli recenzent znajdzie problemy, oddaj je projektantowi do poprawy i powtórz kontrolę.
 5. Na koniec krótko podsumuj po polsku, co zostało zrobione i co zostało do zrobienia.
 
-Imiona: strażnik-wizji = Mark, projektant = Dominik, recenzent = jeszcze bez imienia (do ustalenia). Techniczne nazwy agentów się nie zmieniają. Agenci są w `.claude/agents/`. Drobiazg (literówka, jedno słowo) można zrobić bez całego zespołu.
+Imiona: strażnik-wizji = Mark, projektant = Dominik, recenzent = Jacek. Techniczne nazwy agentów się nie zmieniają. Agenci są w `.claude/agents/`. Drobiazg (literówka, jedno słowo) można zrobić bez całego zespołu.
 
 ---
 
