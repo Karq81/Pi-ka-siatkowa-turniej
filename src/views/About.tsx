@@ -6,6 +6,7 @@ import { countSiteVisit, useAccount } from '../store/accounts'
 import { Demo } from './Demo'
 import { StreamDemo } from './StreamDemo'
 import { PlatformNav } from './Platform'
+import contact from '../content/contact.json'
 
 /**
  * The service's front page (sportlivearena.com, and #o-systemie elsewhere): a product
@@ -181,8 +182,15 @@ export function About() {
         </div>
       </section>
 
+      <section className="ab-sec">
+        <div className="pf-wrap">
+          <h2>{t('Organizacja turniejów sportowych dla klubów i szkół')}</h2>
+          <p className="ab-sub">{t('Strona turnieju dla Twojego klubu, wyniki na żywo dla rodziców i kibiców, panel dla sędziów. Wszystko w telefonie, bez instalowania aplikacji.')}</p>
+        </div>
+      </section>
+
       <footer className="ab-foot">
-        <div className="pf-wrap">© {new Date().getFullYear()} {BRAND}</div>
+        <div className="pf-wrap">© {new Date().getFullYear()} {BRAND}{contact.email && <> · {t('Kontakt')}: <a href={`mailto:${contact.email}`}>{contact.email}</a></>}</div>
       </footer>
     </div>
   )

@@ -5,7 +5,7 @@
 // The app itself is a single-page app whose screens live behind "#"; search engines ignore
 // what follows "#", so these plain HTML pages are what gets found in the search results.
 // The disciplines, their rules and their translated names come straight from src/logic/sports.ts.
-import { mkdir, writeFile, access } from 'node:fs/promises'
+import { mkdir, writeFile, access, readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { createServer } from 'vite'
 
@@ -24,12 +24,24 @@ const sportPath = (lang, id) => `${hubPath(lang)}${id}/`
  * Texts of the static pages. Sport names are inserted as they are (nominative), so every
  * sentence is built to work without declining them. Only facts the app really has.
  */
+/** The contact e-mail shown at the bottom of the static pages (src/content/contact.json); empty = none. */
+const CONTACT = (JSON.parse(await readFile(new URL('../src/content/contact.json', import.meta.url), 'utf8')).email || '').trim()
+
 const COPY = {
   pl: {
-    hubTitle: 'Program do turniejów: {n} dyscyplin, wyniki na żywo | SportLiveArena',
-    hubDesc: 'Zorganizuj turniej w jednej z {n} dyscyplin: grupy, drabinka, terminarz, wyniki na żywo dla kibiców i panel sędziego w telefonie. Za darmo.',
-    hubH1: 'Zorganizuj turniej online – wybierz dyscyplinę',
-    hubIntro: 'SportLiveArena ustawia turniej w kilka minut i pokazuje kibicom wyniki na żywo, tabele i terminarz w telefonie. Wybierz dyscyplinę, aby zobaczyć jej gotowe zasady.',
+    hubTitle: 'Organizacja turniejów sportowych dla klubów: program, wyniki na żywo | SportLiveArena',
+    hubDesc: 'Organizacja turniejów sportowych dla klubów i szkół: strona turnieju, grupy, drabinka, terminarz i wyniki na żywo w telefonie, w {n} dyscyplinach. Za darmo.',
+    hubH1: 'Organizacja turniejów sportowych online dla klubów i szkół',
+    hubIntro: 'SportLiveArena to program do organizacji turniejów sportowych: ustawiasz turniej w kilka minut, a rodzice, trenerzy i kibice oglądają wyniki na żywo, tabele i terminarz w telefonie, bez instalowania aplikacji. Wybierz dyscyplinę, aby zobaczyć jej gotowe zasady.',
+    clubsH: 'Dla klubów, szkół i organizatorów turniejów',
+    clubs: [
+      'Strona internetowa turnieju dla Twojego klubu: gotowa w kilka minut, z własnym adresem',
+      'Wyniki na żywo, tabele, terminarz i drabinka dostępne w telefonie dla rodziców i kibiców',
+      'Sędziowie wpisują wyniki z telefonu, a organizator ma wszystko pod kontrolą w jednym panelu',
+      'Zgłoszenia drużyn przez internet, plakat turnieju z kodem QR i lista sponsorów',
+      'Siatkówka, piłka nożna, ręczna, koszykówka, tenis, szachy i wiele innych dyscyplin',
+    ],
+    contactH: 'Kontakt',
     title: '{sport} – turniej online, wyniki na żywo | SportLiveArena',
     desc: '{sport} – zorganizuj turniej online: gotowe zasady, grupy i drabinka, terminarz, wyniki na żywo dla kibiców i panel sędziego w telefonie. Za darmo.',
     h1: '{sport}: turniej online',
@@ -341,7 +353,7 @@ ${alternates(pathFor)}
 <main>
 ${body}
 </main>
-<footer><a href="/?lang=${lang}">${esc(COPY[lang].home)}</a> · <a href="${hubPath(lang)}">${esc(COPY[lang].all)}</a></footer>
+<footer><a href="/?lang=${lang}">${esc(COPY[lang].home)}</a> · <a href="${hubPath(lang)}">${esc(COPY[lang].all)}</a>${CONTACT ? ` · <a href="mailto:${esc(CONTACT)}">${esc(CONTACT)}</a>` : ''}</footer>
 </body>
 </html>
 `
@@ -366,7 +378,8 @@ function hubPage(lang, { t, sports }) {
   const list = groups
     .map((g) => `<h2>${esc(t(g.name))}</h2>\n<ul class="chips">${g.items.map((s) => `<li><a href="${sportPath(lang, s.id)}">${esc(t(s.label))}</a></li>`).join('')}</ul>`)
     .join('\n')
-  const body = `<h1>${esc(c.hubH1)}</h1>\n<p>${esc(c.hubIntro)}</p>\n${cta(lang)}\n${list}`
+  const clubs = c.clubs ? `<h2>${esc(c.clubsH)}</h2>\n<ul>${c.clubs.map((f) => `<li>${esc(f)}</li>`).join('')}</ul>\n` : ''
+  const body = `<h1>${esc(c.hubH1)}</h1>\n<p>${esc(c.hubIntro)}</p>\n${cta(lang)}\n${clubs}${list}`
   return shell({
     lang, path: hubPath(lang), pathFor: hubPath,
     title: fitTitle(fill(c.hubTitle, { n: sports.length })), desc: fill(c.hubDesc, { n: sports.length }), body,
