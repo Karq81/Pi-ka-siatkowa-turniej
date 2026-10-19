@@ -1661,3 +1661,39 @@ a.btn-back { text-decoration: none; }
 .sponsor-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 8px; }
 .sponsor-grid li { padding: 10px 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; font-weight: 600; text-align: center; }
 @media (max-width: 520px) { .sponsor-grid { grid-template-columns: 1fr 1fr; } .sponsor-grid li { font-size: .9rem; padding: 8px; } }
+
+/* Trial "app" layout for fans on phones (?app=1): a tab bar at the bottom, no top tabs, no service bar. */
+.app-tabbar { display: none; }
+@media (max-width: 700px) {
+  body.app-view .brand-bar { display: none; }
+  body.app-view .info-hero .tabs { display: none; }
+  body.app-view .page { padding-bottom: calc(84px + env(safe-area-inset-bottom)); padding-top: 8px; }
+  body.app-view .info-hero { margin-inline: calc(-1 * clamp(16px, 3vw, 48px)); margin-top: -8px; border-radius: 0 0 18px 18px; padding: 16px; }
+  body.app-view .footer { margin-top: 24px; }
+  .app-tabbar {
+    display: grid; grid-auto-flow: column; grid-auto-columns: 1fr;
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;
+    padding: 6px 6px calc(6px + env(safe-area-inset-bottom));
+    background: color-mix(in srgb, var(--surface) 92%, transparent);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    border-top: 1px solid var(--line); box-shadow: 0 -6px 20px rgb(0 0 0 / 0.08);
+  }
+  .app-tabbar a {
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+    min-height: 56px; border-radius: 12px; text-decoration: none; color: var(--muted);
+    font-family: var(--display); font-weight: 600; font-size: 0.82rem; letter-spacing: 0.02em;
+  }
+  .app-tabbar a.active { color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
+  .app-tab-icon { font-size: 1.35rem; line-height: 1; }
+}
+@media (max-width: 700px) {
+  /* Sub-pages: a small header bar instead of the big banner; the tab bar replaces "Wstecz". */
+  body.app-view .app-sub .info-hero { position: sticky; top: 0; z-index: 40; padding: 10px 16px; gap: 0; }
+  body.app-view .app-sub .info-hero .eyebrow, body.app-view .app-sub .info-when { display: none; }
+  body.app-view .app-sub .info-hero h1 { font-size: 1.5rem !important; line-height: 1.05; }
+  body.app-view .app-sub .info-logo { width: 40px !important; padding: 2px; }
+  body.app-view .app-sub .main-sponsor { width: auto !important; padding: 3px 5px; }
+  body.app-view .app-sub .main-sponsor img { width: 34px !important; }
+  body.app-view .app-sub .main-sponsor-text { display: none; }
+  body.app-view .app-sub .backbar, body.app-view .app-sub .back-bar { display: none; }
+}

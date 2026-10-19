@@ -3,7 +3,7 @@ import { CorrectButton } from './Correction'
 import { StreamPlayer } from './Stream'
 import { LangPicker } from './LangPicker'
 import { t, tk } from '../i18n'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { BRAND, IS_PLATFORM_HOST } from '../config'
 import { formatRatio, isJudo, isScore, scoreUnit, setsText, setText, standings, tally } from '../logic/scoring'
 import { JudoNote } from './JudoScoring'
@@ -38,6 +38,10 @@ const TABS = [
 ]
 const HIDDEN_ROUTES = ['tabele', 'terminarz', 'drabinka']
 
+/** Trial phone layout "like an app" (a tab bar at the bottom), only with ?app=1 in the address until approved. */
+const APP_VIEW = typeof location !== 'undefined' && new URLSearchParams(location.search).get('app') === '1'
+const TAB_ICONS: Record<string, string> = { '': '🏠', grupy: '📋', 'na-zywo': '🔴', wyniki: '🏁' }
+
 export function Public({ route }: { route: string }) {
   const state = useStore()
   // Group links, match pages and the bracket all sit under "Grupy i terminarz".
@@ -55,9 +59,22 @@ export function Public({ route }: { route: string }) {
       ))}
     </nav>
   )
+  useEffect(() => {
+    if (APP_VIEW) document.body.classList.add('app-view')
+  }, [])
   return (
-    <div className="page">
+    <div className={`page${APP_VIEW && tab !== '' ? ' app-sub' : ''}`}>
       <InfoHero nav={nav} />
+      {APP_VIEW && (
+        <nav className="app-tabbar" aria-label={t('Sekcje')}>
+          {TABS.map((x) => (
+            <a key={x.route} href={`#${x.route}`} className={tab === x.route ? 'active' : ''} aria-current={tab === x.route ? 'page' : undefined}>
+              <span className="app-tab-icon" aria-hidden="true">{TAB_ICONS[x.route]}</span>
+              <span className="app-tab-label">{x.route === 'grupy' ? (isElimination(state.tournament) ? t('Drabinka') : t('Grupy')) : t(x.label)}</span>
+            </a>
+          ))}
+        </nav>
+      )}
       <main>
         {tab === '' && <Info />}
         {/* Every screen except the start page gets a back button; team and match pages have their own. */}
