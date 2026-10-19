@@ -220,7 +220,7 @@ describe('Albatros CUP team list', () => {
       tournament: { ...s.tournament, log: [{ at: 1, text: 'x' }], phases: { c1: { groupsEnded: true } }, withdrawal: 'A' as const },
       teams: s.teams.map((t, i) => (i === 0 ? { ...t, status: 'withdrawn' as const, adjust: { points: -1, reason: 'kara' }, voided: true } : t)),
       matches: s.matches.map((m, i) => (i === 0
-        ? { ...m, status: 'finished' as const, sets: [{ a: 20, b: 18 }], decidedBy: 'overtime' as const, cards: [{ side: 'a' as const, kind: 'R' as const }], penalties: { a: 3, b: 2 }, manualPoints: [2, 1] as [number, number], skipped: true }
+        ? { ...m, status: 'finished' as const, sets: [{ a: 20, b: 18 }], decidedBy: 'overtime' as const, cards: [{ side: 'a' as const, kind: 'R' as const }], penalties: { a: 3, b: 2 }, manualPoints: [2, 1] as [number, number], skipped: true, manual: true }
         : m)),
     }
     const r = resetResults(dirty)

@@ -84,7 +84,7 @@ export function resetResults(state: State): State {
     ...state,
     tournament,
     teams: state.teams.map(({ status: _status, adjust: _adjust, voided: _voided, ...team }) => team),
-    matches: state.matches.map(({ decidedBy: _d, cards: _c, manualPoints: _mp, penalties: _p, calledAt: _ca, skipped: _s, ...m }) => ({
+    matches: state.matches.map(({ decidedBy: _d, cards: _c, manualPoints: _mp, penalties: _p, calledAt: _ca, skipped: _s, manual: _m, ...m }) => ({
       ...m, sets: [], status: 'scheduled' as const, updatedAt: 0,
       ...(m.ko ? { teamA: '', teamB: '' } : {}),
     })),
