@@ -38,8 +38,6 @@ const TABS = [
 ]
 const HIDDEN_ROUTES = ['tabele', 'terminarz', 'drabinka']
 
-/** Trial phone layout "like an app" (a tab bar at the bottom), only with ?app=1 in the address until approved. */
-const APP_VIEW = typeof location !== 'undefined' && new URLSearchParams(location.search).get('app') === '1'
 const TAB_ICONS: Record<string, string> = { '': '🏠', grupy: '📋', 'na-zywo': '🔴', wyniki: '🏁' }
 
 export function Public({ route }: { route: string }) {
@@ -59,22 +57,23 @@ export function Public({ route }: { route: string }) {
       ))}
     </nav>
   )
+  // Phone layout "like an app" (a tab bar at the bottom, a compact header): CSS for phones only,
+  // and only while the fans' page is shown (the organiser and referee pages keep their own look).
   useEffect(() => {
-    if (APP_VIEW) document.body.classList.add('app-view')
+    document.body.classList.add('app-view')
+    return () => document.body.classList.remove('app-view')
   }, [])
   return (
-    <div className={`page${APP_VIEW && tab !== '' ? ' app-sub' : ''}`}>
+    <div className={`page${tab !== '' ? ' app-sub' : ''}`}>
       <InfoHero nav={nav} />
-      {APP_VIEW && (
-        <nav className="app-tabbar" aria-label={t('Sekcje')}>
-          {TABS.map((x) => (
-            <a key={x.route} href={`#${x.route}`} className={tab === x.route ? 'active' : ''} aria-current={tab === x.route ? 'page' : undefined}>
-              <span className="app-tab-icon" aria-hidden="true">{TAB_ICONS[x.route]}</span>
-              <span className="app-tab-label">{x.route === 'grupy' ? (isElimination(state.tournament) ? t('Drabinka') : t('Grupy')) : t(x.label)}</span>
-            </a>
-          ))}
-        </nav>
-      )}
+      <nav className="app-tabbar" aria-label={t('Sekcje')}>
+        {TABS.map((x) => (
+          <a key={x.route} href={`#${x.route}`} className={tab === x.route ? 'active' : ''} aria-current={tab === x.route ? 'page' : undefined}>
+            <span className="app-tab-icon" aria-hidden="true">{TAB_ICONS[x.route]}</span>
+            <span className="app-tab-label">{x.route === 'grupy' ? (isElimination(state.tournament) ? t('Drabinka') : t('Grupy')) : t(x.label)}</span>
+          </a>
+        ))}
+      </nav>
       <main>
         {tab === '' && <Info />}
         {/* Every screen except the start page gets a back button; team and match pages have their own. */}

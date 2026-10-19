@@ -1662,12 +1662,12 @@ a.btn-back { text-decoration: none; }
 .sponsor-grid li { padding: 10px 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; font-weight: 600; text-align: center; }
 @media (max-width: 520px) { .sponsor-grid { grid-template-columns: 1fr 1fr; } .sponsor-grid li { font-size: .9rem; padding: 8px; } }
 
-/* Trial "app" layout for fans on phones (?app=1): a tab bar at the bottom, no top tabs, no service bar. */
+/* Fans' page on phones, like an app: a tab bar at the bottom, no top tabs, no service bar (body.app-view only while Public is shown). */
 .app-tabbar { display: none; }
 @media (max-width: 700px) {
   body.app-view .brand-bar { display: none; }
   body.app-view .info-hero .tabs { display: none; }
-  body.app-view .page { padding-bottom: calc(84px + env(safe-area-inset-bottom)); padding-top: 8px; }
+  body.app-view .page { padding-bottom: calc(92px + env(safe-area-inset-bottom)); padding-top: 8px; }
   body.app-view .info-hero { margin-inline: calc(-1 * clamp(16px, 3vw, 48px)); margin-top: -8px; border-radius: 0 0 18px 18px; padding: 16px; }
   body.app-view .footer { margin-top: 24px; }
   .app-tabbar {
@@ -1680,12 +1680,14 @@ a.btn-back { text-decoration: none; }
   }
   .app-tabbar a {
     display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
-    min-height: 56px; border-radius: 12px; text-decoration: none; color: var(--muted);
-    font-family: var(--display); font-weight: 600; font-size: 0.82rem; letter-spacing: 0.02em;
+    min-height: 62px; border-radius: 12px; text-decoration: none; color: var(--muted);
+    font-family: var(--display); font-weight: 600; font-size: 1.23rem; letter-spacing: 0.01em; line-height: 1.1;
   }
   .app-tabbar a.active { color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
   .app-tab-icon { font-size: 1.35rem; line-height: 1; }
+  .app-tab-label { white-space: nowrap; }
 }
+@media (max-width: 380px) { .app-tabbar a { font-size: 1.08rem; } .app-tabbar { padding-inline: 2px; } }
 @media (max-width: 700px) {
   /* Sub-pages: a small header bar instead of the big banner; the tab bar replaces "Wstecz". */
   body.app-view .app-sub .info-hero { position: sticky; top: 0; z-index: 40; padding: 10px 16px; gap: 0; }
