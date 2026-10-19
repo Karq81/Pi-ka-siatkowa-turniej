@@ -76,9 +76,15 @@ export function drawTournament(state: State, opts: DrawOptions, rand: () => numb
 
 /** Clears every result (group and bracket), keeping groups and schedule. */
 export function resetResults(state: State): State {
+  const t = state.tournament
+  // Everything a played tournament adds: results and how they were decided, cards, penalties,
+  // hand-set points, skipped matches, withdrawals, point adjustments, the change log, ended phases.
+  const { log: _log, phases: _phases, perf: _perf, withdrawal: _withdrawal, ...tournament } = t
   return {
     ...state,
-    matches: state.matches.map((m) => ({
+    tournament,
+    teams: state.teams.map(({ status: _status, adjust: _adjust, voided: _voided, ...team }) => team),
+    matches: state.matches.map(({ decidedBy: _d, cards: _c, manualPoints: _mp, penalties: _p, calledAt: _ca, skipped: _s, ...m }) => ({
       ...m, sets: [], status: 'scheduled' as const, updatedAt: 0,
       ...(m.ko ? { teamA: '', teamB: '' } : {}),
     })),

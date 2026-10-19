@@ -213,6 +213,24 @@ describe('Albatros CUP team list', () => {
     }
   })
 
+  it('a reset also clears cards, penalties, withdrawals, adjustments, the log and ended phases', () => {
+    const s = drawnState(rng(5))
+    const dirty = {
+      ...s,
+      tournament: { ...s.tournament, log: [{ at: 1, text: 'x' }], phases: { c1: { groupsEnded: true } }, withdrawal: 'A' as const },
+      teams: s.teams.map((t, i) => (i === 0 ? { ...t, status: 'withdrawn' as const, adjust: { points: -1, reason: 'kara' }, voided: true } : t)),
+      matches: s.matches.map((m, i) => (i === 0
+        ? { ...m, status: 'finished' as const, sets: [{ a: 20, b: 18 }], decidedBy: 'overtime' as const, cards: [{ side: 'a' as const, kind: 'R' as const }], penalties: { a: 3, b: 2 }, manualPoints: [2, 1] as [number, number], skipped: true }
+        : m)),
+    }
+    const r = resetResults(dirty)
+    expect(r.tournament.log).toBeUndefined()
+    expect(r.tournament.phases).toBeUndefined()
+    expect(r.teams[0]).toEqual(s.teams[0])
+    expect(r.matches[0]).toEqual({ ...s.matches[0], sets: [], status: 'scheduled', updatedAt: 0 })
+    expect(JSON.stringify(r)).not.toContain('undefined')
+  })
+
   it('clears all results but keeps the draw', () => {
     const s = drawnState(rng(5))
     const played = { ...s, matches: s.matches.map((m, i) => (i < 5 ? { ...m, status: 'finished' as const, sets: [{ a: 15, b: 3 }] } : m)) }

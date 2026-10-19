@@ -192,10 +192,9 @@ function GroupView({ state, groupId }: { state: State; groupId: string }) {
   // Matches left out (a team withdrawn early, a phase ended) are not shown or counted.
   const matches = state.matches.filter((m) => m.groupId === group.id && !m.skipped).sort((a, b) => a.start.localeCompare(b.start) || a.court - b.court)
   const done = matches.filter((m) => m.status === 'finished')
-  // Last three results per team, oldest first.
+  // Every result of the team in the group, one dot per played match, in the order played (green win, red loss).
   const trend = (id: string) => done
     .filter((m) => m.teamA === id || m.teamB === id)
-    .slice(-3)
     .map((m) => {
       const tl = tally(rules, m.sets)
       const [own, other] = m.teamA === id ? [tl.setsA, tl.setsB] : [tl.setsB, tl.setsA]
