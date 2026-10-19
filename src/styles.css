@@ -1699,3 +1699,6 @@ a.btn-back { text-decoration: none; }
   body.app-view .app-sub .main-sponsor-text { display: none; }
   body.app-view .app-sub .backbar, body.app-view .app-sub .back-bar { display: none; }
 }
+@keyframes app-live-pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.25); opacity: 0.55; } }
+.app-tab-icon.pulse { animation: app-live-pulse 1.4s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .app-tab-icon.pulse { animation: none; } }

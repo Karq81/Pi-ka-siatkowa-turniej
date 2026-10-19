@@ -21,6 +21,7 @@ import { CourtQueue } from './CourtQueue'
 import { Info, InfoHero } from './Info'
 import { FanClock } from './ContestClock'
 import { isElimination } from '../logic/elimination'
+import { tournamentUnderway } from '../logic/underway'
 import { BackBar, courtLabel, formatDay, formatTime, ScoreLine, StatusPill, useLookups, useNow } from '../ui'
 import { CardIcons } from './Cards'
 import type { ReactNode } from 'react'
@@ -57,6 +58,9 @@ export function Public({ route }: { route: string }) {
       ))}
     </nav>
   )
+  // The "Na żywo" dot pulses from the first match until the last one is played.
+  const now = useNow(30000)
+  const underway = tournamentUnderway(state.matches, new Date(now))
   // Phone layout "like an app" (a tab bar at the bottom, a compact header): CSS for phones only,
   // and only while the fans' page is shown (the organiser and referee pages keep their own look).
   useEffect(() => {
@@ -69,7 +73,7 @@ export function Public({ route }: { route: string }) {
       <nav className="app-tabbar" aria-label={t('Sekcje')}>
         {TABS.map((x) => (
           <a key={x.route} href={`#${x.route}`} className={tab === x.route ? 'active' : ''} aria-current={tab === x.route ? 'page' : undefined}>
-            <span className="app-tab-icon" aria-hidden="true">{TAB_ICONS[x.route]}</span>
+            <span className={`app-tab-icon${x.route === 'na-zywo' && underway ? ' pulse' : ''}`} aria-hidden="true">{TAB_ICONS[x.route]}</span>
             <span className="app-tab-label">{x.route === 'grupy' ? (isElimination(state.tournament) ? t('Drabinka') : t('Grupy')) : t(x.label)}</span>
           </a>
         ))}
