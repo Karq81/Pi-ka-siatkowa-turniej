@@ -40,7 +40,8 @@ export function MatchPage({ state, matchId }: { state: State; matchId: string })
           <span className="mp-sep">:</span>
           <MatchSide teamId={m.teamB} name={side(m, 'b')} score={m.status === 'scheduled' ? undefined : scoreB} win={isWin(m, tl, 'b')} />
         </div>
-        <div className="center"><CorrectButton match={m} /></div>
+        {/* Corrections belong to the organiser panel, not to the fans' page. */}
+        {location.hash.startsWith('#panel') && <div className="center"><CorrectButton match={m} /></div>}
         {isUnderway(m, now) && !m.sets.length && <p className="center muted">{t('Mecz trwa. Wynik pojawi się po meczu.')}</p>}
         {!single && m.sets.length > 0 && (
           <p className="center muted">{t('Sety:')} {setsText(rules, m.sets)}</p>
