@@ -329,6 +329,9 @@ describe('next match 2 minutes after the result', () => {
     // Restoring the timetable puts it back.
     const moved = { ...s, matches: s.matches.map((m) => test.find((x) => x.id === m.id) ?? m) }
     expect(restoreTimetable(resetResults(moved)).matches).toEqual(s.matches)
+    // Also when the teams of the moved match are listed the other way round.
+    const swapped = { ...moved, matches: moved.matches.map((m) => (m.id === second.id ? { ...m, teamA: m.teamB, teamB: m.teamA } : m)) }
+    expect(restoreTimetable(resetResults(swapped)).matches.find((m) => m.id === second.id)!.start).toBe(second.start)
     const done = { ...s, matches: s.matches.map((m) => (m.id === first.id ? { ...m, status: 'finished' as const, sets: [{ a: 15, b: 9 }] } : m)) }
     expect(applyMatchUpdate(done, first.id, (m) => ({ ...m, sets: [{ a: 15, b: 11 }] }), at('2026-10-23T15:50:00'))).toHaveLength(1)
   })

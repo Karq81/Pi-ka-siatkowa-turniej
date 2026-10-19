@@ -1,4 +1,4 @@
-import type { Group, Rules, State, Team } from '../types'
+import type { Group, Match, Rules, State, Team } from '../types'
 import { drawTournament } from './draw'
 import { buildGroupsOnOwnCourts } from './schedule'
 
@@ -152,15 +152,17 @@ export function drawnState(rand: () => number = Math.random): State {
 /**
  * The group timetable as planned (each group on its court, from Friday 15:30 at the
  * chosen interval), put back on the matches: used after clearing test results, when
- * finished matches had moved the times. Pairings, courts and results stay.
+ * finished matches had moved the times. Pairings, courts and results stay. A pair is
+ * found whichever team is listed first (sides swapped in the panel keep their time).
  */
 export function restoreTimetable(state: State): State {
   const planned = buildGroupsOnOwnCourts(state.groups, state.groups.map((_, i) => i + 1), {
     ...DEFAULT_SCHEDULE, slotMinutes: state.tournament.slotMinutes ?? DEFAULT_SCHEDULE.slotMinutes,
   })
-  const at = new Map(planned.map((m) => [`${m.groupId}|${m.teamA}|${m.teamB}`, m.start]))
+  const key = (m: Match) => `${m.groupId}|${[m.teamA, m.teamB].sort().join('|')}`
+  const at = new Map(planned.map((m) => [key(m), m.start]))
   return {
     ...state,
-    matches: state.matches.map(({ calledAt: _called, ...m }) => ({ ...m, start: at.get(`${m.groupId}|${m.teamA}|${m.teamB}`) ?? m.start })),
+    matches: state.matches.map(({ calledAt: _called, ...m }) => ({ ...m, start: at.get(key(m)) ?? m.start })),
   }
 }

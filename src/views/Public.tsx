@@ -13,6 +13,7 @@ import { gameText, inTieBreak, isGameSet } from '../logic/tennis'
 import { judoOf, judoSideText } from '../logic/judo'
 import { useFavorites } from '../favorites'
 import { courtBoard, upcomingMatches } from '../logic/courtBoard'
+import { toLocalIso } from '../logic/schedule'
 import { useStore } from '../store/store'
 import type { Match, Rules, State } from '../types'
 import { Competition, NextMatch, TeamBadge, TeamPage } from './Competition'
@@ -149,7 +150,7 @@ export function CourtCard({ state, court, big = false, referee = false }: { stat
         {finished && <StatusPill status="finished" />}
         {board.mode === 'next' && <span className="pill pill-next">{t('Następne')}<span className="pill-long"> {t('spotkanie')}</span> · {formatTime(current.start)}</span>}
       </header>
-      <p className="court-meta">{categoryName(current.categoryId)} · {stageName(current)} · {formatTime(current.start)}</p>
+      <p className="court-meta">{categoryName(current.categoryId)} · {stageName(current)} · {current.start && current.start.slice(0, 10) !== toLocalIso(new Date(now)).slice(0, 10) && `${formatDay(current.start)}, `}{formatTime(current.start)}</p>
       <a className="board" href={`#mecz-${current.id}`}>
         <TeamRow cards={<CardIcons match={current} side="a" />} name={side(current, 'a')} sets={multi ? tl.setsA : undefined} points={judo && cur ? judoSideText(judoOf(cur).a) : cur?.a === 0.5 ? '½' : cur?.a} shido={judo && cur ? judoOf(cur).a.shido : undefined} live={shown} win={winA} mine={mine.includes(current.teamA)} />
         <TeamRow cards={<CardIcons match={current} side="b" />} name={side(current, 'b')} sets={multi ? tl.setsB : undefined} points={judo && cur ? judoSideText(judoOf(cur).b) : cur?.b === 0.5 ? '½' : cur?.b} shido={judo && cur ? judoOf(cur).b.shido : undefined} live={shown} win={winB} mine={mine.includes(current.teamB)} />
