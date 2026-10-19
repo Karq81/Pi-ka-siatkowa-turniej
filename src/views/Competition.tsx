@@ -30,6 +30,9 @@ type Phase = 'groups' | 'ko'
  * The competition for visitors: category → group phase (group tabs with table and
  * matches) or knockout phase (every placement tier), with a countdown to the next match.
  */
+/** Organiser tools (ending a phase, corrections) belong to the organiser panel, never to the fans' page. */
+const inPanel = () => typeof location !== 'undefined' && location.hash.startsWith('#panel')
+
 export function Competition({ state, route }: { state: State; route: string }) {
   // Deep links: #grupa-<id> opens that group, #drabinka the knockout phase.
   const linkedGroup = /^grupa-(.+)$/.exec(route)?.[1]
@@ -286,7 +289,7 @@ export function MatchCard({ state, match: m, label }: { state: State; match: Mat
   const cls = `mcard ${underway ? 'is-live' : ''} ${done ? 'is-done' : ''} ${followed ? 'mine' : ''}`
   if (!m.start || m.bye) return <div className={cls}>{body}</div>
   // The chief referee also gets a correction button, kept outside the link.
-  if (session?.role === 'admin') {
+  if (session?.role === 'admin' && inPanel()) {
     return (
       <div className={cls}>
         <a href={`#mecz-${m.id}`} className="mcard-main">{body}</a>
@@ -308,7 +311,7 @@ function PhaseEnds({ state, categoryId, onEnd }: { state: State; categoryId: str
   const session = useSession()
   const [asking, setAsking] = useState<'groups' | 'stage2' | null>(null)
   const [busy, setBusy] = useState(false)
-  if (session?.role !== 'admin') return null
+  if (session?.role !== 'admin' || !inPanel()) return null
   const openGroups = openFirstStageMatches(state, categoryId).length
   const open2 = openStage2Matches(state, categoryId).length
   const has2 = stage2Groups(state, categoryId).length > 0
